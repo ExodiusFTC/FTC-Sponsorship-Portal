@@ -1,9 +1,28 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { Webhook } from 'svix'
+import { env } from '@/lib/env'
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
+    const payload = await req.text()
+    const headers = {
+      'svix-id': req.headers.get('svix-id') || '',
+      'svix-timestamp': req.headers.get('svix-timestamp') || '',
+      'svix-signature': req.headers.get('svix-signature') || '',
+    }
+
+    if (env.RESEND_WEBHOOK_SECRET) {
+      try {
+        const webhook = new Webhook(env.RESEND_WEBHOOK_SECRET)
+        webhook.verify(payload, headers)
+      } catch (err) {
+        console.error('Webhook signature verification failed', err)
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+      }
+    }
+
+    const body = JSON.parse(payload)
     const supabase = createAdminClient()
 
     // Resend webhook format: { type: 'email.opened', data: { email_id: '...' } }

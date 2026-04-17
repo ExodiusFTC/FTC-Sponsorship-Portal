@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { pitchSchema, type PitchInput } from '@/lib/schemas/pitch'
 import { redirect } from 'next/navigation'
 import type { PitchLineItem } from '@/lib/supabase/types'
+import { checkActionLimit } from '@/lib/rate-limit'
 
 async function getCoachTeamId() {
   const supabase = await createClient()
@@ -32,10 +33,13 @@ function toDbLineItems(items: PitchInput['lineItems']): PitchLineItem[] {
 export async function savePitch(
   data: PitchInput,
   status: 'draft' | 'submitted' = 'draft',
-  pitchId?: string
+  pitchId?: string,
+  sponsorIds?: string[]
 ) {
-  // For drafts, allow partial data; for submissions, enforce full validation.
   if (status === 'submitted') {
+    const limit = await checkActionLimit('submit_pitch')
+    if (!limit.success) return { error: 'Too many submissions. Please try again later.' }
+
     const result = pitchSchema.safeParse(data)
     if (!result.success) return { error: 'Please complete all required fields before submitting' }
   }
@@ -76,13 +80,25 @@ export async function savePitch(
 
     if (error) return { error: error.message }
   } else {
-    const { error } = await supabase
+    const { data: inserted, error } = await supabase
       .from('pitches')
       .insert(payload)
       .select('id')
       .single()
 
     if (error) return { error: error.message }
+    pitchId = inserted.id
+  }
+
+  // Create sponsor target records if submitting and sponsors selected
+  if (status === 'submitted' && sponsorIds && sponsorIds.length > 0 && pitchId) {
+    const targets = sponsorIds.map((sponsorId) => ({
+      pitch_id: pitchId,
+      sponsor_id: sponsorId,
+      dispatch_status: 'pending' as const,
+    }))
+    const { error } = await supabase.from('pitch_sponsor_targets').insert(targets)
+    if (error) return { error: `Pitch created but sponsor targeting failed: ${error.message}` }
   }
 
   if (status === 'submitted') redirect('/dashboard')

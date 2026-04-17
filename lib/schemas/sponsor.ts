@@ -17,7 +17,7 @@ export const sponsorSchema = z.object({
   contactName: z.string().min(2, 'Contact name is required'),
   contactEmail: z.string().email('Invalid email address'),
   contactTitle: z.string().optional(),
-  fundingCapCents: z.coerce.number().min(0, 'Funding cap cannot be negative'),
+  fundingCapCents: z.number().min(0, 'Funding cap cannot be negative'),
   status: z.enum(['active', 'inactive', 'pending_review']),
   notes: z.string().optional(),
 })

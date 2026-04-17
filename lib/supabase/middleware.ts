@@ -32,11 +32,19 @@ export async function updateSession(request: NextRequest) {
   // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#managing-session-with-middleware
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || 
-                     request.nextUrl.pathname.startsWith('/signup') ||
-                     request.nextUrl.pathname.startsWith('/verify-email')
+  const { pathname } = request.nextUrl
+  const isAuthPage =
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/signup') ||
+    pathname.startsWith('/verify-email')
 
-  if (!user && !isAuthPage && request.nextUrl.pathname !== '/') {
+  const isPublicRoute =
+    pathname === '/' ||
+    pathname.startsWith('/legal') ||
+    pathname.startsWith('/sponsors/apply') ||
+    pathname.startsWith('/auth/')
+
+  if (!user && !isAuthPage && !isPublicRoute) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

@@ -9,6 +9,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 export default async function AdminSponsorsPage() {
   const supabase = await createClient()
@@ -33,11 +35,16 @@ export default async function AdminSponsorsPage() {
 
   return (
     <div className="container py-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Manage Sponsors</h1>
-        <p className="text-muted-foreground">
-          View and manage the corporate sponsor directory and their funding caps.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Manage Sponsors</h1>
+          <p className="text-muted-foreground">
+            View and manage the corporate sponsor directory and their funding caps.
+          </p>
+        </div>
+        <Link href="/sponsors/new">
+          <Button>+ Add Sponsor</Button>
+        </Link>
       </div>
 
       <div className="border rounded-md">
@@ -53,9 +60,11 @@ export default async function AdminSponsorsPage() {
           </TableHeader>
           <TableBody>
             {sponsors?.map((sponsor) => (
-              <TableRow key={sponsor.id}>
+              <TableRow key={sponsor.id} className="hover:bg-muted/50">
                 <TableCell className="font-medium">
-                  {sponsor.company_name}
+                  <Link href={`/sponsors/${sponsor.id}/edit`} className="hover:underline">
+                    {sponsor.company_name}
+                  </Link>
                   <div className="text-xs text-muted-foreground font-normal">{sponsor.industry}</div>
                 </TableCell>
                 <TableCell>

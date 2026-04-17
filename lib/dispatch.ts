@@ -1,6 +1,7 @@
 import { Resend } from 'resend'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { env } from '@/lib/env'
+import PitchEmail from '@/emails/pitch-email'
 
 const resend = new Resend(env.RESEND_API_KEY)
 
@@ -40,23 +41,15 @@ export async function dispatchApprovedPitch(pitchId: string) {
         to: target.sponsors.contact_email,
         replyTo: pitch.teams.profiles.email,
         subject: `Sponsorship Opportunity: ${pitch.teams.team_name} - ${pitch.title}`,
-        html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2>Hello ${target.sponsors.contact_name},</h2>
-            <p>We are reaching out from <strong>${pitch.teams.team_name}</strong> with a sponsorship opportunity.</p>
-            
-            <div style="background: #f4f4f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3>${pitch.title}</h3>
-              <p>${pitch.summary}</p>
-              
-              <h4>Financial Ask: $${(pitch.financial_ask_cents / 100).toFixed(2)}</h4>
-              <p>${pitch.cost_explanation}</p>
-            </div>
-            
-            <p>If you are interested in discussing this further, please reply directly to this email to connect with our team coach.</p>
-            <p>Best regards,<br/>The ${pitch.teams.team_name} Team</p>
-          </div>
-        `,
+        react: PitchEmail({
+          sponsorContactName: target.sponsors.contact_name,
+          teamName: pitch.teams.team_name,
+          pitchTitle: pitch.title,
+          pitchSummary: pitch.summary,
+          costExplanation: pitch.cost_explanation,
+          financialAskCents: pitch.financial_ask_cents,
+          lineItems: pitch.line_items as any,
+        }),
         tags: [
           { name: 'pitch_id', value: pitch.id },
           { name: 'sponsor_id', value: target.sponsor_id },

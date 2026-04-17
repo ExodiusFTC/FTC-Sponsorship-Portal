@@ -13,24 +13,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Trash2, Plus, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import type { Pitch } from '@/lib/supabase/types'
 
 const AUTOSAVE_DELAY_MS = 2000
+
+type Sponsor = { id: string; company_name: string; status: string; funding_cap_cents: number; funding_used_cents: number }
 
 type Props = {
   initialPitch?: Pick<
     Pitch,
     'id' | 'title' | 'summary' | 'cost_explanation' | 'line_items' | 'financial_ask_cents' | 'media_urls' | 'status'
   >
+  sponsors?: Sponsor[]
+  preselectedSponsorId?: string
 }
 
-export function PitchForm({ initialPitch }: Props) {
+export function PitchForm({ initialPitch, sponsors = [], preselectedSponsorId }: Props) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [isPending, setIsPending] = useState(false)
   const [pitchId, setPitchId] = useState<string | undefined>(initialPitch?.id)
   const [mediaUrls, setMediaUrls] = useState<string[]>(initialPitch?.media_urls ?? [])
   const [mediaUploading, setMediaUploading] = useState(false)
+  const [selectedSponsorIds, setSelectedSponsorIds] = useState<Set<string>>(
+    preselectedSponsorId ? new Set([preselectedSponsorId]) : new Set()
+  )
   const [autosaveState, setAutosaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastSerialized = useRef<string>('')
@@ -104,7 +112,8 @@ export function PitchForm({ initialPitch }: Props) {
   async function onSubmit(values: PitchInput, status: 'draft' | 'submitted') {
     setIsPending(true)
     setError(null)
-    const result = await savePitch({ ...values, mediaUrls }, status, pitchId)
+    const sponsorIds = status === 'submitted' ? Array.from(selectedSponsorIds) : undefined
+    const result = await savePitch({ ...values, mediaUrls }, status, pitchId, sponsorIds)
     if (result?.error) {
       setError(result.error)
       setIsPending(false)
@@ -114,6 +123,16 @@ export function PitchForm({ initialPitch }: Props) {
       setIsPending(false)
       setAutosaveState('saved')
     }
+  }
+
+  function toggleSponsor(sponsorId: string) {
+    const newSet = new Set(selectedSponsorIds)
+    if (newSet.has(sponsorId)) {
+      newSet.delete(sponsorId)
+    } else {
+      newSet.add(sponsorId)
+    }
+    setSelectedSponsorIds(newSet)
   }
 
   async function handleMediaUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -416,6 +435,49 @@ export function PitchForm({ initialPitch }: Props) {
                 </div>
               )}
             </div>
+
+            {!readOnly && sponsors.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">4. Target Sponsors</h3>
+                <p className="text-sm text-muted-foreground">
+                  Select companies to send this pitch to. You can always change this later.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {sponsors.map((sponsor) => {
+                    const remaining = sponsor.funding_cap_cents - sponsor.funding_used_cents
+                    const isSelected = selectedSponsorIds.has(sponsor.id)
+                    return (
+                      <button
+                        key={sponsor.id}
+                        type="button"
+                        onClick={() => toggleSponsor(sponsor.id)}
+                        className={cn(
+                          'p-3 border rounded-md text-left transition',
+                          isSelected
+                            ? 'border-primary bg-primary/10'
+                            : 'border-muted-foreground/30 hover:border-muted-foreground'
+                        )}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium text-sm">{sponsor.company_name}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              ${(remaining / 100).toLocaleString('en-US', { minimumFractionDigits: 0 })} remaining
+                            </p>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}}
+                            className="w-4 h-4"
+                          />
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {!readOnly && (
               <div className="flex justify-end gap-4 pt-6 border-t">

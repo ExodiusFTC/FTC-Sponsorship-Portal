@@ -9,6 +9,7 @@ const envSchema = z.object({
   // Resend
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.string().email(),
+  RESEND_WEBHOOK_SECRET: z.string().min(1).optional(), // Optional for dev environments
   // Upstash — optional until rate-limiting is wired up (no format check so placeholders are OK)
   UPSTASH_REDIS_REST_URL: z.string().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),

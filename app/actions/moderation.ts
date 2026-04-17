@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { dispatchApprovedPitch } from '@/lib/dispatch'
+import { sendPitchDecisionEmail } from '@/lib/notify'
 
 export async function approvePitch(pitchId: string) {
   const authClient = await createClient()
@@ -42,8 +43,11 @@ export async function approvePitch(pitchId: string) {
     entity_id: pitchId,
   })
 
-  // 3. Dispatch Emails
-  await dispatchApprovedPitch(pitchId)
+  // 3. Notify coach + dispatch to sponsors
+  await Promise.all([
+    sendPitchDecisionEmail(pitchId, 'approved'),
+    dispatchApprovedPitch(pitchId),
+  ])
 
   return { success: true }
 }
@@ -83,6 +87,8 @@ export async function rejectPitch(pitchId: string, feedback: string) {
     metadata: { feedback },
   })
 
+  await sendPitchDecisionEmail(pitchId, 'rejected', feedback)
+
   return { success: true }
 }
 
@@ -120,6 +126,8 @@ export async function requestEdit(pitchId: string, feedback: string) {
     entity_id: pitchId,
     metadata: { feedback },
   })
+
+  await sendPitchDecisionEmail(pitchId, 'changes_requested', feedback)
 
   return { success: true }
 }

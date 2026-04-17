@@ -4,8 +4,14 @@ import { createClient } from '@/lib/supabase/server'
 import { signupSchema, loginSchema, type SignupInput, type LoginInput } from '@/lib/schemas/auth'
 import { redirect } from 'next/navigation'
 import { env } from '@/lib/env'
+import { checkActionLimit } from '@/lib/rate-limit'
 
 export async function signUp(data: SignupInput) {
+  const limit = await checkActionLimit(`signup_${data.email}`)
+  if (!limit.success) {
+    return { error: 'Too many signup attempts. Please try again later.' }
+  }
+
   const result = signupSchema.safeParse(data)
   if (!result.success) {
     return { error: 'Invalid data provided' }
@@ -53,6 +59,12 @@ export async function signIn(data: LoginInput) {
   redirect('/')
 }
 
+export async function signOut() {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  redirect('/login')
+}
+
 export async function uploadCredentials(formData: FormData) {
   const file = formData.get('file') as File
   if (!file) {
@@ -88,5 +100,5 @@ export async function uploadCredentials(formData: FormData) {
     return { error: updateError.message }
   }
 
-  redirect('/')
+  redirect('/awaiting-verification')
 }

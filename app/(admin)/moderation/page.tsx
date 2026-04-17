@@ -5,12 +5,10 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
-  CardFooter
+  CardTitle
 } from "@/components/ui/card"
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { approvePitch, rejectPitch, requestEdit } from '@/app/actions/moderation'
+import { ModerationActions } from '@/components/admin/moderation-actions'
 
 export default async function ModerationPage() {
   const supabase = await createClient()
@@ -86,29 +84,7 @@ export default async function ModerationPage() {
                 </ul>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-end gap-3 border-t pt-4">
-              {/* Note: In a real app, these would open modals or use client forms to allow adding feedback. For simplicity, we can just use simple server action buttons for now. */}
-              <form action={async () => {
-                'use server'
-                await requestEdit(pitch.id, 'Please clarify the line items and provide more detail.')
-              }}>
-                <Button variant="outline" type="submit">Request Edit</Button>
-              </form>
-              
-              <form action={async () => {
-                'use server'
-                await rejectPitch(pitch.id, 'Does not meet sponsorship criteria at this time.')
-              }}>
-                <Button variant="destructive" type="submit">Reject</Button>
-              </form>
-              
-              <form action={async () => {
-                'use server'
-                await approvePitch(pitch.id)
-              }}>
-                <Button variant="default" type="submit">Approve & Queue Dispatch</Button>
-              </form>
-            </CardFooter>
+            <ModerationActions pitchId={pitch.id} />
           </Card>
         ))}
 
