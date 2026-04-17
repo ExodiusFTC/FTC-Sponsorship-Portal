@@ -1,0 +1,126 @@
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+
+export default async function DashboardPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  const { data: team } = await supabase
+    .from('teams')
+    .select('*')
+    .eq('owner_id', user.id)
+    .single()
+
+  if (!team) {
+    redirect('/onboarding')
+  }
+
+  const { data: achievements } = await supabase
+    .from('team_achievements')
+    .select('*')
+    .eq('team_id', team.id)
+
+  return (
+    <div className="container py-8 space-y-8">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">{team.team_name}</h1>
+          <p className="text-muted-foreground">
+            {team.status === 'existing' ? `FTC Team #${team.ftc_team_number}` : 'Incubator Team'}
+          </p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/team/edit">Edit Profile</Link>
+        </Button>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-8">
+        <div className="md:col-span-2 space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Mission Statement</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="whitespace-pre-wrap">{team.mission_statement}</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Achievements</CardTitle>
+                <CardDescription>Season highlights and awards.</CardDescription>
+              </div>
+              <Button asChild size="sm">
+                <Link href="/team/achievements/new">Add Achievement</Link>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {achievements && achievements.length > 0 ? (
+                <div className="space-y-4">
+                  {achievements.map((a) => (
+                    <div key={a.id} className="border-b pb-4 last:border-0">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold">{a.event_name}</h3>
+                          <p className="text-sm text-muted-foreground">{a.season}</p>
+                        </div>
+                        {a.award && <span className="bg-primary/10 text-primary px-2 py-1 rounded text-xs font-medium">{a.award}</span>}
+                      </div>
+                      <p className="mt-2 text-sm">{a.description}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No achievements added yet.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Stats</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Location</p>
+                <p>{team.city}, {team.state}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Organization</p>
+                <p>{team.organization || 'Independent'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Tax Status</p>
+                <p>{team.is_501c3 ? '501(c)(3) Non-profit' : 'Standard'}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Pitches</CardTitle>
+              <CardDescription>Your active sponsorship pitches.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild className="w-full">
+                <Link href="/pitches/new">Create New Pitch</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}
