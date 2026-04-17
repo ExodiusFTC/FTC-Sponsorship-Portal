@@ -15,6 +15,7 @@ export const pitchSchema = z.object({
   costExplanation: z.string().min(50, 'Please provide a more detailed cost explanation'),
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required'),
   financialAskCents: z.number().min(0),
+  mediaUrls: z.array(z.string()).optional(),
 })
 
 export type PitchInput = z.infer<typeof pitchSchema>

@@ -9,6 +9,8 @@ export const teamOnboardingSchema = z.object({
   state: z.string().min(2, 'State is required'),
   missionStatement: z.string().min(50, 'Mission statement should be at least 50 characters'),
   is501c3: z.boolean(),
+  communityInterestText: z.string().optional(),
+  seedFundingGoalsCents: z.number().int().nonnegative().optional(),
 }).superRefine((data, ctx) => {
   if (data.status === 'existing' && !data.ftcTeamNumber) {
     ctx.addIssue({
@@ -16,6 +18,22 @@ export const teamOnboardingSchema = z.object({
       message: 'FTC Team Number is required for existing teams',
       path: ['ftcTeamNumber'],
     })
+  }
+  if (data.status === 'incubator') {
+    if (!data.communityInterestText || data.communityInterestText.length < 50) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Please describe community interest in at least 50 characters',
+        path: ['communityInterestText'],
+      })
+    }
+    if (data.seedFundingGoalsCents === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Seed funding goal is required for incubator teams',
+        path: ['seedFundingGoalsCents'],
+      })
+    }
   }
 })
 

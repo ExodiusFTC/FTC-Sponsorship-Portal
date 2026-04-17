@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { teamOnboardingSchema, type TeamOnboardingInput } from '@/lib/schemas/team'
-import { createTeam } from '@/app/actions/team'
+import { createTeam, lookupFTCTeam } from '@/app/actions/team'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -15,6 +15,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 export function OnboardingForm({ isVerified }: { isVerified: boolean }) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, setIsPending] = useState(false)
+  const [isLookingUp, setIsLookingUp] = useState(false)
+  const [lookupSuccess, setLookupSuccess] = useState(false)
 
   const form = useForm<TeamOnboardingInput>({
     resolver: zodResolver(teamOnboardingSchema),
@@ -26,10 +28,33 @@ export function OnboardingForm({ isVerified }: { isVerified: boolean }) {
       state: '',
       missionStatement: '',
       is501c3: false,
+      communityInterestText: '',
+      seedFundingGoalsCents: undefined,
     },
   })
 
   const status = form.watch('status')
+
+  async function handleLookup() {
+    const teamNumber = form.getValues('ftcTeamNumber')
+    if (!teamNumber) {
+      form.setError('ftcTeamNumber', { message: 'Enter a team number first' })
+      return
+    }
+    setIsLookingUp(true)
+    setLookupSuccess(false)
+    const result = await lookupFTCTeam(teamNumber)
+    setIsLookingUp(false)
+    if (result.error || !result.team) {
+      form.setError('ftcTeamNumber', { message: result.error ?? 'Team not found in FIRST registry' })
+      return
+    }
+    form.setValue('teamName', result.team.team_name, { shouldValidate: true })
+    if (result.team.city) form.setValue('city', result.team.city, { shouldValidate: true })
+    if (result.team.state) form.setValue('state', result.team.state, { shouldValidate: true })
+    form.clearErrors('ftcTeamNumber')
+    setLookupSuccess(true)
+  }
 
   async function onSubmit(values: TeamOnboardingInput) {
     if (!isVerified) {
@@ -68,7 +93,7 @@ export function OnboardingForm({ isVerified }: { isVerified: boolean }) {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            
+
             <FormField
               control={form.control}
               name="status"
@@ -83,6 +108,10 @@ export function OnboardingForm({ isVerified }: { isVerified: boolean }) {
                           {...field}
                           value="existing"
                           checked={field.value === 'existing'}
+                          onChange={() => {
+                            field.onChange('existing')
+                            setLookupSuccess(false)
+                          }}
                           className="w-4 h-4"
                         />
                         <span>Existing FTC Team</span>
@@ -93,6 +122,10 @@ export function OnboardingForm({ isVerified }: { isVerified: boolean }) {
                           {...field}
                           value="incubator"
                           checked={field.value === 'incubator'}
+                          onChange={() => {
+                            field.onChange('incubator')
+                            setLookupSuccess(false)
+                          }}
                           className="w-4 h-4"
                         />
                         <span>Incubator (New Team)</span>
@@ -112,20 +145,80 @@ export function OnboardingForm({ isVerified }: { isVerified: boolean }) {
                   <FormItem>
                     <FormLabel>FTC Team Number</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="e.g. 12345"
-                        type="number"
-                        value={field.value ?? ''}
-                        onChange={(e) => {
-                          const num = parseInt(e.target.value)
-                          field.onChange(isNaN(num) ? undefined : num)
-                        }}
-                      />
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="e.g. 12345"
+                          type="number"
+                          value={field.value ?? ''}
+                          onChange={(e) => {
+                            const num = parseInt(e.target.value)
+                            field.onChange(isNaN(num) ? undefined : num)
+                            setLookupSuccess(false)
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleLookup}
+                          disabled={isLookingUp}
+                          className="shrink-0"
+                        >
+                          {isLookingUp ? 'Looking up...' : 'Lookup'}
+                        </Button>
+                      </div>
                     </FormControl>
+                    {lookupSuccess && (
+                      <p className="text-sm text-green-600">Team found — name and location prefilled from FIRST registry.</p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            )}
+
+            {status === 'incubator' && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="communityInterestText"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Community Interest</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Who in your community wants to build a team? What's the interest level?"
+                          className="min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="seedFundingGoalsCents"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Seed Funding Goal (USD)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g. 5000"
+                          type="number"
+                          min="0"
+                          value={field.value !== undefined ? field.value / 100 : ''}
+                          onChange={(e) => {
+                            const dollars = parseFloat(e.target.value)
+                            field.onChange(isNaN(dollars) ? undefined : Math.round(dollars * 100))
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
             )}
 
             <FormField
@@ -192,10 +285,10 @@ export function OnboardingForm({ isVerified }: { isVerified: boolean }) {
                 <FormItem>
                   <FormLabel>Mission Statement</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="What is your team's goal? How do you impact your community?" 
+                    <Textarea
+                      placeholder="What is your team's goal? How do you impact your community?"
                       className="min-h-[100px]"
-                      {...field} 
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -234,6 +327,7 @@ export function OnboardingForm({ isVerified }: { isVerified: boolean }) {
           </form>
         </Form>
       </CardContent>
+      <CardFooter />
     </Card>
   )
 }

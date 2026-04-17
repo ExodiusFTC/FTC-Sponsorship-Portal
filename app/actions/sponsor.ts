@@ -32,6 +32,57 @@ export async function submitSponsorApplication(data: SponsorApplicationInput) {
   return { success: true }
 }
 
+export async function adminCreateSponsor(data: SponsorInput) {
+  const result = sponsorSchema.safeParse(data)
+  if (!result.success) {
+    return { error: 'Invalid data provided' }
+  }
+
+  const supabase = createAdminClient()
+  const authClient = await createClient()
+
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: profile } = await authClient
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'admin') {
+    return { error: 'Forbidden: Admin access required' }
+  }
+
+  const { error } = await supabase
+    .from('sponsors')
+    .insert({
+      company_name: result.data.companyName,
+      industry: result.data.industry || null,
+      website: result.data.website || null,
+      contact_name: result.data.contactName,
+      contact_email: result.data.contactEmail,
+      contact_title: result.data.contactTitle || null,
+      funding_cap_cents: result.data.fundingCapCents,
+      status: result.data.status,
+      notes: result.data.notes || null,
+      source: 'admin_added',
+    })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  await supabase.from('audit_log').insert({
+    actor_id: user.id,
+    action: 'create_sponsor',
+    entity_type: 'sponsors',
+    metadata: result.data as any,
+  })
+
+  return { success: true }
+}
+
 export async function adminUpdateSponsor(id: string, data: SponsorInput) {
   const result = sponsorSchema.safeParse(data)
   if (!result.success) {

@@ -8,11 +8,51 @@ export interface FTCTeam {
   country: string | null
 }
 
+const FTCSCOUT_URL = 'https://api.ftcscout.org/graphql'
+
+async function fetchFromFTCScout(teamNumber: number): Promise<FTCTeam | null> {
+  const query = `
+    query {
+      teamByNumber(number: ${teamNumber}) {
+        number
+        name
+        city
+        stateProv
+        country
+      }
+    }
+  `
+
+  try {
+    const res = await fetch(FTCSCOUT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+      signal: AbortSignal.timeout(5000),
+    })
+
+    if (!res.ok) return null
+
+    const json = await res.json()
+    const team = json?.data?.teamByNumber
+    if (!team) return null
+
+    return {
+      team_number: team.number,
+      team_name: team.name,
+      city: team.city ?? null,
+      state: team.stateProv ?? null,
+      country: team.country ?? null,
+    }
+  } catch {
+    return null
+  }
+}
+
 export async function validateFTCTeam(teamNumber: number): Promise<FTCTeam | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminClient() as any
 
-  // 1. Check cache first
   const { data: cachedTeam } = await supabase
     .from('ftc_teams_cache')
     .select('*')
@@ -23,24 +63,13 @@ export async function validateFTCTeam(teamNumber: number): Promise<FTCTeam | nul
     return cachedTeam as FTCTeam
   }
 
-  // 2. If not in cache, simulate fetch from FIRST (replace with real API call later)
-  // In a real app, this would be a fetch() to FIRST's API or a scrape of their search page.
-  if (teamNumber > 0 && teamNumber < 100000) {
-    const mockTeam: FTCTeam = {
-      team_number: teamNumber,
-      team_name: `Team ${teamNumber}`,
-      city: 'Sample City',
-      state: 'ST',
-      country: 'USA',
-    }
+  const team = await fetchFromFTCScout(teamNumber)
+  if (!team) return null
 
-    await supabase.from('ftc_teams_cache').upsert({
-      ...mockTeam,
-      last_synced: new Date().toISOString(),
-    })
+  await supabase.from('ftc_teams_cache').upsert({
+    ...team,
+    last_synced: new Date().toISOString(),
+  })
 
-    return mockTeam
-  }
-
-  return null
+  return team
 }

@@ -55,6 +55,8 @@ export type Team = {
   mission_statement: string | null
   is_501c3: boolean
   logo_url: string | null
+  community_interest_text: string | null
+  seed_funding_goals_cents: number
   created_at: string
   updated_at: string
 }
@@ -164,6 +166,8 @@ export type TeamInsert = {
   mission_statement?: string | null
   is_501c3?: boolean
   logo_url?: string | null
+  community_interest_text?: string | null
+  seed_funding_goals_cents?: number
 }
 
 export type TeamAchievementInsert = {
@@ -253,6 +257,8 @@ export type TeamUpdate = {
   mission_statement?: string | null
   is_501c3?: boolean
   logo_url?: string | null
+  community_interest_text?: string | null
+  seed_funding_goals_cents?: number
   updated_at?: string
 }
 

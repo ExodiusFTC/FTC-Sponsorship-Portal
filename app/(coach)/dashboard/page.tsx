@@ -28,6 +28,12 @@ export default async function DashboardPage() {
     .select('*')
     .eq('team_id', team.id)
 
+  const { data: pitches } = await supabase
+    .from('pitches')
+    .select('id, title, status, financial_ask_cents, updated_at')
+    .eq('team_id', team.id)
+    .order('updated_at', { ascending: false })
+
   return (
     <div className="container py-8 space-y-8">
       <div className="flex justify-between items-center">
@@ -110,14 +116,47 @@ export default async function DashboardPage() {
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Pitches</CardTitle>
-              <CardDescription>Your active sponsorship pitches.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link href="/pitches/new" className={cn(buttonVariants(), 'w-full')}>
-                Create New Pitch
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Pitches</CardTitle>
+                <CardDescription>Your sponsorship pitches.</CardDescription>
+              </div>
+              <Link href="/pitches/new" className={buttonVariants({ size: 'sm' })}>
+                New
               </Link>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {pitches && pitches.length > 0 ? (
+                pitches.map((p) => {
+                  const editable = p.status === 'draft' || p.status === 'changes_requested'
+                  return (
+                    <Link
+                      key={p.id}
+                      href={`/pitches/${p.id}/edit`}
+                      className="block rounded border p-3 hover:bg-muted/50 transition"
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate">{p.title}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            ${(p.financial_ask_cents / 100).toFixed(2)}
+                          </p>
+                        </div>
+                        <span className={cn(
+                          'text-xs px-2 py-1 rounded font-medium shrink-0',
+                          editable ? 'bg-amber-100 text-amber-800' : 'bg-muted text-muted-foreground'
+                        )}>
+                          {p.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                    </Link>
+                  )
+                })
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No pitches yet. Create one to get started.
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>

@@ -3,8 +3,21 @@
 import { createClient } from '@/lib/supabase/server'
 import { teamOnboardingSchema, type TeamOnboardingInput } from '@/lib/schemas/team'
 import { achievementSchema, type AchievementInput } from '@/lib/schemas/achievement'
-import { validateFTCTeam } from '@/lib/ftc-roster'
+import { validateFTCTeam, type FTCTeam } from '@/lib/ftc-roster'
 import { redirect } from 'next/navigation'
+
+export async function lookupFTCTeam(
+  teamNumber: number
+): Promise<{ team: FTCTeam; error?: never } | { team?: never; error: string }> {
+  if (!teamNumber || teamNumber <= 0) {
+    return { error: 'Invalid team number' }
+  }
+  const team = await validateFTCTeam(teamNumber)
+  if (!team) {
+    return { error: `FTC Team #${teamNumber} could not be found in the FIRST registry.` }
+  }
+  return { team }
+}
 
 export async function createTeam(data: TeamOnboardingInput) {
   const result = teamOnboardingSchema.safeParse(data)
@@ -19,9 +32,19 @@ export async function createTeam(data: TeamOnboardingInput) {
     return { error: 'Not authenticated' }
   }
 
-  const { status, ftcTeamNumber, teamName, organization, city, state, missionStatement, is501c3 } = result.data
+  const {
+    status,
+    ftcTeamNumber,
+    teamName,
+    organization,
+    city,
+    state,
+    missionStatement,
+    is501c3,
+    communityInterestText,
+    seedFundingGoalsCents,
+  } = result.data
 
-  // Extra validation for existing teams
   if (status === 'existing' && ftcTeamNumber) {
     const ftcData = await validateFTCTeam(ftcTeamNumber)
     if (!ftcData) {
@@ -29,7 +52,7 @@ export async function createTeam(data: TeamOnboardingInput) {
     }
   }
 
-  const { data: team, error } = await supabase
+  const { error } = await supabase
     .from('teams')
     .insert({
       owner_id: user.id,
@@ -41,6 +64,8 @@ export async function createTeam(data: TeamOnboardingInput) {
       state,
       mission_statement: missionStatement,
       is_501c3: is501c3,
+      community_interest_text: communityInterestText ?? null,
+      seed_funding_goals_cents: seedFundingGoalsCents ?? 0,
     })
     .select()
     .single()
@@ -50,6 +75,43 @@ export async function createTeam(data: TeamOnboardingInput) {
   }
 
   redirect('/dashboard')
+}
+
+export async function uploadTeamLogo(teamId: string, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return { error: 'Not authenticated' }
+
+  const file = formData.get('file') as File | null
+  if (!file || file.size === 0) return { error: 'No file provided' }
+
+  const ext = file.name.split('.').pop()?.toLowerCase()
+  if (!ext || !['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+    return { error: 'Logo must be a JPG, PNG, or WebP image' }
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    return { error: 'Logo must be under 2 MB' }
+  }
+
+  const filePath = `${user.id}/${teamId}.${ext}`
+  const { error: uploadError } = await supabase.storage
+    .from('team-logos')
+    .upload(filePath, file, { upsert: true, contentType: file.type })
+
+  if (uploadError) return { error: uploadError.message }
+
+  const { data: urlData } = supabase.storage.from('team-logos').getPublicUrl(filePath)
+
+  const { error: updateError } = await supabase
+    .from('teams')
+    .update({ logo_url: urlData.publicUrl })
+    .eq('id', teamId)
+    .eq('owner_id', user.id)
+
+  if (updateError) return { error: updateError.message }
+
+  return { success: true, url: urlData.publicUrl }
 }
 
 export async function updateTeam(id: string, data: Partial<TeamOnboardingInput>) {
@@ -93,7 +155,6 @@ export async function addAchievement(teamId: string, data: AchievementInput) {
     return { error: 'Not authenticated' }
   }
 
-  // Verify ownership of the team
   const { data: team } = await supabase
     .from('teams')
     .select('id')
