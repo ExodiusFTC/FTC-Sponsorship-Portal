@@ -55,14 +55,14 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE TABLE IF NOT EXISTS profiles (
   id                    uuid        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   role                  user_role   NOT NULL DEFAULT 'coach',
-  full_name             text        NOT NULL,
+  full_name             text        NOT NULL CHECK (char_length(full_name) <= 200),
   email                 text        NOT NULL,
   coach_verified        boolean     NOT NULL DEFAULT false,
   coach_credentials_url text,
   created_at            timestamptz NOT NULL DEFAULT now(),
-  updated_at            timestamptz NOT NULL DEFAULT now(),
-  -- COPPA: no student PII columns anywhere in this schema (by design)
-  CONSTRAINT no_student_data CHECK (true)
+  updated_at            timestamptz NOT NULL DEFAULT now()
+  -- COPPA compliance: this table intentionally contains zero student PII columns.
+  -- Only adult coach/admin data is stored. See SECURITY.md for the full policy.
 );
 
 -- 2b. teams
@@ -228,6 +228,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Prevent coaches from modifying their own role or coach_verified status
+CREATE OR REPLACE FUNCTION prevent_role_elevation()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.role <> OLD.role AND NOT is_admin() THEN
+    RAISE EXCEPTION 'role elevation not permitted';
+  END IF;
+  IF NEW.coach_verified <> OLD.coach_verified AND NOT is_admin() THEN
+    RAISE EXCEPTION 'coach_verified modification not permitted';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+DROP TRIGGER IF EXISTS enforce_profile_immutable_fields ON profiles;
+CREATE TRIGGER enforce_profile_immutable_fields
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW EXECUTE FUNCTION prevent_role_elevation();
+
 -- Drop triggers before recreating so the migration stays idempotent
 DROP TRIGGER IF EXISTS set_updated_at_profiles             ON profiles;
 DROP TRIGGER IF EXISTS set_updated_at_teams                ON teams;
@@ -271,12 +290,12 @@ BEGIN
   VALUES (
     NEW.id,
     NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+    COALESCE(LEFT(NEW.raw_user_meta_data->>'full_name', 200), ''),
     'coach'
   );
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
@@ -307,7 +326,7 @@ RETURNS boolean AS $$
     SELECT 1 FROM profiles
     WHERE id = auth.uid() AND role = 'admin'
   );
-$$ LANGUAGE sql SECURITY DEFINER STABLE;
+$$ LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public;
 
 CREATE OR REPLACE FUNCTION is_coach_verified()
 RETURNS boolean AS $$
@@ -315,7 +334,7 @@ RETURNS boolean AS $$
     SELECT 1 FROM profiles
     WHERE id = auth.uid() AND role = 'coach' AND coach_verified = true
   );
-$$ LANGUAGE sql SECURITY DEFINER STABLE;
+$$ LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public;
 
 -- ---------------------------------------------------------------------------
 -- 8. RLS Policies
@@ -333,23 +352,21 @@ DROP POLICY IF EXISTS "profiles_insert_trigger" ON profiles;
 CREATE POLICY "profiles_select" ON profiles FOR SELECT
   USING (id = auth.uid() OR is_admin());
 
--- Users can update their own profile but cannot elevate role or flip coach_verified
+-- Users can update their own profile; role/coach_verified immutability enforced by trigger
+DROP POLICY IF EXISTS "profiles_update_own" ON profiles;
 CREATE POLICY "profiles_update_own" ON profiles FOR UPDATE
-  USING (id = auth.uid())
-  WITH CHECK (
-    id = auth.uid() AND
-    role          = (SELECT role          FROM profiles WHERE id = auth.uid()) AND
-    coach_verified = (SELECT coach_verified FROM profiles WHERE id = auth.uid())
-  );
+  USING (id = auth.uid());
 
 -- Admins can update any profile (e.g., to flip coach_verified)
 CREATE POLICY "profiles_update_admin" ON profiles FOR UPDATE
   USING (is_admin());
 
 -- Insert is handled by the handle_new_user trigger (service role).
--- This policy covers the edge case where a user row must match their own auth.uid.
+-- This policy covers the edge case where a user row must match their own auth.uid,
+-- and prevents self-granting of admin role.
+DROP POLICY IF EXISTS "profiles_insert_trigger" ON profiles;
 CREATE POLICY "profiles_insert_trigger" ON profiles FOR INSERT
-  WITH CHECK (id = auth.uid());
+  WITH CHECK (id = auth.uid() AND role = 'coach');
 
 -- ── teams ───────────────────────────────────────────────────────────────────
 
@@ -366,9 +383,11 @@ CREATE POLICY "teams_select" ON teams FOR SELECT
 CREATE POLICY "teams_insert" ON teams FOR INSERT
   WITH CHECK (owner_id = auth.uid() AND is_coach_verified());
 
--- Owners and admins can update
+-- Owners and admins can update; WITH CHECK prevents owner_id hijacking
+DROP POLICY IF EXISTS "teams_update" ON teams;
 CREATE POLICY "teams_update" ON teams FOR UPDATE
-  USING (owner_id = auth.uid() OR is_admin());
+  USING (owner_id = auth.uid() OR is_admin())
+  WITH CHECK (owner_id = auth.uid() OR is_admin());
 
 -- Only admins can delete teams
 CREATE POLICY "teams_delete" ON teams FOR DELETE
@@ -420,10 +439,12 @@ DROP POLICY IF EXISTS "sponsors_insert"       ON sponsors;
 DROP POLICY IF EXISTS "sponsors_update"       ON sponsors;
 DROP POLICY IF EXISTS "sponsors_delete"       ON sponsors;
 
--- Verified coaches can see active sponsors only; admins see all
+-- Verified coaches can see active sponsors that are not fully funded; admins see all
+DROP POLICY IF EXISTS "sponsors_select_coach" ON sponsors;
 CREATE POLICY "sponsors_select_coach" ON sponsors FOR SELECT
   USING (
-    (is_coach_verified() AND status = 'active') OR is_admin()
+    (is_coach_verified() AND status = 'active' AND funding_used_cents < funding_cap_cents)
+    OR is_admin()
   );
 
 -- Only admins can write sponsor records
@@ -458,11 +479,16 @@ CREATE POLICY "pitches_insert" ON pitches FOR INSERT
     AND is_coach_verified()
   );
 
--- Coaches can update their own pitches only when in editable states
+-- Coaches can update their own pitches only when in editable states;
+-- WITH CHECK prevents status escalation beyond 'submitted'
+DROP POLICY IF EXISTS "pitches_update_coach" ON pitches;
 CREATE POLICY "pitches_update_coach" ON pitches FOR UPDATE
   USING (
     EXISTS (SELECT 1 FROM teams WHERE id = team_id AND owner_id = auth.uid())
     AND status IN ('draft', 'changes_requested')
+  )
+  WITH CHECK (
+    status IN ('draft', 'changes_requested', 'submitted')
   );
 
 -- Admins can update any pitch (e.g., status transitions, feedback)
@@ -550,25 +576,37 @@ DROP POLICY IF EXISTS "audit_log_select" ON audit_log;
 CREATE POLICY "audit_log_select" ON audit_log FOR SELECT
   USING (is_admin());
 
+-- NOTE: audit_log has no authenticated INSERT policy.
+-- All inserts MUST use the Supabase service-role client (which bypasses RLS).
+-- Application server actions must use createAdminClient() from lib/supabase/admin.ts,
+-- NOT the user-session client, for any audit_log writes.
+-- This is enforced architecturally, not at the DB layer.
+
 -- ---------------------------------------------------------------------------
 -- 9. Analytics Views
 -- ---------------------------------------------------------------------------
 
-CREATE OR REPLACE VIEW v_sponsor_capacity AS
+DROP VIEW IF EXISTS v_sponsor_capacity;
+CREATE OR REPLACE VIEW v_sponsor_capacity
+  WITH (security_invoker = true)
+AS
 SELECT
   id,
   company_name,
   status,
   funding_cap_cents,
   funding_used_cents,
-  (funding_cap_cents - funding_used_cents)                           AS remaining_cents,
+  (funding_cap_cents - funding_used_cents) AS remaining_cents,
   CASE
     WHEN funding_cap_cents = 0 THEN 0
     ELSE ROUND((funding_used_cents::numeric / funding_cap_cents) * 100, 1)
-  END                                                                AS utilization_pct
+  END AS utilization_pct
 FROM sponsors;
 
-CREATE OR REPLACE VIEW v_pitch_summary AS
+DROP VIEW IF EXISTS v_pitch_summary;
+CREATE OR REPLACE VIEW v_pitch_summary
+  WITH (security_invoker = true)
+AS
 SELECT
   p.id,
   p.title,
@@ -576,14 +614,24 @@ SELECT
   p.financial_ask_cents,
   t.team_name,
   t.owner_id,
-  COUNT(pst.id)                                                          AS target_count,
-  COUNT(pst.id) FILTER (WHERE pst.dispatch_status = 'sent')             AS sent_count,
+  COUNT(pst.id) AS target_count,
+  COUNT(pst.id) FILTER (WHERE pst.dispatch_status = 'sent') AS sent_count,
   p.created_at,
   p.updated_at
 FROM pitches p
 JOIN teams t ON t.id = p.team_id
 LEFT JOIN pitch_sponsor_targets pst ON pst.pitch_id = p.id
 GROUP BY p.id, t.team_name, t.owner_id;
+
+-- ---------------------------------------------------------------------------
+-- 10. Additional Constraints (idempotent re-run safety)
+-- ---------------------------------------------------------------------------
+
+-- Ensure full_name length constraint exists even on pre-existing schemas
+DO $$ BEGIN
+  ALTER TABLE profiles ADD CONSTRAINT full_name_length CHECK (char_length(full_name) <= 200);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- =============================================================================
 -- End of migration 0001_init.sql
