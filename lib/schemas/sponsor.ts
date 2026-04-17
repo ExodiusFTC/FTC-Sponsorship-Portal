@@ -1,0 +1,25 @@
+import { z } from 'zod'
+
+export const sponsorApplicationSchema = z.object({
+  companyName: z.string().min(2, 'Company name is required'),
+  contactName: z.string().min(2, 'Contact name is required'),
+  contactEmail: z.string().email('Invalid email address'),
+  proposedCapCents: z.coerce.number().min(0, 'Proposed funding cap cannot be negative').default(0),
+  message: z.string().optional(),
+})
+
+export type SponsorApplicationInput = z.infer<typeof sponsorApplicationSchema>
+
+export const sponsorSchema = z.object({
+  companyName: z.string().min(2, 'Company name is required'),
+  industry: z.string().optional(),
+  website: z.string().url('Invalid URL').optional().or(z.literal('')),
+  contactName: z.string().min(2, 'Contact name is required'),
+  contactEmail: z.string().email('Invalid email address'),
+  contactTitle: z.string().optional(),
+  fundingCapCents: z.coerce.number().min(0, 'Funding cap cannot be negative'),
+  status: z.enum(['active', 'inactive', 'pending_review']),
+  notes: z.string().optional(),
+})
+
+export type SponsorInput = z.infer<typeof sponsorSchema>
