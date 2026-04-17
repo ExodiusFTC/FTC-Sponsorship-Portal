@@ -39,11 +39,20 @@ export const actionLimiter = redis
     })
   : null;
 
+export type RateLimitResult =
+  | { ok: true }
+  | { ok: false; retryAfterSeconds: number; limit: number }
+
 /**
  * Utility function to check limits inside server actions.
  * If Upstash isn't configured (e.g., local dev without keys), it bypasses the limit.
  */
-export async function checkActionLimit(identifier: string = 'anonymous') {
-  if (!actionLimiter) return { success: true };
-  return await actionLimiter.limit(identifier);
+export async function checkActionLimit(identifier: string = 'anonymous'): Promise<RateLimitResult> {
+  if (!actionLimiter) return { ok: true };
+  const res = await actionLimiter.limit(identifier);
+  if (res.success) {
+    return { ok: true };
+  }
+  const retryAfterSeconds = Math.ceil((res.reset - Date.now()) / 1000);
+  return { ok: false, retryAfterSeconds: Math.max(0, retryAfterSeconds), limit: res.limit };
 }

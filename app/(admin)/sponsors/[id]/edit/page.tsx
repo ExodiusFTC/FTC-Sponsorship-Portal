@@ -1,25 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect, notFound } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { SponsorForm } from '@/components/sponsor/sponsor-form'
 import { buttonVariants } from '@/components/ui/button'
 import Link from 'next/link'
+import { DeleteButton } from '../delete-button'
 
 export default async function EditSponsorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') {
-    redirect('/dashboard')
-  }
 
   const { data: sponsor } = await supabase
     .from('sponsors')
@@ -35,9 +23,12 @@ export default async function EditSponsorPage({ params }: { params: Promise<{ id
     <div className="container max-w-2xl py-8 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Edit Sponsor</h1>
-        <Link href="/sponsors" className={buttonVariants({ variant: 'outline' })}>
-          ← Back
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/sponsors" className={buttonVariants({ variant: 'outline' })}>
+            ← Back
+          </Link>
+          <DeleteButton sponsorId={sponsor.id} sponsorName={sponsor.company_name} />
+        </div>
       </div>
       <SponsorForm initialSponsor={sponsor} />
     </div>

@@ -14,19 +14,6 @@ import Link from 'next/link'
 
 export default async function AdminSponsorsPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') {
-    redirect('/dashboard') // Or an access denied page
-  }
 
   const { data: sponsors } = await supabase
     .from('sponsors')

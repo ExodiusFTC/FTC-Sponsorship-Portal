@@ -4,14 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
+import { PitchRejectionSummary } from '@/components/coach/pitch-rejection-summary'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect('/login')
-  }
+  if (!user) return null // Handled by layout
 
   const { data: team } = await supabase
     .from('teams')
@@ -30,9 +29,13 @@ export default async function DashboardPage() {
 
   const { data: pitches } = await supabase
     .from('pitches')
-    .select('id, title, status, financial_ask_cents, updated_at')
+    .select('id, title, status, financial_ask_cents, admin_feedback, updated_at')
     .eq('team_id', team.id)
     .order('updated_at', { ascending: false })
+
+  const pitchesWithFeedback = pitches?.filter(
+    (p) => p.admin_feedback && (p.status === 'rejected' || p.status === 'changes_requested')
+  )
 
   return (
     <div className="container py-8 space-y-8">
@@ -114,6 +117,14 @@ export default async function DashboardPage() {
               </div>
             </CardContent>
           </Card>
+
+          {pitchesWithFeedback && pitchesWithFeedback.length > 0 && (
+            <div className="space-y-4">
+              {pitchesWithFeedback.map((p) => (
+                <PitchRejectionSummary key={p.id} pitch={p} />
+              ))}
+            </div>
+          )}
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">

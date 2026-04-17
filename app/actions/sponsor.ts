@@ -3,7 +3,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sponsorApplicationSchema, sponsorSchema, type SponsorApplicationInput, type SponsorInput } from '@/lib/schemas/sponsor'
-import { redirect } from 'next/navigation'
+import { sendSponsorApplicationConfirmation } from '@/lib/notify'
+import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 
 export async function submitSponsorApplication(data: SponsorApplicationInput) {
   const result = sponsorApplicationSchema.safeParse(data)
@@ -11,7 +13,7 @@ export async function submitSponsorApplication(data: SponsorApplicationInput) {
     return { error: 'Invalid data provided' }
   }
 
-  const { companyName, contactEmail, proposedCapCents, message } = result.data
+  const { companyName, contactName, contactEmail, proposedCapCents, message } = result.data
 
   // Use admin client since the user may be unauthenticated
   const supabase = createAdminClient()
@@ -28,6 +30,13 @@ export async function submitSponsorApplication(data: SponsorApplicationInput) {
   if (error) {
     return { error: error.message }
   }
+
+  await sendSponsorApplicationConfirmation({
+    contactEmail,
+    companyName,
+    contactName,
+    proposedCapCents,
+  })
 
   return { success: true }
 }
@@ -134,5 +143,52 @@ export async function adminUpdateSponsor(id: string, data: SponsorInput) {
     metadata: data as any,
   })
 
+  return { success: true }
+}
+
+const deleteSponsorSchema = z.object({ id: z.string().uuid() })
+
+export async function deleteSponsor(id: string): Promise<{ success?: true; error?: string }> {
+  const parsed = deleteSponsorSchema.safeParse({ id })
+  if (!parsed.success) return { error: 'Invalid sponsor id' }
+
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: profile } = await authClient
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'admin') {
+    return { error: 'Forbidden: Admin access required' }
+  }
+
+  const supabase = createAdminClient()
+
+  // Snapshot for audit metadata before delete.
+  const { data: snapshot } = await supabase
+    .from('sponsors')
+    .select('*')
+    .eq('id', parsed.data.id)
+    .single()
+
+  if (!snapshot) return { error: 'Sponsor not found' }
+
+  const { error } = await supabase.from('sponsors').delete().eq('id', parsed.data.id)
+  if (error) return { error: error.message }
+
+  await supabase.from('audit_log').insert({
+    actor_id: user.id,
+    action: 'delete_sponsor',
+    entity_type: 'sponsors',
+    entity_id: parsed.data.id,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    metadata: { snapshot } as any,
+  })
+
+  revalidatePath('/sponsors')
   return { success: true }
 }

@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Trash2, Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Pitch } from '@/lib/supabase/types'
+import { RateLimitNotice } from '@/components/ui/rate-limit-notice'
 
 const AUTOSAVE_DELAY_MS = 2000
 
@@ -32,6 +33,7 @@ type Props = {
 export function PitchForm({ initialPitch, sponsors = [], preselectedSponsorId }: Props) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const [rateLimitData, setRateLimitData] = useState<{ retryAfterSeconds: number; limit: number } | null>(null)
   const [isPending, setIsPending] = useState(false)
   const [pitchId, setPitchId] = useState<string | undefined>(initialPitch?.id)
   const [mediaUrls, setMediaUrls] = useState<string[]>(initialPitch?.media_urls ?? [])
@@ -112,8 +114,14 @@ export function PitchForm({ initialPitch, sponsors = [], preselectedSponsorId }:
   async function onSubmit(values: PitchInput, status: 'draft' | 'submitted') {
     setIsPending(true)
     setError(null)
+    setRateLimitData(null)
     const sponsorIds = status === 'submitted' ? Array.from(selectedSponsorIds) : undefined
     const result = await savePitch({ ...values, mediaUrls }, status, pitchId, sponsorIds)
+    if (result?.error === 'rate_limited' && 'retryAfterSeconds' in result) {
+      setRateLimitData({ retryAfterSeconds: result.retryAfterSeconds as number, limit: (result as { limit?: number }).limit || 0 })
+      setIsPending(false)
+      return
+    }
     if (result?.error) {
       setError(result.error)
       setIsPending(false)
@@ -139,6 +147,7 @@ export function PitchForm({ initialPitch, sponsors = [], preselectedSponsorId }:
     const file = e.target.files?.[0]
     if (!file) return
     setError(null)
+    setRateLimitData(null)
 
     // Ensure we have a pitch id to attach media to.
     let id = pitchId
@@ -210,6 +219,9 @@ export function PitchForm({ initialPitch, sponsors = [], preselectedSponsorId }:
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
+            )}
+            {rateLimitData && (
+              <RateLimitNotice retryAfterSeconds={rateLimitData.retryAfterSeconds} />
             )}
 
             <div className="space-y-4">

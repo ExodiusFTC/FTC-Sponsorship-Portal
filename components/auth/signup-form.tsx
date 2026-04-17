@@ -12,9 +12,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import Link from 'next/link'
+import { RateLimitNotice } from '@/components/ui/rate-limit-notice'
 
 export function SignupForm() {
   const [error, setError] = useState<string | null>(null)
+  const [rateLimitData, setRateLimitData] = useState<{ retryAfterSeconds: number; limit: number } | null>(null)
   const [isPending, setIsPending] = useState(false)
 
   const form = useForm<SignupInput>({
@@ -30,7 +32,13 @@ export function SignupForm() {
   async function onSubmit(values: SignupInput) {
     setIsPending(true)
     setError(null)
+    setRateLimitData(null)
     const result = await signUp(values)
+    if (result?.error === 'rate_limited' && 'retryAfterSeconds' in result) {
+      setRateLimitData({ retryAfterSeconds: result.retryAfterSeconds as number, limit: (result as { limit?: number }).limit || 0 })
+      setIsPending(false)
+      return
+    }
     if (result?.error) {
       setError(result.error)
       setIsPending(false)
@@ -52,6 +60,9 @@ export function SignupForm() {
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
+            )}
+            {rateLimitData && (
+              <RateLimitNotice retryAfterSeconds={rateLimitData.retryAfterSeconds} />
             )}
             <FormField
               control={form.control}

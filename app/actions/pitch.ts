@@ -38,7 +38,7 @@ export async function savePitch(
 ) {
   if (status === 'submitted') {
     const limit = await checkActionLimit('submit_pitch')
-    if (!limit.success) return { error: 'Too many submissions. Please try again later.' }
+    if (!limit.ok) return { error: 'rate_limited', retryAfterSeconds: limit.retryAfterSeconds, limit: limit.limit }
 
     const result = pitchSchema.safeParse(data)
     if (!result.success) return { error: 'Please complete all required fields before submitting' }

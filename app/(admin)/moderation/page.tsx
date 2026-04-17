@@ -12,19 +12,6 @@ import { ModerationActions } from '@/components/admin/moderation-actions'
 
 export default async function ModerationPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') {
-    redirect('/dashboard') // Or an access denied page
-  }
 
   // Fetch pitches that are submitted (waiting for moderation)
   const { data: pitches } = await supabase

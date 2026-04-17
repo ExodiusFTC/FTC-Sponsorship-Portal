@@ -5,11 +5,12 @@ import { signupSchema, loginSchema, type SignupInput, type LoginInput } from '@/
 import { redirect } from 'next/navigation'
 import { env } from '@/lib/env'
 import { checkActionLimit } from '@/lib/rate-limit'
+import { sendCredentialUploadAlert } from '@/lib/notify'
 
 export async function signUp(data: SignupInput) {
   const limit = await checkActionLimit(`signup_${data.email}`)
-  if (!limit.success) {
-    return { error: 'Too many signup attempts. Please try again later.' }
+  if (!limit.ok) {
+    return { error: 'rate_limited', retryAfterSeconds: limit.retryAfterSeconds, limit: limit.limit }
   }
 
   const result = signupSchema.safeParse(data)
@@ -99,6 +100,10 @@ export async function uploadCredentials(formData: FormData) {
   if (updateError) {
     return { error: updateError.message }
   }
+
+  // Notify admins. Fire-and-forget; failures are logged inside notify and must not
+  // block the redirect. Note: redirect() throws, so this MUST run before it.
+  await sendCredentialUploadAlert({ coachId: user.id })
 
   redirect('/awaiting-verification')
 }
