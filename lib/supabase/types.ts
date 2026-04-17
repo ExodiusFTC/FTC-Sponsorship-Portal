@@ -21,7 +21,7 @@ export type ApplicationStatus = 'pending' | 'approved' | 'rejected'
 // Line item type for pitches.line_items JSONB
 // ---------------------------------------------------------------------------
 
-export interface PitchLineItem {
+export type PitchLineItem = {
   label: string
   qty: number
   unit_cost_cents: number
@@ -32,7 +32,7 @@ export interface PitchLineItem {
 // Row types — what SELECT * returns
 // ---------------------------------------------------------------------------
 
-export interface Profile {
+export type Profile = {
   id: string
   role: UserRole
   full_name: string
@@ -43,7 +43,7 @@ export interface Profile {
   updated_at: string
 }
 
-export interface Team {
+export type Team = {
   id: string
   owner_id: string
   status: TeamStatus
@@ -59,7 +59,7 @@ export interface Team {
   updated_at: string
 }
 
-export interface TeamAchievement {
+export type TeamAchievement = {
   id: string
   team_id: string
   season: string | null
@@ -69,7 +69,7 @@ export interface TeamAchievement {
   created_at: string
 }
 
-export interface Sponsor {
+export type Sponsor = {
   id: string
   company_name: string
   industry: string | null
@@ -87,7 +87,7 @@ export interface Sponsor {
   updated_at: string
 }
 
-export interface Pitch {
+export type Pitch = {
   id: string
   team_id: string
   title: string
@@ -104,7 +104,7 @@ export interface Pitch {
   updated_at: string
 }
 
-export interface PitchSponsorTarget {
+export type PitchSponsorTarget = {
   id: string
   pitch_id: string
   sponsor_id: string
@@ -115,7 +115,7 @@ export interface PitchSponsorTarget {
   updated_at: string
 }
 
-export interface SponsorApplication {
+export type SponsorApplication = {
   id: string
   company_name: string
   contact_email: string
@@ -128,7 +128,7 @@ export interface SponsorApplication {
   updated_at: string
 }
 
-export interface AuditLog {
+export type AuditLog = {
   id: string
   actor_id: string | null
   action: string
@@ -143,7 +143,7 @@ export interface AuditLog {
 // Make optional fields match DB defaults or nullability
 // ---------------------------------------------------------------------------
 
-export interface ProfileInsert {
+export type ProfileInsert = {
   /** FK to auth.users — required */
   id: string
   role?: UserRole
@@ -153,7 +153,7 @@ export interface ProfileInsert {
   coach_credentials_url?: string | null
 }
 
-export interface TeamInsert {
+export type TeamInsert = {
   owner_id: string
   status?: TeamStatus
   ftc_team_number?: number | null
@@ -166,7 +166,7 @@ export interface TeamInsert {
   logo_url?: string | null
 }
 
-export interface TeamAchievementInsert {
+export type TeamAchievementInsert = {
   team_id: string
   season?: string | null
   event_name: string
@@ -174,7 +174,7 @@ export interface TeamAchievementInsert {
   description?: string | null
 }
 
-export interface SponsorInsert {
+export type SponsorInsert = {
   company_name: string
   industry?: string | null
   website?: string | null
@@ -189,7 +189,7 @@ export interface SponsorInsert {
   notes?: string | null
 }
 
-export interface PitchInsert {
+export type PitchInsert = {
   team_id: string
   title: string
   summary?: string | null
@@ -203,7 +203,7 @@ export interface PitchInsert {
   reviewed_at?: string | null
 }
 
-export interface PitchSponsorTargetInsert {
+export type PitchSponsorTargetInsert = {
   pitch_id: string
   sponsor_id: string
   dispatch_status?: DispatchStatus
@@ -211,7 +211,7 @@ export interface PitchSponsorTargetInsert {
   sent_at?: string | null
 }
 
-export interface SponsorApplicationInsert {
+export type SponsorApplicationInsert = {
   company_name: string
   contact_email: string
   proposed_cap_cents?: number
@@ -221,7 +221,7 @@ export interface SponsorApplicationInsert {
   reviewed_at?: string | null
 }
 
-export interface AuditLogInsert {
+export type AuditLogInsert = {
   actor_id?: string | null
   action: string
   entity_type: string
@@ -233,7 +233,7 @@ export interface AuditLogInsert {
 // Update types — all fields optional
 // ---------------------------------------------------------------------------
 
-export interface ProfileUpdate {
+export type ProfileUpdate = {
   role?: UserRole
   full_name?: string
   email?: string
@@ -242,7 +242,7 @@ export interface ProfileUpdate {
   updated_at?: string
 }
 
-export interface TeamUpdate {
+export type TeamUpdate = {
   owner_id?: string
   status?: TeamStatus
   ftc_team_number?: number | null
@@ -256,7 +256,7 @@ export interface TeamUpdate {
   updated_at?: string
 }
 
-export interface TeamAchievementUpdate {
+export type TeamAchievementUpdate = {
   team_id?: string
   season?: string | null
   event_name?: string
@@ -264,7 +264,7 @@ export interface TeamAchievementUpdate {
   description?: string | null
 }
 
-export interface SponsorUpdate {
+export type SponsorUpdate = {
   company_name?: string
   industry?: string | null
   website?: string | null
@@ -280,7 +280,7 @@ export interface SponsorUpdate {
   updated_at?: string
 }
 
-export interface PitchUpdate {
+export type PitchUpdate = {
   team_id?: string
   title?: string
   summary?: string | null
@@ -295,7 +295,7 @@ export interface PitchUpdate {
   updated_at?: string
 }
 
-export interface PitchSponsorTargetUpdate {
+export type PitchSponsorTargetUpdate = {
   pitch_id?: string
   sponsor_id?: string
   dispatch_status?: DispatchStatus
@@ -304,7 +304,7 @@ export interface PitchSponsorTargetUpdate {
   updated_at?: string
 }
 
-export interface SponsorApplicationUpdate {
+export type SponsorApplicationUpdate = {
   company_name?: string
   contact_email?: string
   proposed_cap_cents?: number
@@ -319,7 +319,7 @@ export interface SponsorApplicationUpdate {
 // View row types
 // ---------------------------------------------------------------------------
 
-export interface SponsorCapacityView {
+export type SponsorCapacityView = {
   id: string
   company_name: string
   status: SponsorStatus
@@ -329,7 +329,7 @@ export interface SponsorCapacityView {
   utilization_pct: number
 }
 
-export interface PitchSummaryView {
+export type PitchSummaryView = {
   id: string
   title: string
   status: PitchStatus
@@ -346,59 +346,75 @@ export interface PitchSummaryView {
 // Supabase Database type — passed as generic to createClient<Database>
 // ---------------------------------------------------------------------------
 
-export interface Database {
+// GenericTable (from @supabase/postgrest-js) requires Relationships: []
+// on every table and view, or TypeScript resolves query results to `never`.
+// Row types must be `type` aliases (not `interface`) to satisfy the
+// `Row: Record<string, unknown>` constraint in TypeScript 5.9+.
+export type Database = {
   public: {
     Tables: {
       profiles: {
         Row: Profile
         Insert: ProfileInsert
         Update: ProfileUpdate
+        Relationships: []
       }
       teams: {
         Row: Team
         Insert: TeamInsert
         Update: TeamUpdate
+        Relationships: []
       }
       team_achievements: {
         Row: TeamAchievement
         Insert: TeamAchievementInsert
         Update: TeamAchievementUpdate
+        Relationships: []
       }
       sponsors: {
         Row: Sponsor
         Insert: SponsorInsert
         Update: SponsorUpdate
+        Relationships: []
       }
       pitches: {
         Row: Pitch
         Insert: PitchInsert
         Update: PitchUpdate
+        Relationships: []
       }
       pitch_sponsor_targets: {
         Row: PitchSponsorTarget
         Insert: PitchSponsorTargetInsert
         Update: PitchSponsorTargetUpdate
+        Relationships: []
       }
       sponsor_applications: {
         Row: SponsorApplication
         Insert: SponsorApplicationInsert
         Update: SponsorApplicationUpdate
+        Relationships: []
       }
       audit_log: {
         Row: AuditLog
         Insert: AuditLogInsert
         Update: Record<string, never>
+        Relationships: []
       }
     }
     Views: {
       v_sponsor_capacity: {
         Row: SponsorCapacityView
+        Relationships: []
       }
       v_pitch_summary: {
         Row: PitchSummaryView
+        Relationships: []
       }
     }
-    Functions: Record<string, never>
+    Functions: {
+      [_ in never]: never
+    }
     Enums: {
       user_role: UserRole
       team_status: TeamStatus

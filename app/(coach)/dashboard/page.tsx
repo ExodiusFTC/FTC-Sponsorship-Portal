@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
@@ -36,9 +37,9 @@ export default async function DashboardPage() {
             {team.status === 'existing' ? `FTC Team #${team.ftc_team_number}` : 'Incubator Team'}
           </p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/team/edit">Edit Profile</Link>
-        </Button>
+        <Link href="/team/edit" className={buttonVariants({ variant: 'outline' })}>
+          Edit Profile
+        </Link>
       </div>
 
       <div className="grid md:grid-cols-3 gap-8">
@@ -58,9 +59,9 @@ export default async function DashboardPage() {
                 <CardTitle>Achievements</CardTitle>
                 <CardDescription>Season highlights and awards.</CardDescription>
               </div>
-              <Button asChild size="sm">
-                <Link href="/team/achievements/new">Add Achievement</Link>
-              </Button>
+              <Link href="/team/achievements/new" className={buttonVariants({ size: 'sm' })}>
+                Add Achievement
+              </Link>
             </CardHeader>
             <CardContent>
               {achievements && achievements.length > 0 ? (
@@ -114,9 +115,9 @@ export default async function DashboardPage() {
               <CardDescription>Your active sponsorship pitches.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button asChild className="w-full">
-                <Link href="/pitches/new">Create New Pitch</Link>
-              </Button>
+              <Link href="/pitches/new" className={cn(buttonVariants(), 'w-full')}>
+                Create New Pitch
+              </Link>
             </CardContent>
           </Card>
         </div>

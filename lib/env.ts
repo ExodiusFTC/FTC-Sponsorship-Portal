@@ -9,9 +9,9 @@ const envSchema = z.object({
   // Resend
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.string().email(),
-  // Upstash
-  UPSTASH_REDIS_REST_URL: z.string().url(),
-  UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
+  // Upstash — optional until rate-limiting is wired up (no format check so placeholders are OK)
+  UPSTASH_REDIS_REST_URL: z.string().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
   // App
   NEXT_PUBLIC_APP_URL: z.string().url(),
   // Sentry (optional — only required in production)

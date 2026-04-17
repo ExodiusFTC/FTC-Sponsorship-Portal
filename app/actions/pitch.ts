@@ -37,7 +37,12 @@ export async function savePitch(data: PitchInput, status: 'draft' | 'submitted' 
       title,
       summary,
       cost_explanation: costExplanation,
-      line_items: lineItems,
+      line_items: lineItems.map((item) => ({
+        label: item.label,
+        qty: item.qty,
+        unit_cost_cents: item.unitCostCents,
+        total_cents: item.totalCents,
+      })),
       financial_ask_cents: financialAskCents,
       status,
     })

@@ -8,11 +8,15 @@ export async function dispatchApprovedPitch(pitchId: string) {
   const supabase = createAdminClient()
 
   // 1. Fetch pitch, team, and targets
-  const { data: pitch } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: pitch } = await (supabase as any)
     .from('pitches')
     .select(`
       *,
-      teams (*),
+      teams (
+        *,
+        profiles ( email )
+      ),
       pitch_sponsor_targets (
         id, sponsor_id, sponsors ( contact_email, contact_name, company_name )
       )
@@ -26,6 +30,7 @@ export async function dispatchApprovedPitch(pitchId: string) {
   }
 
   // 2. Prepare emails (batch)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const targets = pitch.pitch_sponsor_targets as any[]
   
   for (const target of targets) {
@@ -33,6 +38,7 @@ export async function dispatchApprovedPitch(pitchId: string) {
       const { data, error } = await resend.emails.send({
         from: env.RESEND_FROM_EMAIL,
         to: target.sponsors.contact_email,
+        replyTo: pitch.teams.profiles.email,
         subject: `Sponsorship Opportunity: ${pitch.teams.team_name} - ${pitch.title}`,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">

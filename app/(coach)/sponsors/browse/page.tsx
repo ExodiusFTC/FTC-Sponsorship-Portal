@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Building2, Globe } from 'lucide-react'
 
@@ -70,9 +70,12 @@ export default async function SponsorBrowserPage() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button className="w-full" variant="outline" asChild>
-                  <a href={`/pitches/new?sponsor=${sponsor.id}`}>Target in Pitch</a>
-                </Button>
+                <a
+                  href={`/pitches/new?sponsor=${sponsor.id}`}
+                  className={buttonVariants({ variant: 'outline', className: 'w-full' })}
+                >
+                  Target in Pitch
+                </a>
               </CardFooter>
             </Card>
           )

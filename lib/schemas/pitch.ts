@@ -2,9 +2,9 @@ import { z } from 'zod'
 
 export const lineItemSchema = z.object({
   label: z.string().min(1, 'Label is required'),
-  qty: z.coerce.number().min(1, 'Quantity must be at least 1'),
-  unitCostCents: z.coerce.number().min(0, 'Unit cost must be at least 0'),
-  totalCents: z.coerce.number().min(0),
+  qty: z.number().min(1, 'Quantity must be at least 1'),
+  unitCostCents: z.number().min(0, 'Unit cost must be at least 0'),
+  totalCents: z.number().min(0),
 })
 
 export type LineItemInput = z.infer<typeof lineItemSchema>

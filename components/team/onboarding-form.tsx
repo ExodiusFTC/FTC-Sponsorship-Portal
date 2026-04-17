@@ -112,7 +112,15 @@ export function OnboardingForm({ isVerified }: { isVerified: boolean }) {
                   <FormItem>
                     <FormLabel>FTC Team Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. 12345" {...field} type="number" />
+                      <Input
+                        placeholder="e.g. 12345"
+                        type="number"
+                        value={field.value ?? ''}
+                        onChange={(e) => {
+                          const num = parseInt(e.target.value)
+                          field.onChange(isNaN(num) ? undefined : num)
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

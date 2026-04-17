@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 
 export default function VerifyEmailPage() {
   return (
@@ -16,9 +17,9 @@ export default function VerifyEmailPage() {
           <p className="text-sm text-muted-foreground">
             Once verified, you&apos;ll be able to log in and start building your team profile.
           </p>
-          <Button asChild variant="outline" className="w-full">
-            <Link href="/login">Return to Login</Link>
-          </Button>
+          <Link href="/login" className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}>
+            Return to Login
+          </Link>
         </CardContent>
       </Card>
     </div>

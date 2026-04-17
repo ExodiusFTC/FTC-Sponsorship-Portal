@@ -4,7 +4,7 @@ export const sponsorApplicationSchema = z.object({
   companyName: z.string().min(2, 'Company name is required'),
   contactName: z.string().min(2, 'Contact name is required'),
   contactEmail: z.string().email('Invalid email address'),
-  proposedCapCents: z.coerce.number().min(0, 'Proposed funding cap cannot be negative').default(0),
+  proposedCapCents: z.number().min(0, 'Proposed funding cap cannot be negative'),
   message: z.string().optional(),
 })
 
