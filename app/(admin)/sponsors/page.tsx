@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { PageHeader } from '@/components/page-header'
+import { SponsorToggleButton } from '@/components/admin/sponsor-toggle-button'
 
 export default async function AdminSponsorsPage() {
   const supabase = await createClient()
@@ -38,15 +39,20 @@ export default async function AdminSponsorsPage() {
               <TableHead>Company</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead style={{ textAlign: 'right' }}>Funding Cap</TableHead>
-              <TableHead style={{ textAlign: 'right' }}>Remaining</TableHead>
+              <TableHead style={{ textAlign: 'right' }}>Cap</TableHead>
+              <TableHead style={{ textAlign: 'right' }}>Used / Remaining</TableHead>
+              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sponsors?.map((sponsor) => (
               <TableRow key={sponsor.id}>
                 <TableCell isFirst>
-                  <Link href={`/sponsors/${sponsor.id}/edit`} style={{ color: 'var(--text-primary)', textDecoration: 'none' }} className="hover:underline">
+                  <Link
+                    href={`/sponsors/${sponsor.id}/edit`}
+                    style={{ color: 'var(--text-primary)', textDecoration: 'none' }}
+                    className="hover:underline font-medium"
+                  >
                     {sponsor.company_name}
                   </Link>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{sponsor.industry}</div>
@@ -70,14 +76,21 @@ export default async function AdminSponsorsPage() {
                 <TableCell style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
                   ${(sponsor.funding_cap_cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </TableCell>
-                <TableCell style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
-                  ${((sponsor.funding_cap_cents - sponsor.funding_used_cents) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                <TableCell style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                  ${(sponsor.funding_used_cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  {' / '}
+                  <span style={{ color: 'var(--text-primary)' }}>
+                    ${((sponsor.funding_cap_cents - sponsor.funding_used_cents) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <SponsorToggleButton sponsorId={sponsor.id} currentStatus={sponsor.status} />
                 </TableCell>
               </TableRow>
             ))}
             {(!sponsors || sponsors.length === 0) && (
               <TableRow>
-                <TableCell colSpan={5} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)' }}>
+                <TableCell colSpan={6} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)' }}>
                   No sponsors found in the database.
                 </TableCell>
               </TableRow>

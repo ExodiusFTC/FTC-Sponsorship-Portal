@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { createInAppNotification, sendCoachVerificationEmail } from '@/lib/notify'
 
 async function requireAdmin() {
   const authClient = await createClient()
@@ -38,8 +39,30 @@ export async function verifyCoach(coachId: string, verified: boolean) {
     entity_id: coachId,
   })
 
+  if (verified) {
+    // Fetch coach profile for name
+    const { data: coachProfile } = await adminClient
+      .from('profiles')
+      .select('full_name')
+      .eq('id', coachId)
+      .single()
+
+    const coachName = coachProfile?.full_name ?? 'Coach'
+
+    await Promise.all([
+      createInAppNotification({
+        recipientId: coachId,
+        type: 'coach_verified',
+        title: 'Your account has been verified!',
+        body: 'You can now create your team portfolio and submit sponsorship applications.',
+      }),
+      sendCoachVerificationEmail(coachId, coachName),
+    ])
+  }
+
   revalidatePath('/coaches')
   revalidatePath('/analytics')
+  revalidatePath('/admin')
   return { success: true }
 }
 

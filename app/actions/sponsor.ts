@@ -89,6 +89,7 @@ export async function adminCreateSponsor(data: SponsorInput) {
     metadata: result.data as any,
   })
 
+  revalidatePath('/sponsors')
   return { success: true }
 }
 
@@ -143,6 +144,7 @@ export async function adminUpdateSponsor(id: string, data: SponsorInput) {
     metadata: data as any,
   })
 
+  revalidatePath('/sponsors')
   return { success: true }
 }
 
@@ -187,6 +189,40 @@ export async function deleteSponsor(id: string): Promise<{ success?: true; error
     entity_id: parsed.data.id,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     metadata: { snapshot } as any,
+  })
+
+  revalidatePath('/sponsors')
+  return { success: true }
+}
+
+/** Lightweight toggle — only updates status, no full schema validation required. */
+export async function adminToggleSponsorStatus(id: string, newStatus: 'active' | 'inactive') {
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: profile } = await authClient
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'admin') return { error: 'Forbidden' }
+
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('sponsors')
+    .update({ status: newStatus })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+
+  await supabase.from('audit_log').insert({
+    actor_id: user.id,
+    action: 'toggle_sponsor_status',
+    entity_type: 'sponsors',
+    entity_id: id,
+    metadata: { newStatus },
   })
 
   revalidatePath('/sponsors')

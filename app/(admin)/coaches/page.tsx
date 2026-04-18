@@ -1,103 +1,104 @@
 import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent } from '@/components/ui/card'
-import { VerifyCoachButton } from '@/components/admin/verify-coach-button'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { PageHeader } from '@/components/page-header'
+import { CoachVerificationCard } from '@/components/admin/coach-verification-card'
 
 export default async function CoachesPage() {
   const supabase = await createClient()
 
   const { data: coaches } = await supabase
     .from('profiles')
-    .select('id, full_name, created_at, coach_verified, coach_credentials_url')
+    .select(`
+      id, full_name, email, created_at, coach_verified, coach_credentials_url,
+      teams:teams(team_name, ftc_team_number, city, state)
+    `)
     .eq('role', 'coach')
     .order('created_at', { ascending: false })
 
-  const pending  = coaches?.filter(c => !c.coach_verified && c.coach_credentials_url) ?? []
-  const verified = coaches?.filter(c =>  c.coach_verified) ?? []
-  const waiting  = coaches?.filter(c => !c.coach_verified && !c.coach_credentials_url) ?? []
+  // Generate signed URLs for credentials (30-min expiry) server-side
+  const adminClient = createAdminClient()
+
+  const coachesWithSignedUrls = await Promise.all(
+    (coaches ?? []).map(async (coach) => {
+      let signedUrl: string | null = null
+      if (coach.coach_credentials_url) {
+        const { data } = await adminClient.storage
+          .from('coach-credentials')
+          .createSignedUrl(coach.coach_credentials_url, 1800)
+        signedUrl = data?.signedUrl ?? null
+      }
+      // teams is returned as an array from the join; grab first
+      const teamArr = coach.teams as any
+      const team = Array.isArray(teamArr) ? teamArr[0] ?? null : teamArr ?? null
+      return { ...coach, email: coach.email ?? null, signedUrl, team }
+    })
+  )
+
+  const pending  = coachesWithSignedUrls.filter(c => !c.coach_verified && c.coach_credentials_url)
+  const verified = coachesWithSignedUrls.filter(c =>  c.coach_verified)
+  const waiting  = coachesWithSignedUrls.filter(c => !c.coach_verified && !c.coach_credentials_url)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+    <div className="flex flex-col gap-10">
       <PageHeader
-        title="Teams"
-        subtitle="Verify coaches who have uploaded credentials. Only verified coaches can create teams and pitches."
+        title="Teams & Coaches"
+        subtitle="Verify coaches who have uploaded credentials. Only verified coaches can create teams and submit pitches."
       />
 
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <h2 style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          Awaiting Verification
+      {/* Awaiting Verification */}
+      <section className="flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-zinc-200 uppercase tracking-widest font-mono">
+            Awaiting Verification
+          </h2>
           {pending.length > 0 && (
-            <span style={{ background: 'var(--badge-warning-bg)', color: 'var(--badge-warning-text)', fontSize: '12px', fontWeight: 600, padding: '1px 7px', borderRadius: '9999px' }}>
+            <span className="inline-flex items-center rounded-full bg-amber-500/10 border border-amber-900/60 text-amber-400 text-[10px] font-bold px-2 py-0.5">
               {pending.length}
             </span>
           )}
-        </h2>
+        </div>
         {pending.length === 0 ? (
-          <p style={{ fontSize: '14px', color: 'var(--text-muted)', padding: '16px 0' }}>No coaches pending verification.</p>
+          <p className="text-sm text-zinc-500 py-4 border border-dashed border-zinc-800 rounded-xl text-center">
+            No coaches pending verification.
+          </p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {pending.map(coach => <CoachRow key={coach.id} coach={coach} />)}
+          <div className="flex flex-col gap-3">
+            {pending.map(coach => (
+              <CoachVerificationCard key={coach.id} coach={coach as any} />
+            ))}
           </div>
         )}
       </section>
 
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <h2 style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-primary)' }}>Verified Coaches</h2>
+      {/* Verified */}
+      <section className="flex flex-col gap-4">
+        <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-widest font-mono">
+          Verified Coaches
+        </h2>
         {verified.length === 0 ? (
-          <p style={{ fontSize: '14px', color: 'var(--text-muted)', padding: '16px 0' }}>No verified coaches yet.</p>
+          <p className="text-sm text-zinc-600 py-4">No verified coaches yet.</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {verified.map(coach => <CoachRow key={coach.id} coach={coach} />)}
+          <div className="flex flex-col gap-3">
+            {verified.map(coach => (
+              <CoachVerificationCard key={coach.id} coach={coach as any} />
+            ))}
           </div>
         )}
       </section>
 
+      {/* No credentials */}
       {waiting.length > 0 && (
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-muted)' }}>No Credentials Uploaded</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {waiting.map(coach => <CoachRow key={coach.id} coach={coach} />)}
+        <section className="flex flex-col gap-4">
+          <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-widest font-mono">
+            No Credentials Uploaded
+          </h2>
+          <div className="flex flex-col gap-3">
+            {waiting.map(coach => (
+              <CoachVerificationCard key={coach.id} coach={coach as any} />
+            ))}
           </div>
         </section>
       )}
     </div>
-  )
-}
-
-function CoachRow({
-  coach,
-}: {
-  coach: {
-    id: string
-    full_name: string | null
-    created_at: string
-    coach_verified: boolean
-    coach_credentials_url: string | null
-  }
-}) {
-  return (
-    <Card>
-      <CardContent style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <p style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{coach.full_name ?? '(no name)'}</p>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{coach.id}</p>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }} suppressHydrationWarning>
-            Joined {new Date(coach.created_at).toLocaleDateString()}
-          </p>
-          <div style={{ marginTop: '4px' }}>
-            {coach.coach_verified ? (
-              <span style={{ background: 'var(--badge-success-bg)', color: 'var(--badge-success-text)', fontSize: '12px', fontWeight: 500, padding: '2px 8px', borderRadius: '9999px' }}>
-                Verified
-              </span>
-            ) : (
-              <span style={{ border: '1px solid var(--badge-warning-text)', color: 'var(--badge-warning-text)', fontSize: '12px', fontWeight: 500, padding: '2px 8px', borderRadius: '9999px' }}>
-                {coach.coach_credentials_url ? 'Credentials uploaded' : 'No credentials'}
-              </span>
-            )}
-          </div>
-        </div>
-        <VerifyCoachButton coachId={coach.id} verified={coach.coach_verified} />
-      </CardContent>
-    </Card>
   )
 }

@@ -18,11 +18,13 @@ export default async function SettingsPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       <PageHeader title="Account Settings" subtitle="Manage your profile, password, and account." />
-      <AccountSettings
-        currentName={profile?.full_name ?? ''}
-        email={user.email ?? ''}
-        role={profile?.role ?? 'coach'}
-      />
+      <div style={{ maxWidth: 640, margin: '0 auto', width: '100%' }}>
+        <AccountSettings
+          currentName={profile?.full_name ?? ''}
+          email={user.email ?? ''}
+          role={profile?.role ?? 'coach'}
+        />
+      </div>
     </div>
   )
 }

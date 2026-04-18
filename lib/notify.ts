@@ -2,6 +2,7 @@ import SubmissionDecisionEmail from '@/emails/submission-decision-email'
 import CredentialUploadAlert from '@/emails/credential-upload-alert'
 import SponsorAppConfirmation from '@/emails/sponsor-app-confirmation'
 import HandshakeEmail from '@/emails/handshake-email'
+import CoachVerificationEmail from '@/emails/coach-verification-email'
 import { Resend } from 'resend'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -154,14 +155,40 @@ export async function createInAppNotification({
   recipientId, type, title, body, submissionId,
 }: {
   recipientId: string
-  type: 'submission_declined' | 'submission_approved' | 'submission_changes_requested' | 'general'
+  type: 'submission_declined' | 'submission_approved' | 'submission_changes_requested' | 'coach_verified' | 'general'
   title: string
   body?: string
   submissionId?: string
 }) {
-  const supabase = createAdminClient()
-  await supabase.from('notifications').insert({
-    recipient_id: recipientId,
-    type, title, body, submission_id: submissionId,
-  })
+  try {
+    const supabase = createAdminClient()
+    await supabase.from('notifications').insert({
+      recipient_id: recipientId,
+      type, title, body: body ?? null, submission_id: submissionId ?? null,
+    })
+  } catch (err) {
+    console.error('[notify] createInAppNotification failed', err)
+  }
+}
+
+/** Send a congratulations email when an admin verifies a coach's credentials. */
+export async function sendCoachVerificationEmail(coachId: string, coachName: string) {
+  try {
+    const supabase = createAdminClient()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', coachId)
+      .single()
+    if (!profile?.email) return
+
+    await resend.emails.send({
+      from: env.RESEND_FROM_EMAIL,
+      to: profile.email,
+      subject: 'Your Matchmaker coach account has been verified 🎉',
+      react: CoachVerificationEmail({ coachName }),
+    })
+  } catch (err) {
+    console.error('[notify] sendCoachVerificationEmail failed', err)
+  }
 }
