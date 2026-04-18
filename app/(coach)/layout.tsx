@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { AppLayout } from '@/components/app-layout'
 
 export default async function CoachLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -21,5 +22,5 @@ export default async function CoachLayout({ children }: { children: React.ReactN
 
   if (!profile?.coach_verified) redirect('/awaiting-verification')
 
-  return <>{children}</>
+  return <AppLayout>{children}</AppLayout>
 }

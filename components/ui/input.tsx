@@ -3,15 +3,34 @@ import { Input as InputPrimitive } from "@base-ui/react/input"
 
 import { cn } from "@/lib/utils"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+function Input({ className, type, style, ...props }: React.ComponentProps<"input"> & { style?: React.CSSProperties }) {
   return (
     <InputPrimitive
       type={type}
       data-slot="input"
       className={cn(
-        "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        "w-full min-w-0 outline-none file:inline-flex file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:opacity-50 aria-invalid:ring-0",
         className
       )}
+      style={{
+        background: "var(--bg-app)",
+        border: "1px solid var(--border-color)",
+        borderRadius: "6px",
+        padding: "8px 12px",
+        fontSize: "14px",
+        color: "var(--text-primary)",
+        transition: "border-color 100ms ease",
+        ...style,
+      }}
+      onFocus={(e) => {
+        (e.currentTarget as HTMLElement).style.borderColor = "var(--text-secondary)"
+        if (props.onFocus) props.onFocus(e as React.FocusEvent<HTMLInputElement>)
+      }}
+      onBlur={(e) => {
+        const isInvalid = (e.currentTarget as HTMLElement).getAttribute("aria-invalid") === "true"
+        ;(e.currentTarget as HTMLElement).style.borderColor = isInvalid ? "var(--accent-error)" : "var(--border-color)"
+        if (props.onBlur) props.onBlur(e as React.FocusEvent<HTMLInputElement>)
+      }}
       {...props}
     />
   )

@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { buttonVariants } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Building2, Globe } from 'lucide-react'
+import { Globe } from 'lucide-react'
+import { PageHeader } from '@/components/page-header'
 
 export default async function SponsorBrowserPage() {
   const supabase = await createClient()
@@ -13,57 +13,58 @@ export default async function SponsorBrowserPage() {
     redirect('/login')
   }
 
-  // RLS will automatically filter to only active sponsors where funding_used_cents < funding_cap_cents
   const { data: sponsors } = await supabase
     .from('sponsors')
     .select('*')
     .order('company_name')
 
   return (
-    <div className="container py-8 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Sponsor Directory</h1>
-        <p className="text-muted-foreground">
-          Browse verified companies actively looking to sponsor FTC teams.
-        </p>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <PageHeader
+        title="Find Sponsors"
+        subtitle="Browse verified companies actively looking to sponsor FTC teams."
+      />
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {sponsors?.map((sponsor) => {
-          // Calculate remaining capacity for display context, though specific dollar amounts might be hidden
-          const isHighCapacity = sponsor.funding_cap_cents - sponsor.funding_used_cents > 500000 // > $5000 remaining
-          
+          const isHighCapacity = sponsor.funding_cap_cents - sponsor.funding_used_cents > 500000
+
           return (
-            <Card key={sponsor.id} className="flex flex-col">
+            <Card key={sponsor.id} style={{ display: 'flex', flexDirection: 'column' }}>
               <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-xl">{sponsor.company_name}</CardTitle>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <CardTitle>{sponsor.company_name}</CardTitle>
                   {sponsor.industry && (
-                    <Badge variant="secondary">{sponsor.industry}</Badge>
+                    <span style={{
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '9999px',
+                      padding: '2px 8px',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      color: 'var(--text-secondary)',
+                    }}>
+                      {sponsor.industry}
+                    </span>
                   )}
                 </div>
-                <CardDescription className="flex items-center gap-2 mt-2">
-                  <Building2 className="w-4 h-4" /> 
-                  <span>Verified Sponsor</span>
-                </CardDescription>
+                <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' }}>Verified Sponsor</p>
               </CardHeader>
-              <CardContent className="flex-1">
-                <div className="space-y-4">
+              <CardContent style={{ flex: 1 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {sponsor.website && (
-                    <a 
-                      href={sponsor.website} 
-                      target="_blank" 
+                    <a
+                      href={sponsor.website}
+                      target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center text-sm text-primary hover:underline gap-1"
+                      style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px', color: 'var(--text-primary)', textDecoration: 'underline' }}
                     >
-                      <Globe className="w-4 h-4" />
+                      <Globe size={14} />
                       {new URL(sponsor.website).hostname.replace('www.', '')}
                     </a>
                   )}
-                  
-                  <div className="bg-muted/50 p-3 rounded-md">
-                    <p className="text-sm font-medium">Sponsorship Capacity</p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                  <div style={{ background: 'var(--bg-elevated)', padding: '12px', borderRadius: '6px' }}>
+                    <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>Sponsorship Capacity</p>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
                       {isHighCapacity ? 'High capacity remaining' : 'Limited capacity remaining'}
                     </p>
                   </div>
@@ -72,7 +73,8 @@ export default async function SponsorBrowserPage() {
               <CardFooter>
                 <a
                   href={`/pitches/new?sponsor=${sponsor.id}`}
-                  className={buttonVariants({ variant: 'outline', className: 'w-full' })}
+                  className={buttonVariants({ variant: 'secondary' })}
+                  style={{ width: '100%', justifyContent: 'center' }}
                 >
                   Target in Pitch
                 </a>
@@ -82,9 +84,9 @@ export default async function SponsorBrowserPage() {
         })}
 
         {sponsors?.length === 0 && (
-          <div className="col-span-full text-center py-12 bg-muted/30 rounded-lg border border-dashed">
-            <h3 className="text-lg font-medium">No sponsors available</h3>
-            <p className="text-muted-foreground mt-1">
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '48px 0', background: 'var(--bg-surface)', borderRadius: '6px', border: '1px dashed var(--border-color)' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-primary)' }}>No sponsors available</h3>
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>
               There are currently no active sponsors with remaining funding capacity. Please check back later.
             </p>
           </div>

@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { VerifyCoachButton } from '@/components/admin/verify-coach-button'
+import { PageHeader } from '@/components/page-header'
 
 export default async function CoachesPage() {
   const supabase = await createClient()
@@ -17,55 +17,46 @@ export default async function CoachesPage() {
   const waiting  = coaches?.filter(c => !c.coach_verified && !c.coach_credentials_url) ?? []
 
   return (
-    <div className="container py-8 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Coach Accounts</h1>
-        <p className="text-muted-foreground">
-          Verify coaches who have uploaded credentials. Only verified coaches can create teams and pitches.
-        </p>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <PageHeader
+        title="Teams"
+        subtitle="Verify coaches who have uploaded credentials. Only verified coaches can create teams and pitches."
+      />
 
-      {/* Pending verification */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
+      <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <h2 style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
           Awaiting Verification
           {pending.length > 0 && (
-            <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">{pending.length}</Badge>
+            <span style={{ background: 'var(--badge-warning-bg)', color: 'var(--badge-warning-text)', fontSize: '12px', fontWeight: 600, padding: '1px 7px', borderRadius: '9999px' }}>
+              {pending.length}
+            </span>
           )}
         </h2>
         {pending.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4">No coaches pending verification.</p>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)', padding: '16px 0' }}>No coaches pending verification.</p>
         ) : (
-          <div className="space-y-2">
-            {pending.map(coach => (
-              <CoachRow key={coach.id} coach={coach} />
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {pending.map(coach => <CoachRow key={coach.id} coach={coach} />)}
           </div>
         )}
       </section>
 
-      {/* Verified */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Verified Coaches</h2>
+      <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <h2 style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-primary)' }}>Verified Coaches</h2>
         {verified.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4">No verified coaches yet.</p>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)', padding: '16px 0' }}>No verified coaches yet.</p>
         ) : (
-          <div className="space-y-2">
-            {verified.map(coach => (
-              <CoachRow key={coach.id} coach={coach} />
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {verified.map(coach => <CoachRow key={coach.id} coach={coach} />)}
           </div>
         )}
       </section>
 
-      {/* Awaiting credentials */}
       {waiting.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-muted-foreground">No Credentials Uploaded</h2>
-          <div className="space-y-2">
-            {waiting.map(coach => (
-              <CoachRow key={coach.id} coach={coach} />
-            ))}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <h2 style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-muted)' }}>No Credentials Uploaded</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {waiting.map(coach => <CoachRow key={coach.id} coach={coach} />)}
           </div>
         </section>
       )}
@@ -86,20 +77,22 @@ function CoachRow({
 }) {
   return (
     <Card>
-      <CardContent className="flex items-center justify-between py-4">
-        <div className="space-y-0.5">
-          <p className="font-medium">{coach.full_name ?? '(no name)'}</p>
-          <p className="text-xs text-muted-foreground font-mono">{coach.id}</p>
-          <p className="text-xs text-muted-foreground">
+      <CardContent style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <p style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{coach.full_name ?? '(no name)'}</p>
+          <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{coach.id}</p>
+          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
             Joined {new Date(coach.created_at).toLocaleDateString()}
           </p>
-          <div className="flex gap-2 mt-1">
+          <div style={{ marginTop: '4px' }}>
             {coach.coach_verified ? (
-              <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Verified</Badge>
+              <span style={{ background: 'var(--badge-success-bg)', color: 'var(--badge-success-text)', fontSize: '12px', fontWeight: 500, padding: '2px 8px', borderRadius: '9999px' }}>
+                Verified
+              </span>
             ) : (
-              <Badge variant="outline" className="text-amber-700 border-amber-400">
+              <span style={{ border: '1px solid var(--badge-warning-text)', color: 'var(--badge-warning-text)', fontSize: '12px', fontWeight: 500, padding: '2px 8px', borderRadius: '9999px' }}>
                 {coach.coach_credentials_url ? 'Credentials uploaded' : 'No credentials'}
-              </Badge>
+              </span>
             )}
           </div>
         </div>

@@ -1,21 +1,22 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/page-header'
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  draft:             { label: 'Draft',             color: 'bg-muted text-muted-foreground' },
-  pending:           { label: 'Pending Review',    color: 'bg-blue-100 text-blue-800' },
-  approved:          { label: 'Approved & Sent',   color: 'bg-emerald-100 text-emerald-800' },
-  declined:          { label: 'Declined',          color: 'bg-red-100 text-red-800' },
+const STATUS_LABELS: Record<string, { label: string; bg: string; text: string }> = {
+  draft:    { label: 'Draft',           bg: 'var(--badge-pending-bg)',  text: 'var(--badge-pending-text)' },
+  pending:  { label: 'Pending Review',  bg: 'var(--badge-warning-bg)',  text: 'var(--badge-warning-text)' },
+  approved: { label: 'Approved & Sent', bg: 'var(--badge-success-bg)',  text: 'var(--badge-success-text)' },
+  declined: { label: 'Declined',        bg: 'var(--badge-rejected-bg)', text: 'var(--badge-rejected-text)' },
 }
 
 export default async function AnalyticsPage() {
   const supabase = await createClient()
 
   const { data: capacityData } = await supabase.from('v_sponsor_capacity').select('*')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: submissionSummary } = await (supabase as any).from('v_submission_summary').select('*')
   const { data: pendingCoaches } = await supabase
     .from('profiles')
@@ -25,15 +26,16 @@ export default async function AnalyticsPage() {
     .not('coach_credentials_url', 'is', null)
     .order('created_at', { ascending: true })
 
-  // totalRequested is the sum of unique team financial asks for all teams with at least one submission
   const uniqueTeamAsks = new Map<string, number>()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   submissionSummary?.forEach((s: any) => {
     uniqueTeamAsks.set(s.team_name, s.financial_ask_cents)
   })
   const totalRequested = Array.from(uniqueTeamAsks.values()).reduce((sum, ask) => sum + ask, 0)
-  
+
   const totalCapacity  = capacityData?.reduce((s, c) => s + (c.funding_cap_cents ?? 0), 0) ?? 0
   const totalUsed      = capacityData?.reduce((s, c) => s + (c.funding_used_cents ?? 0), 0) ?? 0
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const totalSent      = submissionSummary?.filter((s: any) => s.status === 'approved').length ?? 0
   const activeSponsors = capacityData?.filter(s => s.status === 'active').length ?? 0
   const pendingCount   = pendingCoaches?.length ?? 0
@@ -45,18 +47,12 @@ export default async function AnalyticsPage() {
   const totalSubmissions = submissionSummary?.length ?? 0
 
   return (
-    <div className="container py-8 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
-        <p className="text-muted-foreground">Platform-wide metrics and conversion funnel.</p>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <PageHeader title="Dashboard" subtitle="Platform-wide metrics and conversion funnel." />
 
       {/* KPI row */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard
-          label="Total Requested"
-          value={`$${(totalRequested / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-        />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
+        <StatCard label="Total Requested" value={`$${(totalRequested / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} />
         <StatCard
           label="Capacity Remaining"
           value={`$${((totalCapacity - totalUsed) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
@@ -64,44 +60,35 @@ export default async function AnalyticsPage() {
         />
         <StatCard label="Approved & Sent" value={String(totalSent)} />
         <StatCard label="Active Sponsors" value={String(activeSponsors)} />
-        <StatCard
-          label="Pending Verifications"
-          value={String(pendingCount)}
-          highlight={pendingCount > 0}
-        />
+        <StatCard label="Pending Verifications" value={String(pendingCount)} highlight={pendingCount > 0} />
       </div>
 
       {/* Charts row */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
         <Card>
           <CardHeader>
             <CardTitle>Sponsor Capacity Utilization</CardTitle>
           </CardHeader>
           <CardContent>
             {capacityData && capacityData.filter(s => s.status === 'active').length > 0 ? (
-              <div className="space-y-4">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {capacityData
                   .filter(s => s.status === 'active')
                   .sort((a, b) => (b.utilization_pct ?? 0) - (a.utilization_pct ?? 0))
                   .slice(0, 8)
                   .map(sponsor => {
                     const pct = Math.min(Number(sponsor.utilization_pct ?? 0), 100)
+                    const barColor = pct >= 90 ? 'var(--accent-error)' : pct >= 60 ? 'var(--badge-warning-text)' : 'var(--text-primary)'
                     return (
                       <div key={sponsor.id}>
-                        <div className="flex justify-between items-center mb-1 text-sm">
-                          <span className="font-medium truncate max-w-[180px]">{sponsor.company_name}</span>
-                          <span className="text-muted-foreground shrink-0 ml-2">{pct}%</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                          <span style={{ fontWeight: 500, fontSize: '14px', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>{sponsor.company_name}</span>
+                          <span style={{ fontSize: '14px', color: 'var(--text-secondary)', flexShrink: 0, marginLeft: '8px' }}>{pct}%</span>
                         </div>
-                        <div className="w-full bg-muted rounded-full h-2">
-                          <div
-                            className={cn(
-                              'h-2 rounded-full',
-                              pct >= 90 ? 'bg-red-500' : pct >= 60 ? 'bg-amber-500' : 'bg-primary'
-                            )}
-                            style={{ width: `${pct}%` }}
-                          />
+                        <div style={{ width: '100%', background: 'var(--bg-elevated)', borderRadius: '3px', height: '6px' }}>
+                          <div style={{ width: `${pct}%`, height: '6px', borderRadius: '3px', background: barColor }} />
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                        <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
                           ${(((sponsor.funding_cap_cents ?? 0) - (sponsor.funding_used_cents ?? 0)) / 100).toLocaleString('en-US')} remaining
                         </p>
                       </div>
@@ -109,7 +96,7 @@ export default async function AnalyticsPage() {
                   })}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">No active sponsors yet.</p>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted)', textAlign: 'center', padding: '32px 0' }}>No active sponsors yet.</p>
             )}
           </CardContent>
         </Card>
@@ -120,67 +107,65 @@ export default async function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             {totalSubmissions > 0 ? (
-              <div className="space-y-3">
-                {Object.entries(STATUS_LABELS).map(([key, { label, color }]) => {
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {Object.entries(STATUS_LABELS).map(([key, { label, bg, text }]) => {
                   const count = statusCounts[key] ?? 0
                   const pct = totalSubmissions > 0 ? Math.round((count / totalSubmissions) * 100) : 0
                   return (
                     <div key={key}>
-                      <div className="flex justify-between items-center mb-1 text-sm">
-                        <span className={cn('px-2 py-0.5 rounded text-xs font-medium', color)}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <span style={{ padding: '2px 8px', borderRadius: '9999px', fontSize: '12px', fontWeight: 500, background: bg, color: text }}>
                           {label}
                         </span>
-                        <span className="text-muted-foreground">
+                        <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
                           {count} submission{count !== 1 ? 's' : ''}
                         </span>
                       </div>
-                      <div className="w-full bg-muted rounded-full h-1.5">
-                        <div
-                          className="bg-primary/60 h-1.5 rounded-full"
-                          style={{ width: `${pct}%` }}
-                        />
+                      <div style={{ width: '100%', background: 'var(--bg-elevated)', borderRadius: '3px', height: '4px' }}>
+                        <div style={{ width: `${pct}%`, height: '4px', borderRadius: '3px', background: 'var(--text-primary)', opacity: 0.6 }} />
                       </div>
                     </div>
                   )
                 })}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">No submissions yet.</p>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted)', textAlign: 'center', padding: '32px 0' }}>No submissions yet.</p>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent submission activity table */}
+      {/* Recent activity table */}
       <Card>
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
         </CardHeader>
         <CardContent>
           {totalSubmissions > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', fontSize: '14px' }}>
                 <thead>
-                  <tr className="border-b text-muted-foreground text-left">
-                    <th className="pb-2 pr-4 font-medium">Team</th>
-                    <th className="pb-2 pr-4 font-medium">Sponsor</th>
-                    <th className="pb-2 pr-4 font-medium">Portfolio Ask</th>
-                    <th className="pb-2 font-medium">Status</th>
+                  <tr>
+                    <th style={{ textAlign: 'left', paddingBottom: '8px', paddingRight: '16px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.02em', color: 'var(--text-muted)', fontWeight: 500, borderBottom: '1px solid var(--border-color)' }}>Team</th>
+                    <th style={{ textAlign: 'left', paddingBottom: '8px', paddingRight: '16px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.02em', color: 'var(--text-muted)', fontWeight: 500, borderBottom: '1px solid var(--border-color)' }}>Sponsor</th>
+                    <th style={{ textAlign: 'left', paddingBottom: '8px', paddingRight: '16px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.02em', color: 'var(--text-muted)', fontWeight: 500, borderBottom: '1px solid var(--border-color)' }}>Portfolio Ask</th>
+                    <th style={{ textAlign: 'left', paddingBottom: '8px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.02em', color: 'var(--text-muted)', fontWeight: 500, borderBottom: '1px solid var(--border-color)' }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {(submissionSummary as any[])!
                     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
                     .slice(0, 10)
                     .map(submission => {
-                      const meta = STATUS_LABELS[submission.status] ?? { label: submission.status, color: 'bg-muted' }
+                      const meta = STATUS_LABELS[submission.status] ?? { label: submission.status, bg: 'var(--bg-elevated)', text: 'var(--text-muted)' }
                       return (
-                        <tr key={submission.id} className="border-b last:border-0">
-                          <td className="py-2 pr-4 font-medium">{submission.team_name}</td>
-                          <td className="py-2 pr-4 max-w-[180px] truncate text-muted-foreground">{submission.company_name}</td>
-                          <td className="py-2 pr-4">${(submission.financial_ask_cents / 100).toLocaleString('en-US')}</td>
-                          <td className="py-2">
-                            <span className={cn('px-2 py-0.5 rounded text-xs font-medium', meta.color)}>
+                        <tr key={submission.id} style={{ borderBottom: '1px solid var(--border-color)', height: '44px' }}>
+                          <td style={{ paddingRight: '16px', fontWeight: 500, color: 'var(--text-primary)' }}>{submission.team_name}</td>
+                          <td style={{ paddingRight: '16px', color: 'var(--text-secondary)', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{submission.company_name}</td>
+                          <td style={{ paddingRight: '16px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>${(submission.financial_ask_cents / 100).toLocaleString('en-US')}</td>
+                          <td>
+                            <span style={{ padding: '2px 8px', borderRadius: '9999px', fontSize: '12px', fontWeight: 500, background: meta.bg, color: meta.text }}>
                               {meta.label}
                             </span>
                           </td>
@@ -191,47 +176,46 @@ export default async function AnalyticsPage() {
               </table>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-8">No activity yet.</p>
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)', textAlign: 'center', padding: '32px 0' }}>No activity yet.</p>
           )}
         </CardContent>
       </Card>
 
-      {/* Pending coach verifications */}
       {pendingCount > 0 && (
-        <Card className="border-amber-200">
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               Coaches Awaiting Verification
-              <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">{pendingCount}</Badge>
+              <span style={{ background: 'var(--badge-warning-bg)', color: 'var(--badge-warning-text)', fontSize: '12px', fontWeight: 600, padding: '1px 7px', borderRadius: '9999px' }}>{pendingCount}</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
+          <CardContent style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
               These coaches uploaded credentials and are waiting for admin approval.
             </p>
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {pendingCoaches?.map(coach => (
-                <div key={coach.id} className="flex justify-between items-center border rounded p-3">
+                <div key={coach.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '12px' }}>
                   <div>
-                    <p className="font-medium text-sm">{coach.full_name}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{coach.id}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p style={{ fontWeight: 500, fontSize: '14px', color: 'var(--text-primary)' }}>{coach.full_name}</p>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{coach.id}</p>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                       Applied {new Date(coach.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <Link
-                    href={`https://supabase.com/dashboard`}
+                    href="https://supabase.com/dashboard"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}
+                    className={cn(buttonVariants({ size: 'sm', variant: 'secondary' }))}
                   >
                     Open Supabase ↗
                   </Link>
                 </div>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground bg-muted rounded p-2 font-mono">
-              UPDATE profiles SET coach_verified = true WHERE id = &apos;&lt;id above&gt;&apos;;
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', background: 'var(--bg-elevated)', borderRadius: '6px', padding: '8px', fontFamily: 'var(--font-mono)' }}>
+              {'UPDATE profiles SET coach_verified = true WHERE id = \'<id above>\';'}
             </p>
           </CardContent>
         </Card>
@@ -252,13 +236,19 @@ function StatCard({
   highlight?: boolean
 }) {
   return (
-    <Card className={highlight ? 'border-amber-300' : undefined}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className={cn('text-2xl font-bold', highlight && 'text-amber-600')}>{value}</div>
-        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+    <Card>
+      <CardContent style={{ paddingTop: '0' }}>
+        <p style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>{label}</p>
+        <p style={{
+          fontSize: '28px',
+          fontWeight: 600,
+          letterSpacing: '-0.5px',
+          color: highlight ? 'var(--badge-warning-text)' : 'var(--text-primary)',
+          marginTop: '4px',
+        }}>
+          {value}
+        </p>
+        {sub && <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{sub}</p>}
       </CardContent>
     </Card>
   )
