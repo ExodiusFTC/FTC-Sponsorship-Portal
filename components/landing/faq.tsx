@@ -34,7 +34,6 @@ export function FAQ() {
   return (
     <section id="faq" className="mx-auto max-w-3xl px-6 py-24">
       <FadeUp>
-        <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500 text-center">{'/// FAQ'}</div>
         <h2 className="mt-3 text-center text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-50">
           Questions coaches actually ask.
         </h2>

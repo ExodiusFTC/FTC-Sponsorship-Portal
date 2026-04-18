@@ -17,7 +17,6 @@ export function HowItWorks() {
   return (
     <section id="how" className="mx-auto max-w-6xl px-6 py-24">
       <FadeUp className="max-w-2xl">
-        <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{'/// Flow'}</div>
         <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-50">
           Four steps between your team and a signed check.
         </h2>

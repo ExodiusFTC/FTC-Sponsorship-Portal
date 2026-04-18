@@ -1,6 +1,6 @@
 # Matchmaker: The Common App for FTC
 
-A "Dynamic Portfolio" and Verified Grant Portal connecting FIRST Tech Challenge (FTC) robotics teams with verified corporate sponsors. Teams maintain a professional "Base Resume" (Global Team Data) and generate Customized Submissions with unique, trackable URLs for sponsors. Admins vet the quality of the 'Custom Pitch' fields before dispatching links to sponsors.
+A "Dynamic Portfolio" and Verified Grant Portal connecting FIRST Tech Challenge (FTC) robotics teams with verified corporate sponsors. Teams maintain a professional "Portfolio" (Global Team Data) and generate Customized Submissions with unique, trackable URLs for sponsors. Admins vet the quality of the 'Custom Pitch' fields before dispatching links to sponsors.
 
 ## Architecture
 
@@ -82,7 +82,7 @@ App runs at [http://localhost:3000](http://localhost:3000).
 app/
   (auth)/          # Login, signup, verify-email, credential upload
   (coach)/         # Dashboard, team edit, submission builder, sponsor browser
-  (admin)/         # Moderation queue, sponsor management, analytics
+  (admin)/         # Review queue, sponsor management, analytics
   api/
     webhooks/      # Resend bounce/open webhook handler
 components/
@@ -107,8 +107,8 @@ emails/            # React Email templates
 | Chunk | Status | Description |
 |---|---|---|
 | 1 | Done | Scaffold, auth, DB schema, RLS, Supabase clients, seed |
-| 2 | Done | Master Portfolio (Resume) flow, FTC roster validator, incubator flow |
+| 2 | Done | Master Portfolio flow, FTC roster validator, incubator flow |
 | 3 | Done | Submission builder with custom pitch alignment |
 | 4 | Pending | Sponsor database, targeting UI, opt-in application |
-| 5 | Done | Admin moderation queue and Resend dispatch |
+| 5 | Done | Admin review queue and Resend dispatch |
 | 6 | Pending | Analytics hardening, COPPA hardening, E2E tests, launch prep |

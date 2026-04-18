@@ -362,7 +362,7 @@ function PitchesTab() {
       <Sparkles className="mx-auto h-6 w-6 text-zinc-600" strokeWidth={1.5} />
       <div className="mt-4 text-sm font-medium text-zinc-200">Pitches live here soon.</div>
       <p className="mx-auto mt-1 max-w-xs text-xs text-zinc-500">
-        Draft sponsor-specific pitches from your Base Resume. Shipping next season.
+        Draft sponsor-specific pitches from your Portfolio. Shipping next season.
       </p>
     </div>
   )

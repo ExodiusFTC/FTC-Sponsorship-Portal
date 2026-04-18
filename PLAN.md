@@ -264,7 +264,7 @@ Use `dangerouslySetInnerHTML`. This **must** be the first child of `<head>`.
 | Icon | Label | Badge |
 |------|-------|-------|
 | `LayoutDashboard` | Dashboard | — |
-| `Inbox` | Moderation Queue | ✅ `useSWR('/api/admin/queue/count', { refreshInterval: 30000 })` |
+| `Inbox` | Review Queue | ✅ `useSWR('/api/admin/queue/count', { refreshInterval: 30000 })` |
 | `Building2` | Sponsors | — |
 | `Users` | Teams | — |
 | `BarChart2` | Analytics | — |
@@ -286,7 +286,7 @@ Use `dangerouslySetInnerHTML`. This **must** be the first child of `<head>`.
   - Close on outside click via `useEffect` `mousedown` listener.
   - Dropdown items: `Sign Out`, `Settings` link.
 
-### 2e. Admin Queue Badge
+### 2e. Review Queue Badge
 - **Position:** inline, right-aligned using `margin-left: auto` on the badge span.
 - **Styles:** `background: var(--bg-elevated); color: var(--text-primary); font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 9999px; border: 1px solid var(--border)`.
 - **Pulse animation:** When the SWR count value changes, toggle a CSS class for `animation: badgePulse 300ms ease-out`.
@@ -432,7 +432,7 @@ Replace **ALL** existing page title sections across every screen with this compo
   - Optional small sparkline SVG (`var(--text-muted)` stroke, no fill, 40px tall).
 - **Recent Matches:** full-width table using updated Table component from Phase 4d.
 
-### 6b. Admin Moderation Queue
+### 6b. Admin Review Queue
 - **Layout:** two-panel split: `display: grid; grid-template-columns: 35% 65%; gap: 0; height: 100%; overflow: hidden`. Each panel: `overflow-y: auto`.
 - **Left panel — Pending submission list:**
   - Each row: `MonoChip` team number + company name + relative timestamp (`font-size: 12px; color: var(--text-muted)`).
@@ -478,7 +478,7 @@ Replace **ALL** existing page title sections across every screen with this compo
   - `position: fixed; bottom: 0; left: 240px; right: 0; background: var(--bg-surface); border-top: 1px solid var(--border); padding: 12px 48px; display: flex; justify-content: space-between; align-items: center; z-index: 40`.
   - Only render when `selectedCount > 0`.
   - Entrance: `translateY(100%) → translateY(0)` over 200ms ease-out.
-  - Left: `"X companies selected"` text. Right: `"Submit to Admin Queue →"` primary button.
+  - Left: `"X companies selected"` text. Right: `"Submit to Review Queue →"` primary button.
   - When pitch slot exhausted: `button opacity: 0.4; cursor: not-allowed;` tooltip `"Weekly limit reached"`.
   - When bar is visible: add `padding-bottom: 72px` to main content area to prevent table clipping.
 
@@ -524,7 +524,7 @@ Run each checklist item. **Every one must pass** before submitting.
 | 3 | Theme toggle icon | theme change | `opacity 0→1` + `rotate(30deg → 0deg)`; 200ms ease-out; CSS transition on `.icon-enter` class |
 | 4 | Table rows | hover | background color shift; 100ms linear; no delay |
 | 5 | All buttons | mousedown | `scale(0.98)`; released on mouseup; 80ms |
-| 6 | Admin queue badge | count value change | `scale(1 → 1.3 → 1)` pulse; 300ms ease-out; CSS keyframe triggered by class toggle from `useEffect` |
+| 6 | Review queue badge | count value change | `scale(1 → 1.3 → 1)` pulse; 300ms ease-out; CSS keyframe triggered by class toggle from `useEffect` |
 | 7 | Modal | open | `scale(0.96) + opacity 0 → scale(1) + opacity 1`; 200ms ease-out; **no exit animation** |
 | 8 | Form input | validation error | border-color snaps to `var(--accent-error)` instantly; 0ms transition; error text appears immediately |
 | 9 | Multi-step form step indicator | step complete | checkmark SVG `stroke-dashoffset` draw animation; 300ms ease |
@@ -547,7 +547,7 @@ Run each checklist item. **Every one must pass** before submitting.
 - ❌ **Never** use shadcn's default HSL color system — replace with the token system defined in Phase 0.
 - ❌ **Never** modify Supabase RLS policies, Server Actions, Zod schemas, or any backend code. This is a **visual-only** change.
 - ❌ **Never** collect or display student PII (COPPA compliance, per `CLAUDE.md`).
-- ❌ **Never** bypass the admin moderation queue gate for emails.
+- ❌ **Never** bypass the admin review queue gate for emails.
 
 ---
 

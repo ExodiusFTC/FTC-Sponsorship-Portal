@@ -4,9 +4,9 @@
 These four rules take absolute precedence over all other architectural and feature decisions:
 
 1.  **COPPA Compliance**: Only verified adults (coaches/advisors) may create accounts. No student PII (Personally Identifiable Information) may ever be collected, stored, or exposed.
-2.  **Admin-Gatekept Dispatch**: No email leaves the platform without Admin approval. The moderation queue is the single chokepoint for all outreach.
+2.  **Admin-Gatekept Dispatch**: No email leaves the platform without Admin approval. The review queue is the single chokepoint for all outreach.
 3.  **Sponsor Capacity Integrity**: Sponsors have funding caps that must be respected; inactive or capped sponsors must be invisible to teams during the pitch creation/targeting phase.
-4.  **Data Architecture Distinction**: Strictly prioritize the distinction between Global Team Data (the Base Resume/Portfolio) and Submission-Specific Data (custom pitch alignment, specific needs, local connection).
+4.  **Data Architecture Distinction**: Strictly prioritize the distinction between Global Team Data (the Portfolio) and Submission-Specific Data (custom pitch alignment, specific needs, local connection).
 
 ---
 
@@ -71,8 +71,8 @@ These four rules take absolute precedence over all other architectural and featu
 - [ ] Public sponsor opt-in page (`/sponsors/apply`).
 - [ ] Team-facing sponsor browser (filtered by RLS and capacity).
 
-### Chunk 5 — Admin Moderation Engine & SMTP Dispatch
-- [ ] Admin dashboard and moderation queue.
+### Chunk 5 — Admin Review Engine & SMTP Dispatch
+- [ ] Admin dashboard and review queue.
 - [ ] Approve & Dispatch workflow (Resend integration).
 - [ ] Webhook handler for tracking (bounces/opens).
 

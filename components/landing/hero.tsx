@@ -6,11 +6,12 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { GooeyText } from '@/components/ui/gooey-text'
 import {
   DISPATCH_SEASON_LABEL,
+  HERO_DESCRIPTION,
   HERO_MORPHING_WORDS,
-  HERO_TITLE_TOP,
   HERO_TITLE_BOTTOM,
-  HERO_DESCRIPTION
+  HERO_TITLE_TOP,
 } from '@/lib/site-config'
+import { LogosRail } from './logos-rail'
 
 export function Hero() {
   const reduce = useReducedMotion()
@@ -18,7 +19,7 @@ export function Hero() {
   const show = { opacity: 1, y: 0 }
 
   return (
-    <section className="relative pt-40 pb-24 overflow-hidden">
+    <section className="relative pt-32 pb-0 overflow-hidden">
       {/* dot-grid backdrop */}
       <div
         aria-hidden
@@ -95,6 +96,8 @@ export function Hero() {
           </Link>
         </motion.div>
       </div>
+
+      <LogosRail />
     </section>
   )
 }

@@ -13,8 +13,6 @@ import {
   Building2,
   Users,
   BarChart2,
-  Sun,
-  Moon,
   ChevronDown,
   ChevronsUpDown,
   LogOut,
@@ -23,7 +21,6 @@ import {
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import useSWR from 'swr'
 import { createClient } from '@/lib/supabase/client'
-import { useTheme } from './theme-provider'
 import { cn } from '@/lib/utils'
 
 type Role = 'coach' | 'admin' | null
@@ -40,7 +37,7 @@ const coachNavItems: NavDef[] = [
 
 const adminNavItems: NavDef[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/analytics', kbd: 'G D' },
-  { icon: Inbox, label: 'Moderation', href: '/moderation', showBadge: true, kbd: 'G M' },
+  { icon: Inbox, label: 'Inbox', href: '/moderation', showBadge: true, kbd: 'G M' },
   { icon: Building2, label: 'Sponsors', href: '/sponsors', kbd: 'G S' },
   { icon: Users, label: 'Teams', href: '/coaches', kbd: 'G T' },
   { icon: BarChart2, label: 'Analytics', href: '/analytics', kbd: 'G A' },
@@ -119,32 +116,6 @@ function WorkspacePill({ role }: { role: Role }) {
         </div>
       </div>
       <ChevronsUpDown className="h-3.5 w-3.5 text-zinc-500" strokeWidth={1.5} />
-    </button>
-  )
-}
-
-function ThemeToggle() {
-  const { theme, toggle } = useTheme()
-  return (
-    <button
-      onClick={toggle}
-      suppressHydrationWarning
-      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-900 hover:text-zinc-100"
-      title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-    >
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.span
-          key={theme}
-          suppressHydrationWarning
-          initial={{ rotate: -90, opacity: 0 }}
-          animate={{ rotate: 0, opacity: 1 }}
-          exit={{ rotate: 90, opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="flex"
-        >
-          {theme === 'dark' ? <Sun className="h-4 w-4" strokeWidth={1.5} /> : <Moon className="h-4 w-4" strokeWidth={1.5} />}
-        </motion.span>
-      </AnimatePresence>
     </button>
   )
 }
@@ -271,7 +242,6 @@ export function Sidebar() {
             </svg>
             <span className="text-sm font-semibold tracking-tight text-zinc-100">Matchmaker</span>
           </Link>
-          <ThemeToggle />
         </div>
 
         <WorkspacePill role={role} />

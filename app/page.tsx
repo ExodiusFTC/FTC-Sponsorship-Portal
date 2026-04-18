@@ -5,10 +5,8 @@ import { Hero } from '@/components/landing/hero'
 import { StatsStrip } from '@/components/landing/stats-strip'
 import { FeatureGrid } from '@/components/landing/feature-grid'
 import { ProductShowcase, PortfolioMock, ModerationMock } from '@/components/landing/product-showcase'
-import { LogosRail } from '@/components/landing/logos-rail'
 import { HowItWorks } from '@/components/landing/how-it-works'
 import { FAQ } from '@/components/landing/faq'
-import { CtaBand } from '@/components/landing/cta-band'
 import { LandingFooter } from '@/components/landing/footer'
 
 export default async function HomePage() {
@@ -35,9 +33,8 @@ export default async function HomePage() {
         <StatsStrip />
         <FeatureGrid />
         <ProductShowcase
-          eyebrow="Base Resume"
           title="Build your team story once. Fork it a hundred times."
-          body="Your Base Resume is the canonical source — story, budget bands, achievements, links. Every submission forks from it, keeping the asks custom without rewriting the fundamentals."
+          body="Your Portfolio is the canonical source — story, budget bands, achievements, links. Every submission forks from it, keeping the asks custom without rewriting the fundamentals."
           bullets={[
             'One portfolio, zero duplicated maintenance',
             'Budget line-items with live totals',
@@ -47,7 +44,6 @@ export default async function HomePage() {
         />
         <ProductShowcase
           flipped
-          eyebrow="Moderation"
           title="Nothing ships without a human read."
           body="Every outbound sponsor email queues for admin review. Approve, send changes back, or block — the submission thread stays tied to the audit log."
           bullets={[
@@ -57,10 +53,8 @@ export default async function HomePage() {
           ]}
           visual={<ModerationMock />}
         />
-        <LogosRail />
         <HowItWorks />
         <FAQ />
-        <CtaBand />
       </main>
       <LandingFooter />
     </div>

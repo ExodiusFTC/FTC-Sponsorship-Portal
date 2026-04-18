@@ -19,18 +19,18 @@ export const DISPATCH_SEASON_LABEL = `Season ${CURRENT_SEASON} dispatch window o
 // ─── Sponsors marquee ────────────────────────────────────────────────────────
 // Add real sponsor names here as the platform grows.
 export const MARQUEE_SPONSORS = [
-  'Lockheed Martin',
-  'Boeing',
-  'Raytheon',
-  'National Instruments',
-  'REV Robotics',
-  'AndyMark',
-  'goBILDA',
-  'Northrop Grumman',
-  'Texas Instruments',
-  'SpaceX',
-  'Qualcomm',
-  'Cognex',
+  'Sponsor A',
+  'Sponsor B',
+  'Sponsor C',
+  'Sponsor D',
+  'Sponsor E',
+  'Sponsor F',
+  'Sponsor G',
+  'Sponsor H',
+  'Sponsor I',
+  'Sponsor J',
+  'Sponsor K',
+  'Sponsor L',
 ]
 
 // ─── Portfolio mock (product showcase) ───────────────────────────────────────

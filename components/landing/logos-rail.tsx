@@ -8,15 +8,15 @@ export function LogosRail() {
   const items = [...MARQUEE_SPONSORS, ...MARQUEE_SPONSORS]
 
   return (
-    <section className="mx-auto max-w-6xl px-6 py-14">
+    <div className="mx-auto max-w-6xl px-6 pt-28 pb-20">
       <FadeUp>
         <div className="text-center text-xs uppercase tracking-[0.2em] text-zinc-500">
-          Trusted by sponsors across robotics, aerospace, and local philanthropy
+          Trusted by industry leaders, organizations, and sponsors from all over the world
         </div>
       </FadeUp>
 
       <div
-        className="relative mt-8 overflow-hidden"
+        className="relative mt-12 overflow-hidden"
         style={{
           maskImage: 'linear-gradient(to right, transparent, black 12%, black 88%, transparent)',
         }}
@@ -28,7 +28,7 @@ export function LogosRail() {
           {items.map((name, i) => (
             <span
               key={i}
-              className="shrink-0 font-serif text-xl tracking-widest text-zinc-600 hover:text-zinc-300 transition-colors select-none"
+              className="shrink-0 font-mono text-xl tracking-widest text-zinc-600 hover:text-zinc-300 transition-colors select-none"
             >
               {name}
             </span>
@@ -42,6 +42,6 @@ export function LogosRail() {
           to   { transform: translateX(-50%); }
         }
       `}</style>
-    </section>
+    </div>
   )
 }

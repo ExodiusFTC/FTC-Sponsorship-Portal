@@ -35,7 +35,7 @@ export default async function ModerationPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       <PageHeader
-        title="Moderation Queue"
+        title="Review Queue"
         subtitle="Review submitted portfolios and custom pitches. Approved submissions will be dispatched to sponsors."
       />
 

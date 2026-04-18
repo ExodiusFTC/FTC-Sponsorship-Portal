@@ -12,7 +12,7 @@ const coachLinks: NavLink[] = [
 ]
 
 const adminLinks: NavLink[] = [
-  { href: '/moderation', label: 'Moderation' },
+  { href: '/moderation', label: 'Queue' },
   { href: '/coaches', label: 'Coaches' },
   { href: '/applications', label: 'Applications' },
   { href: '/sponsors', label: 'Sponsors' },

@@ -6,7 +6,7 @@ export default function PrivacyPolicyPage() {
         <p className="text-muted-foreground mt-2" suppressHydrationWarning>Last updated: {new Date().toLocaleDateString()}</p>
       </div>
 
-      <div className="prose prose-slate dark:prose-invert">
+      <div className="prose prose-invert">
         <h2>1. Introduction</h2>
         <p>
           The FTC Sponsorship Portal ("we," "our," or "us") is committed to protecting the privacy of its users. This policy outlines how we collect, use, and safeguard information.

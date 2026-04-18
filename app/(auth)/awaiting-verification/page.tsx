@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { signOut } from '@/app/actions/auth'
 
 export default async function AwaitingVerificationPage() {
   const supabase = await createClient()
@@ -26,7 +27,7 @@ export default async function AwaitingVerificationPage() {
     <div className="container mx-auto max-w-md py-20">
       <Card className="text-center">
         <CardHeader>
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-10 text-3xl">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100/10 text-3xl">
             ⏱︎
           </div>
           <CardTitle>Application under review</CardTitle>
@@ -43,14 +44,24 @@ export default async function AwaitingVerificationPage() {
             </a>
             .
           </p>
-          {!profile?.coach_credentials_url && (
-            <Link
-              href="/upload-credentials"
-              className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}
-            >
-              Upload credentials
-            </Link>
-          )}
+          <div className="flex flex-col gap-2">
+            {!profile?.coach_credentials_url && (
+              <Link
+                href="/upload-credentials"
+                className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}
+              >
+                Upload credentials
+              </Link>
+            )}
+            <form action={signOut} className="w-full">
+              <button
+                type="submit"
+                className={cn(buttonVariants({ variant: 'ghost' }), 'w-full text-zinc-500 hover:text-zinc-200')}
+              >
+                Sign out
+              </button>
+            </form>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -6,7 +6,7 @@ export default function TermsOfServicePage() {
         <p className="text-muted-foreground mt-2" suppressHydrationWarning>Last updated: {new Date().toLocaleDateString()}</p>
       </div>
 
-      <div className="prose prose-slate dark:prose-invert">
+      <div className="prose prose-invert">
         <h2>1. Acceptance of Terms</h2>
         <p>
           By creating an account on the FTC Sponsorship Portal, you agree to comply with these terms. This platform connects FIRST Tech Challenge (FTC) robotics teams with potential corporate sponsors.
@@ -21,11 +21,11 @@ export default function TermsOfServicePage() {
         <ul>
           <li>Misrepresenting your team's status, achievements, or financial needs.</li>
           <li>Submitting fraudulent financial asks.</li>
-          <li>Attempting to bypass the moderation system or contact sponsors directly without platform approval.</li>
+          <li>Attempting to bypass the review system or contact sponsors directly without platform approval.</li>
           <li>Uploading or sharing personally identifiable information (PII) of minors.</li>
         </ul>
 
-        <h2>4. Moderation & Email Dispatch</h2>
+        <h2>4. Review & Email Dispatch</h2>
         <p>
           All pitch submissions are subject to review and approval by our administrative team. We reserve the right to edit, reject, or request changes to any pitch. An approved pitch will be dispatched via email to selected sponsors; however, we do not guarantee funding or a response from sponsors.
         </p>

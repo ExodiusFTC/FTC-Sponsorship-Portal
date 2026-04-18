@@ -13,7 +13,7 @@ const features = [
   {
     icon: ShieldCheck,
     title: 'Admin-gated dispatch',
-    body: 'Every outbound email passes through a moderation queue. Nothing leaves the platform until it has been reviewed and approved.',
+    body: 'Every outbound email passes through a review queue. Nothing leaves the platform until it has been reviewed and approved.',
   },
   {
     icon: Mailbox,
@@ -42,7 +42,7 @@ export function FeatureGrid() {
     <section id="product" className="mx-auto max-w-6xl px-6 py-24">
       <FadeUp className="max-w-2xl">
         <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-50">
-          Built for coaches who don&apos;t have time to send 200 cold emails.
+          Built for coaches who don&apos;t have time to send dozens of cold emails.
         </h2>
         <p className="mt-4 text-zinc-400 leading-relaxed">
           Matchmaker replaces the spray-and-pray sponsorship workflow with a single pipeline that

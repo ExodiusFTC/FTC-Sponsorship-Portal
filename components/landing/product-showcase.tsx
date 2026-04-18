@@ -14,7 +14,7 @@ export function ProductShowcase({
   visual,
   flipped = false,
 }: {
-  eyebrow: string
+  eyebrow?: string
   title: string
   body: string
   bullets: string[]
@@ -25,7 +25,7 @@ export function ProductShowcase({
     <section className="mx-auto max-w-6xl px-6 py-24">
       <div className={cn('grid gap-12 lg:grid-cols-2 lg:gap-16 items-center', flipped && 'lg:[&>*:first-child]:order-2')}>
         <FadeUp>
-          <p className="text-xs font-mono uppercase tracking-[0.15em] text-indigo-300/70">{eyebrow}</p>
+          {eyebrow && <p className="text-xs font-mono uppercase tracking-[0.15em] text-indigo-300/70">{eyebrow}</p>}
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-50">{title}</h2>
           <p className="mt-4 text-zinc-400 leading-relaxed">{body}</p>
           <ul className="mt-8 space-y-3">
@@ -99,11 +99,10 @@ export function ModerationMock() {
           <span className="h-2.5 w-2.5 rounded-full bg-zinc-800" />
           <span className="h-2.5 w-2.5 rounded-full bg-zinc-800" />
         </div>
-        <span className="font-mono text-[10px] text-zinc-600">/moderation</span>
       </div>
       <div className="rounded-lg border border-zinc-900 bg-zinc-950">
         <div className="flex items-center justify-between border-b border-zinc-900 px-4 py-3">
-          <div className="text-sm font-medium text-zinc-100">Moderation Queue</div>
+          <div className="text-sm font-medium text-zinc-100">Review Queue</div>
           <span className="rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-0.5 text-[10px] font-mono text-zinc-400">
             {MODERATION_MOCK_ROWS.length} pending
           </span>
