@@ -6,10 +6,10 @@
 
 // ─── Platform stats ─────────────────────────────────────────────────────────
 export const PLATFORM_STATS = [
-  { label: 'Teams onboarded', value: 12, suffix: '+' },
-  { label: 'Sponsors active', value: 7, suffix: '' },
-  { label: 'Avg. review time', value: 4, suffix: 'h' },
-  { label: 'Pitches dispatched', value: 31, suffix: '' },
+  { label: 'Teams onboarded', value: 0, suffix: '+' },
+  { label: 'Sponsors active', value: 0, suffix: '' },
+  { label: 'Avg. review time', value: 0, suffix: 'h' },
+  { label: 'Pitches dispatched', value: 0, suffix: '' },
 ] as const
 
 // ─── Season ──────────────────────────────────────────────────────────────────
@@ -19,23 +19,23 @@ export const DISPATCH_SEASON_LABEL = `Season ${CURRENT_SEASON} dispatch window o
 // ─── Sponsors marquee ────────────────────────────────────────────────────────
 // Add real sponsor names here as the platform grows.
 export const MARQUEE_SPONSORS = [
-  'Sponsor A',
-  'Sponsor B',
-  'Sponsor C',
-  'Sponsor D',
-  'Sponsor E',
-  'Sponsor F',
-  'Sponsor G',
-  'Sponsor H',
-  'Sponsor I',
-  'Sponsor J',
-  'Sponsor K',
-  'Sponsor L',
+  'Gringotts Bank',
+  'Ollivanders Wands',
+  'Weasleys Wizard Wheezes',
+  'Honeydukes',
+  'Quality Quidditch Supplies',
+  'The Daily Prophet',
+  'Flourish and Blotts',
+  'Madam Malkins',
+  'The Leaky Cauldron',
+  'Borgin and Burkes',
+  'Slug and Jiggers',
+  'The Quibbler',
 ]
 
 // ─── Portfolio mock (product showcase) ───────────────────────────────────────
 export const PORTFOLIO_MOCK = {
-  teamNumber: '21996',
+  teamNumber: '31579',
   teamName: 'Exodius',
   budgetItems: [
     { label: `Outreach, Q1 ${CURRENT_SEASON}`, funded: '$2,400', goal: '$5,000' },
@@ -46,10 +46,10 @@ export const PORTFOLIO_MOCK = {
 
 // ─── Moderation queue mock ───────────────────────────────────────────────────
 export const MODERATION_MOCK_ROWS = [
-  { to: 'grants@revrobotics.com', team: 'Exodius', status: 'pending' },
-  { to: 'stem@ti.com', team: 'Voltrex', status: 'approved' },
-  { to: 'community@gobilda.com', team: 'NovaDrive', status: 'pending' },
-  { to: 'education@qualcomm.com', team: 'Exodius', status: 'changes' },
+  { to: 'griphook@gringotts.test', team: 'The Golden Snitches', status: 'pending' },
+  { to: 'garrick@ollivanders.test', team: 'Ravenclaw Roboteers', status: 'approved' },
+  { to: 'fred@weasley.test', team: 'Gryffindor Gearheads', status: 'pending' },
+  { to: 'rita@prophet.test', team: 'The Golden Snitches', status: 'changes' },
 ] as const
 
 // ─── Footer social links ─────────────────────────────────────────────────────
