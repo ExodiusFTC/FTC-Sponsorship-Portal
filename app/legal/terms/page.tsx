@@ -3,7 +3,7 @@ export default function TermsOfServicePage() {
     <div className="container max-w-3xl py-12 space-y-8">
       <div>
         <h1 className="text-3xl font-bold">Terms of Service</h1>
-        <p className="text-muted-foreground mt-2">Last updated: {new Date().toLocaleDateString()}</p>
+        <p className="text-muted-foreground mt-2" suppressHydrationWarning>Last updated: {new Date().toLocaleDateString()}</p>
       </div>
 
       <div className="prose prose-slate dark:prose-invert">

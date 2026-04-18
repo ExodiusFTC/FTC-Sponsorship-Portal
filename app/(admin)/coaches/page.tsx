@@ -81,7 +81,7 @@ function CoachRow({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           <p style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{coach.full_name ?? '(no name)'}</p>
           <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{coach.id}</p>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }} suppressHydrationWarning>
             Joined {new Date(coach.created_at).toLocaleDateString()}
           </p>
           <div style={{ marginTop: '4px' }}>

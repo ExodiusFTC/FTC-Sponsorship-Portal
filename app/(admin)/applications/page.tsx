@@ -46,7 +46,7 @@ export default async function ApplicationsPage() {
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle className="text-lg">{app.company_name}</CardTitle>
-                      <CardDescription>
+                      <CardDescription suppressHydrationWarning>
                         {app.contact_email} · Applied {new Date(app.created_at).toLocaleDateString()}
                       </CardDescription>
                     </div>

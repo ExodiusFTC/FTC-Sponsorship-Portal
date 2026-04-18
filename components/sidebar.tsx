@@ -178,10 +178,21 @@ function LogoBlock() {
 function ThemeToggle() {
   const { theme, toggle } = useTheme()
   const [iconKey, setIconKey] = useState(0)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   function handleClick() {
     setIconKey((k) => k + 1)
     toggle()
+  }
+
+  if (!mounted) {
+    return (
+      <div style={{ width: '32px', height: '32px' }} />
+    )
   }
 
   return (

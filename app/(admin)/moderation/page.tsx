@@ -75,7 +75,7 @@ export default async function ModerationPage() {
                         fontWeight: 500,
                         color: 'var(--text-secondary)',
                         fontFamily: 'var(--font-mono)',
-                      }}>
+                      }} suppressHydrationWarning>
                         Ask: ${((team?.financial_ask_cents || 0) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </span>
                       {isOverAsk && (
@@ -83,7 +83,7 @@ export default async function ModerationPage() {
                           ⚠ Ask (${(financialAsk / 100).toFixed(2)}) exceeds line items (${(lineItemSum / 100).toFixed(2)})
                         </span>
                       )}
-                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }} suppressHydrationWarning>
                         Submitted: {new Date(submission.updated_at).toLocaleDateString()}
                       </span>
                     </div>

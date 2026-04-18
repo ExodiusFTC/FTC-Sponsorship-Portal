@@ -88,7 +88,7 @@ export default async function AnalyticsPage() {
                         <div style={{ width: '100%', background: 'var(--bg-elevated)', borderRadius: '3px', height: '6px' }}>
                           <div style={{ width: `${pct}%`, height: '6px', borderRadius: '3px', background: barColor }} />
                         </div>
-                        <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }} suppressHydrationWarning>
                           ${(((sponsor.funding_cap_cents ?? 0) - (sponsor.funding_used_cents ?? 0)) / 100).toLocaleString('en-US')} remaining
                         </p>
                       </div>
@@ -163,7 +163,7 @@ export default async function AnalyticsPage() {
                         <tr key={submission.id} style={{ borderBottom: '1px solid var(--border-color)', height: '44px' }}>
                           <td style={{ paddingRight: '16px', fontWeight: 500, color: 'var(--text-primary)' }}>{submission.team_name}</td>
                           <td style={{ paddingRight: '16px', color: 'var(--text-secondary)', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{submission.company_name}</td>
-                          <td style={{ paddingRight: '16px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>${(submission.financial_ask_cents / 100).toLocaleString('en-US')}</td>
+                          <td style={{ paddingRight: '16px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '12px' }} suppressHydrationWarning>${(submission.financial_ask_cents / 100).toLocaleString('en-US')}</td>
                           <td>
                             <span style={{ padding: '2px 8px', borderRadius: '9999px', fontSize: '12px', fontWeight: 500, background: meta.bg, color: meta.text }}>
                               {meta.label}
@@ -199,7 +199,7 @@ export default async function AnalyticsPage() {
                   <div>
                     <p style={{ fontWeight: 500, fontSize: '14px', color: 'var(--text-primary)' }}>{coach.full_name}</p>
                     <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{coach.id}</p>
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)' }} suppressHydrationWarning>
                       Applied {new Date(coach.created_at).toLocaleDateString()}
                     </p>
                   </div>
@@ -245,7 +245,7 @@ function StatCard({
           letterSpacing: '-0.5px',
           color: highlight ? 'var(--badge-warning-text)' : 'var(--text-primary)',
           marginTop: '4px',
-        }}>
+        }} suppressHydrationWarning>
           {value}
         </p>
         {sub && <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{sub}</p>}

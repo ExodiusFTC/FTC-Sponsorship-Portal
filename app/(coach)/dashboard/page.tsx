@@ -161,7 +161,7 @@ export default async function DashboardPage() {
               </div>
               <div>
                 <p style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Portfolio Ask</p>
-                <p style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: '14px' }}>
+                <p style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: '14px' }} suppressHydrationWarning>
                   ${((team.financial_ask_cents || 0) / 100).toLocaleString('en-US')}
                 </p>
               </div>
@@ -213,7 +213,7 @@ export default async function DashboardPage() {
                       <div className="flex justify-between items-start gap-2">
                         <div className="min-w-0 flex-1">
                           <p style={{ fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.company_name}</p>
-                          <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                          <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }} suppressHydrationWarning>
                             {new Date(s.updated_at).toLocaleDateString()}
                           </p>
                         </div>

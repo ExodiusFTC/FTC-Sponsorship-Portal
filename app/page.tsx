@@ -60,7 +60,7 @@ export default async function HomePage() {
 
       <footer className="border-t mt-12">
         <div className="container mx-auto px-4 py-6 flex flex-wrap justify-between gap-4 text-sm text-muted-foreground">
-          <span>© {new Date().getFullYear()} FTC Sponsorship Portal</span>
+          <span suppressHydrationWarning>© {new Date().getFullYear()} FTC Sponsorship Portal</span>
           <div className="flex gap-4">
             <Link href="/legal/terms" className="hover:text-foreground">Terms</Link>
             <Link href="/legal/privacy" className="hover:text-foreground">Privacy</Link>
