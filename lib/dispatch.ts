@@ -1,14 +1,13 @@
 import SubmissionEmail from '@/emails/submission-email'
 import { Resend } from 'resend'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { env } from '@/lib/env'
 
 const resend = new Resend(env.RESEND_API_KEY)
 
-export async function dispatchApprovedSubmission(submissionId: string) {
-  const supabase = await createClient()
+export async function dispatchApprovedSubmission(submissionId: string, accessToken?: string) {
+  const supabase = createAdminClient()
 
-  // 1. Fetch submission, team, and targets
   const { data: submission } = await supabase
     .from('submissions')
     .select(`
@@ -25,47 +24,58 @@ export async function dispatchApprovedSubmission(submissionId: string) {
     .single()
 
   if (!submission || !submission.sponsors || !submission.teams) {
-    console.error('Submission not found or missing relations')
+    console.error('[dispatch] Submission not found or missing relations')
     return { error: 'Submission not found' }
   }
 
-  const sponsor = submission.sponsors as any
-  const team = submission.teams as any
+  const sponsor = submission.sponsors as unknown as Record<string, unknown>
+  const team = submission.teams as unknown as Record<string, unknown>
+  const teamProfile = team.profiles as Record<string, string>
 
-  // 2. Dispatch email to sponsor
+  const viewerUrl = accessToken
+    ? `${env.NEXT_PUBLIC_APP_URL}/sponsor-view/${accessToken}`
+    : null
+
+  const subject = `Verified FTC Robotics Sponsorship Proposal: Team ${team.ftc_team_number ?? 'Incubator'} (${team.state})`
+
   try {
-      const result = await resend.emails.send({
-        from: env.RESEND_FROM_EMAIL,
-        to: sponsor.contact_email,
-        replyTo: team.profiles.email,
-        subject: `Sponsorship Opportunity: ${team.team_name}`,
-        react: SubmissionEmail({
-          teamName: team.team_name,
-          missionStatement: team.mission_statement,
-          technicalSummary: team.technical_summary,
-          outreachSummary: team.outreach_summary,
-          financialAskCents: team.financial_ask_cents,
-          budgetItems: team.budget_items as any,
-          customPitchAlignment: submission.custom_pitch_alignment || '',
-          specificNeedsStatement: submission.specific_needs_statement || '',
-        }),
-        tags: [
-          { name: 'submission_id', value: submission.id },
-          { name: 'sponsor_id', value: sponsor.id },
-        ],
-      })
+    const result = await resend.emails.send({
+      from: env.RESEND_FROM_EMAIL,
+      to: sponsor.contact_email as string,
+      replyTo: teamProfile.email,
+      subject,
+      react: SubmissionEmail({
+        teamName: team.team_name as string,
+        ftcTeamNumber: team.ftc_team_number as number | null,
+        state: team.state as string,
+        taxStatus: team.tax_status as string,
+        missionStatement: team.mission_statement as string | null,
+        technicalSummary: team.technical_summary as string | null,
+        outreachSummary: team.outreach_summary as string | null,
+        financialAskCents: team.financial_ask_cents as number,
+        budgetItems: team.budget_items as { label: string; qty: number; unitCostCents: number; totalCents: number }[],
+        customPitchAlignment: submission.custom_pitch_alignment ?? '',
+        specificNeedsStatement: submission.specific_needs_statement ?? '',
+        heroImageUrl: ((team.media_urls as string[]) ?? [])[0] ?? null,
+        viewerUrl,
+      }),
+      tags: [
+        { name: 'submission_id', value: submission.id },
+        { name: 'sponsor_id', value: sponsor.id as string },
+      ],
+    })
 
-      if (result.data?.id) {
-        await supabase
-          .from('submissions')
-          .update({ resend_message_id: result.data.id })
-          .eq('id', submissionId)
-      }
+    if (result.data?.id) {
+      await supabase
+        .from('submissions')
+        .update({ resend_message_id: result.data.id })
+        .eq('id', submissionId)
+    }
 
-      if (result.error) {
-        console.error('Failed to send email to', sponsor.contact_email, result.error)
-      }
+    if (result.error) {
+      console.error('[dispatch] Failed to send email to', sponsor.contact_email, result.error)
+    }
   } catch (e) {
-    console.error('Failed to dispatch email', e)
+    console.error('[dispatch] Failed to dispatch email', e)
   }
 }

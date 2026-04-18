@@ -1,19 +1,43 @@
-import { Html, Head, Preview, Body, Container, Section, Heading, Text, Hr } from '@react-email/components'
+import {
+  Html, Head, Preview, Body, Container, Section,
+  Heading, Text, Hr, Img, Button, Row, Column,
+} from '@react-email/components'
 import * as React from 'react'
+
+interface BudgetItem {
+  label: string
+  qty: number
+  unitCostCents: number
+  totalCents: number
+}
 
 interface SubmissionEmailProps {
   teamName: string
+  ftcTeamNumber: number | null
+  state: string
+  taxStatus: string
   missionStatement: string | null
   technicalSummary: string | null
   outreachSummary: string | null
   financialAskCents: number
-  budgetItems: { label: string; qty: number; unitCostCents: number; totalCents: number }[]
+  budgetItems: BudgetItem[]
   customPitchAlignment: string
   specificNeedsStatement: string
+  heroImageUrl: string | null
+  viewerUrl: string | null
+}
+
+function taxBadgeLabel(taxStatus: string): string | null {
+  if (taxStatus === '501c3') return '✓ IRS 501(c)(3) Tax-Exempt'
+  if (taxStatus === 'School') return '✓ Public School Program'
+  return null
 }
 
 export default function SubmissionEmail({
   teamName,
+  ftcTeamNumber,
+  state,
+  taxStatus,
   missionStatement,
   technicalSummary,
   outreachSummary,
@@ -21,46 +45,156 @@ export default function SubmissionEmail({
   budgetItems,
   customPitchAlignment,
   specificNeedsStatement,
+  heroImageUrl,
+  viewerUrl,
 }: SubmissionEmailProps) {
+  const taxLabel = taxBadgeLabel(taxStatus)
+  const totalDisplay = `$${(financialAskCents / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+  const teamLabel = ftcTeamNumber ? `Team #${ftcTeamNumber}` : 'Incubator Team'
+
   return (
     <Html>
       <Head />
-      <Preview>Sponsorship Opportunity: {teamName}</Preview>
+      <Preview>Verified FTC Robotics Sponsorship Proposal: {teamLabel} ({state})</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={h1}>Partnership Request: {teamName}</Heading>
-          
-          <Section style={pitchBox}>
-            <Text style={text}><strong>Why we align with you:</strong><br />{customPitchAlignment}</Text>
-            <Text style={text}><strong>Our specific needs:</strong><br />{specificNeedsStatement}</Text>
+
+          {/* Hero image */}
+          {heroImageUrl && (
+            <Section style={{ marginBottom: '24px' }}>
+              <Img
+                src={heroImageUrl}
+                alt={`${teamName} robot photo`}
+                width="580"
+                style={{ borderRadius: '8px', objectFit: 'cover', maxHeight: '300px', width: '100%' }}
+              />
+            </Section>
+          )}
+
+          {/* Header */}
+          <Section style={headerSection}>
+            <Heading style={h1}>Sponsorship Proposal: {teamName}</Heading>
+            <Text style={subhead}>{teamLabel} · {state}</Text>
+            {taxLabel && (
+              <Section style={taxBadge}>
+                <Text style={taxBadgeText}>{taxLabel}</Text>
+              </Section>
+            )}
+          </Section>
+
+          {/* 2-sentence summary */}
+          <Section style={summaryBox}>
+            {missionStatement && (
+              <Text style={text}>
+                {missionStatement.slice(0, 300)}{missionStatement.length > 300 ? '…' : ''}
+              </Text>
+            )}
+            <Text style={{ ...text, marginTop: '8px' }}>
+              <strong>Total Sponsorship Request: {totalDisplay}</strong>
+            </Text>
           </Section>
 
           <Hr style={hr} />
-          
-          <Heading style={h2}>Team Portfolio</Heading>
-          {missionStatement && <Text style={text}><strong>Mission:</strong> {missionStatement}</Text>}
-          {technicalSummary && <Text style={text}><strong>Technical Summary:</strong> {technicalSummary}</Text>}
-          {outreachSummary && <Text style={text}><strong>Outreach:</strong> {outreachSummary}</Text>}
 
-          <Heading style={h3}>Budget Ask: ${(financialAskCents / 100).toFixed(2)}</Heading>
-          <ul style={{ ...text, paddingLeft: '20px' }}>
+          {/* Custom pitch */}
+          <Section style={pitchBox}>
+            <Heading style={h2}>Why We Align With You</Heading>
+            <Text style={text}>{customPitchAlignment}</Text>
+          </Section>
+
+          <Section style={{ marginTop: '16px' }}>
+            <Heading style={h2}>Our Specific Needs</Heading>
+            <Text style={text}>{specificNeedsStatement}</Text>
+          </Section>
+
+          <Hr style={hr} />
+
+          {/* Portfolio */}
+          <Heading style={h2}>Team Portfolio</Heading>
+          {technicalSummary && (
+            <Section style={{ marginBottom: '12px' }}>
+              <Text style={label}>Technical Summary</Text>
+              <Text style={text}>{technicalSummary}</Text>
+            </Section>
+          )}
+          {outreachSummary && (
+            <Section style={{ marginBottom: '12px' }}>
+              <Text style={label}>Community Outreach</Text>
+              <Text style={text}>{outreachSummary}</Text>
+            </Section>
+          )}
+
+          <Hr style={hr} />
+
+          {/* Budget */}
+          <Heading style={h2}>
+            Budget Breakdown — Total Ask: <strong>{totalDisplay}</strong>
+          </Heading>
+          <Section style={budgetTable}>
             {budgetItems && budgetItems.map((item, i) => (
-              <li key={i}>
-                {item.qty}x {item.label} - ${(item.totalCents / 100).toFixed(2)}
-              </li>
+              <Row key={i} style={budgetRow}>
+                <Column style={{ ...budgetCell, width: '60%' }}>
+                  {item.qty}× {item.label}
+                </Column>
+                <Column style={{ ...budgetCell, textAlign: 'right', fontWeight: 'bold' }}>
+                  ${(item.totalCents / 100).toFixed(2)}
+                </Column>
+              </Row>
             ))}
-          </ul>
+            <Row style={{ ...budgetRow, borderTop: '2px solid #e2e8f0', marginTop: '4px' }}>
+              <Column style={{ ...budgetCell, width: '60%', fontWeight: 'bold' }}>Total</Column>
+              <Column style={{ ...budgetCell, textAlign: 'right', fontWeight: 'bold', fontSize: '16px' }}>
+                {totalDisplay}
+              </Column>
+            </Row>
+          </Section>
+
+          <Hr style={hr} />
+
+          {/* CTA */}
+          {viewerUrl ? (
+            <Section style={{ textAlign: 'center' as const, marginTop: '24px' }}>
+              <Text style={text}>
+                View the full portfolio and respond to this proposal using the secure link below.
+                This link expires in 14 days.
+              </Text>
+              <Button href={viewerUrl} style={ctaButton}>
+                View Proposal & Respond →
+              </Button>
+            </Section>
+          ) : (
+            <Text style={{ ...text, color: '#6b7280' }}>
+              Reply to this email to get in touch with the team coach directly.
+            </Text>
+          )}
+
+          <Hr style={hr} />
+          <Text style={footer}>
+            This proposal was verified and dispatched by the Matchmaker FTC Sponsorship Portal.
+            {taxLabel ? ' Contributions may be tax-deductible — consult your tax advisor.' : ''}
+          </Text>
+
         </Container>
       </Body>
     </Html>
   )
 }
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'sans-serif' }
-const container = { margin: '0 auto', padding: '20px 0 48px', width: '580px' }
-const h1 = { fontSize: '24px', fontWeight: 'bold', margin: '30px 0 15px' }
-const h2 = { fontSize: '20px', fontWeight: 'bold', margin: '20px 0 10px' }
-const h3 = { fontSize: '18px', fontWeight: 'bold', margin: '15px 0 10px' }
-const text = { fontSize: '14px', lineHeight: '24px' }
-const pitchBox = { padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px' }
-const hr = { borderColor: '#e6ebf1', margin: '20px 0' }
+const main = { backgroundColor: '#f8fafc', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }
+const container = { margin: '0 auto', padding: '32px 20px 48px', maxWidth: '600px', backgroundColor: '#ffffff', borderRadius: '12px' }
+const headerSection = { marginBottom: '20px' }
+const h1 = { fontSize: '26px', fontWeight: '700', color: '#0f172a', margin: '0 0 4px' }
+const h2 = { fontSize: '18px', fontWeight: '600', color: '#1e293b', margin: '0 0 8px' }
+const subhead = { fontSize: '14px', color: '#64748b', margin: '0 0 12px' }
+const text = { fontSize: '14px', lineHeight: '22px', color: '#334155', margin: '0' }
+const label = { fontSize: '11px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.08em', margin: '0 0 4px' }
+const hr = { borderColor: '#e2e8f0', margin: '24px 0' }
+const taxBadge = { display: 'inline-block', backgroundColor: '#dcfce7', borderRadius: '6px', padding: '4px 12px', marginTop: '4px' }
+const taxBadgeText = { fontSize: '12px', fontWeight: '700', color: '#15803d', margin: '0' }
+const summaryBox = { backgroundColor: '#f1f5f9', borderRadius: '8px', padding: '16px 20px', marginBottom: '20px' }
+const pitchBox = { backgroundColor: '#eff6ff', borderRadius: '8px', padding: '16px 20px', border: '1px solid #bfdbfe' }
+const budgetTable = { backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px 16px' }
+const budgetRow = { padding: '4px 0' }
+const budgetCell = { fontSize: '13px', color: '#334155', padding: '4px 0' }
+const ctaButton = { backgroundColor: '#2563eb', color: '#ffffff', padding: '14px 28px', borderRadius: '8px', fontWeight: '700', fontSize: '15px', textDecoration: 'none', display: 'inline-block', margin: '16px auto' }
+const footer = { fontSize: '11px', color: '#94a3b8', lineHeight: '18px', marginTop: '16px' }

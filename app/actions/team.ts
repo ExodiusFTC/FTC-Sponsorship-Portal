@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { teamOnboardingSchema, type TeamOnboardingInput } from '@/lib/schemas/team'
 import { achievementSchema, type AchievementInput } from '@/lib/schemas/achievement'
 import { validateFTCTeam, type FTCTeam } from '@/lib/ftc-roster'
@@ -39,6 +40,7 @@ export async function createTeam(data: TeamOnboardingInput) {
     organization,
     city,
     state,
+    tagline,
     missionStatement,
     taxStatus,
     communityInterestText,
@@ -49,6 +51,9 @@ export async function createTeam(data: TeamOnboardingInput) {
     youtubeUrl,
     budgetItems,
     financialAskCents,
+    drivetrain,
+    buildSystem,
+    programming,
   } = result.data
 
   if (status === 'existing' && ftcTeamNumber) {
@@ -58,38 +63,55 @@ export async function createTeam(data: TeamOnboardingInput) {
     }
   }
 
-  const { error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const insertPayload: any = {
+    owner_id: user.id,
+    status,
+    ftc_team_number: ftcTeamNumber,
+    team_name: teamName,
+    organization,
+    city,
+    state,
+    tagline: tagline ?? null,
+    mission_statement: missionStatement,
+    tax_status: taxStatus,
+    community_interest_text: communityInterestText ?? null,
+    seed_funding_goals_cents: seedFundingGoalsCents ?? 0,
+    technical_summary: technicalSummary,
+    outreach_summary: outreachSummary,
+    drivetrain: drivetrain ?? null,
+    build_system: buildSystem ?? null,
+    programming: programming ?? null,
+    media_urls: mediaUrls || [],
+    youtube_url: youtubeUrl,
+    budget_items: (budgetItems || []).map(item => ({
+      label: item.label,
+      qty: item.qty,
+      unit_cost_cents: item.unitCostCents,
+      total_cents: item.totalCents
+    })),
+    financial_ask_cents: financialAskCents ?? 0,
+  }
+
+  const { data: team, error } = await supabase
     .from('teams')
-    .insert({
-      owner_id: user.id,
-      status,
-      ftc_team_number: ftcTeamNumber,
-      team_name: teamName,
-      organization,
-      city,
-      state,
-      mission_statement: missionStatement,
-      tax_status: taxStatus as any,
-      community_interest_text: communityInterestText ?? null,
-      seed_funding_goals_cents: seedFundingGoalsCents ?? 0,
-      technical_summary: technicalSummary,
-      outreach_summary: outreachSummary,
-      media_urls: mediaUrls || [],
-      youtube_url: youtubeUrl,
-      budget_items: (budgetItems || []).map(item => ({
-        label: item.label,
-        qty: item.qty,
-        unit_cost_cents: item.unitCostCents,
-        total_cents: item.totalCents
-      })),
-      financial_ask_cents: financialAskCents ?? 0,
-    })
-    .select()
+    .insert(insertPayload)
+    .select('id')
     .single()
 
   if (error) {
     return { error: error.message }
   }
+
+  // Audit log — coach create is a material event admins should see
+  const admin = createAdminClient()
+  await admin.from('audit_log').insert({
+    actor_id: user.id,
+    action: 'create_team',
+    entity_type: 'teams',
+    entity_id: team.id,
+    metadata: { team_name: teamName, status },
+  })
 
   redirect('/dashboard')
 }
@@ -139,33 +161,50 @@ export async function updateTeam(id: string, data: Partial<TeamOnboardingInput>)
     return { error: 'Not authenticated' }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updatePayload: any = {
+    team_name: data.teamName,
+    organization: data.organization,
+    city: data.city,
+    state: data.state,
+    tagline: data.tagline ?? null,
+    mission_statement: data.missionStatement,
+    tax_status: data.taxStatus,
+    technical_summary: data.technicalSummary,
+    outreach_summary: data.outreachSummary,
+    drivetrain: data.drivetrain ?? null,
+    build_system: data.buildSystem ?? null,
+    programming: data.programming ?? null,
+    media_urls: data.mediaUrls,
+    youtube_url: data.youtubeUrl,
+    budget_items: (data.budgetItems || []).map(item => ({
+      label: item.label,
+      qty: item.qty,
+      unit_cost_cents: item.unitCostCents,
+      total_cents: item.totalCents
+    })),
+    financial_ask_cents: data.financialAskCents,
+  }
+
   const { error } = await supabase
     .from('teams')
-    .update({
-      team_name: data.teamName,
-      organization: data.organization,
-      city: data.city,
-      state: data.state,
-      mission_statement: data.missionStatement,
-      tax_status: data.taxStatus as any,
-      technical_summary: data.technicalSummary,
-      outreach_summary: data.outreachSummary,
-      media_urls: data.mediaUrls,
-      youtube_url: data.youtubeUrl,
-      budget_items: (data.budgetItems || []).map(item => ({
-        label: item.label,
-        qty: item.qty,
-        unit_cost_cents: item.unitCostCents,
-        total_cents: item.totalCents
-      })),
-      financial_ask_cents: data.financialAskCents,
-    })
+    .update(updatePayload)
     .eq('id', id)
     .eq('owner_id', user.id)
 
   if (error) {
     return { error: error.message }
   }
+
+  // Audit log — profile edits after submission are material
+  const admin = createAdminClient()
+  await admin.from('audit_log').insert({
+    actor_id: user.id,
+    action: 'update_team',
+    entity_type: 'teams',
+    entity_id: id,
+    metadata: { fields_updated: Object.keys(data) },
+  })
 
   return { success: true }
 }

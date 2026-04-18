@@ -50,18 +50,31 @@ export default async function ModerationPage() {
           const sponsor = (submission.sponsors as any)
           return (
             <Card key={submission.id}>
-              <CardHeader className="flex flex-row justify-between items-start">
-                <div>
-                  <CardTitle className="text-2xl">Submission to {sponsor?.company_name}</CardTitle>
-                  <CardDescription className="text-base mt-1 text-foreground font-medium">
-                    From: {team?.team_name} {team?.status === 'existing' && team?.ftc_team_number ? `(#${team.ftc_team_number})` : '(Incubator)'}
-                  </CardDescription>
-                  <div className="mt-2 flex items-center gap-2">
-                    <Badge variant="outline">Financial Ask: ${((team?.financial_ask_cents || 0) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</Badge>
-                    <span className="text-xs text-muted-foreground">Submitted: {new Date(submission.updated_at).toLocaleDateString()}</span>
+              {(() => {
+              const budgetItemsArr = (team?.budget_items as { total_cents?: number }[]) ?? []
+              const lineItemSum = budgetItemsArr.reduce((sum, item) => sum + (item.total_cents ?? 0), 0)
+              const financialAsk = team?.financial_ask_cents ?? 0
+              const isOverAsk = financialAsk > lineItemSum && lineItemSum > 0
+              return (
+                <CardHeader className="flex flex-row justify-between items-start">
+                  <div>
+                    <CardTitle className="text-2xl">Submission to {sponsor?.company_name}</CardTitle>
+                    <CardDescription className="text-base mt-1 text-foreground font-medium">
+                      From: {team?.team_name} {team?.status === 'existing' && team?.ftc_team_number ? `(#${team.ftc_team_number})` : '(Incubator)'}
+                    </CardDescription>
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      <Badge variant="outline">Financial Ask: ${((team?.financial_ask_cents || 0) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</Badge>
+                      {isOverAsk && (
+                        <Badge variant="destructive" className="text-xs">
+                          ⚠ Ask (${(financialAsk / 100).toFixed(2)}) exceeds line items (${(lineItemSum / 100).toFixed(2)})
+                        </Badge>
+                      )}
+                      <span className="text-xs text-muted-foreground">Submitted: {new Date(submission.updated_at).toLocaleDateString()}</span>
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
+                </CardHeader>
+              )
+            })()}
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6 border-b pb-6">
                   <div>

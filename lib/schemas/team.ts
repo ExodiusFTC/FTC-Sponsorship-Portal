@@ -1,19 +1,33 @@
 import { z } from 'zod'
 
+export const DRIVETRAIN_OPTIONS = ['mecanum', 'swerve', 'tank', 'other'] as const
+export const BUILD_SYSTEM_OPTIONS = ['gobilda', 'rev', 'custom', 'other'] as const
+export const PROGRAMMING_OPTIONS = ['java', 'blocks', 'other'] as const
+
 export const teamOnboardingSchema = z.object({
   status: z.enum(['existing', 'incubator']),
   ftcTeamNumber: z.number().optional(),
   teamName: z.string().min(2, 'Team name must be at least 2 characters'),
+  tagline: z
+    .string()
+    .max(250, 'Tagline must be 250 characters or fewer')
+    .optional(),
   organization: z.string().optional(),
   city: z.string().min(2, 'City is required'),
   state: z.string().min(2, 'State is required'),
-  missionStatement: z.string().min(50, 'Mission statement should be at least 50 characters'),
+  missionStatement: z
+    .string()
+    .min(50, 'Mission statement should be at least 50 characters')
+    .max(1500, 'Mission statement must be 1500 characters or fewer'),
   taxStatus: z.enum(['501c3', 'School', 'None']),
-  communityInterestText: z.string().optional(),
+  communityInterestText: z.string().max(2000, 'Must be 2000 characters or fewer').optional(),
   seedFundingGoalsCents: z.number().int().nonnegative().optional(),
-  
-  technicalSummary: z.string().optional(),
-  outreachSummary: z.string().optional(),
+
+  technicalSummary: z.string().max(2000, 'Must be 2000 characters or fewer').optional(),
+  outreachSummary: z.string().max(2000, 'Must be 2000 characters or fewer').optional(),
+  drivetrain: z.enum(DRIVETRAIN_OPTIONS).optional(),
+  buildSystem: z.enum(BUILD_SYSTEM_OPTIONS).optional(),
+  programming: z.enum(PROGRAMMING_OPTIONS).optional(),
   mediaUrls: z.array(z.string()).default([]),
   youtubeUrl: z.string().optional().nullable(),
   budgetItems: z.array(
@@ -34,7 +48,7 @@ export const teamOnboardingSchema = z.object({
     })
   }
   if (data.status === 'incubator') {
-    if (!data.communityInterestText || data.communityInterestText.length < 50) {
+    if (!data.communityInterestText || data.communityInterestText.length < 50 || data.communityInterestText.length > 2000) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Please describe community interest in at least 50 characters',

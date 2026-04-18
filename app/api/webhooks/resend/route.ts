@@ -12,7 +12,13 @@ export async function POST(req: Request) {
       'svix-signature': req.headers.get('svix-signature') || '',
     }
 
-    if (env.RESEND_WEBHOOK_SECRET) {
+    if (!env.RESEND_WEBHOOK_SECRET) {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('RESEND_WEBHOOK_SECRET is not configured; rejecting webhook')
+        return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 })
+      }
+      console.warn('[resend-webhook] RESEND_WEBHOOK_SECRET unset — skipping signature check (dev only)')
+    } else {
       try {
         const webhook = new Webhook(env.RESEND_WEBHOOK_SECRET)
         webhook.verify(payload, headers)

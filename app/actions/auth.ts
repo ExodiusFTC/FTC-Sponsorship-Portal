@@ -27,6 +27,7 @@ export async function signUp(data: SignupInput) {
     options: {
       data: {
         full_name: fullName,
+        age_confirmed_at: new Date().toISOString(),
       },
       emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback`,
     },

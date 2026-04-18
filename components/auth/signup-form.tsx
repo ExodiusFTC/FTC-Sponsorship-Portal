@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { signupSchema, type SignupInput } from '@/lib/schemas/auth'
+import { Checkbox } from '@/components/ui/checkbox'
 import { signUp } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,6 +27,7 @@ export function SignupForm() {
       email: '',
       password: '',
       confirmPassword: '',
+      ageConfirmed: undefined,
     },
   })
 
@@ -113,6 +115,29 @@ export function SignupForm() {
                     <Input type="password" {...field} />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="ageConfirmed"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value === true}
+                      onCheckedChange={(checked) => field.onChange(checked === true ? true : undefined)}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="font-medium">
+                      I confirm I am 18 years of age or older
+                    </FormLabel>
+                    <p className="text-xs text-muted-foreground">
+                      Required for COPPA compliance. All users must be verified adults.
+                    </p>
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />

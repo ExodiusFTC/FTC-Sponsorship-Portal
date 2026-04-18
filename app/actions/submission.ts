@@ -1,9 +1,9 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { submissionSchema, type SubmissionInput } from '@/lib/schemas/submission'
 import { redirect } from 'next/navigation'
-import { checkActionLimit } from '@/lib/rate-limit'
 
 async function getCoachTeamId() {
   const supabase = await createClient()
@@ -23,27 +23,41 @@ async function getCoachTeamId() {
 export async function saveSubmission(
   data: SubmissionInput,
   status: 'draft' | 'pending' = 'draft',
-  submissionId?: string
+  submissionId?: string,
+  variantLabel = 'default'
 ) {
   if (status === 'pending') {
-    const limit = await checkActionLimit('submit_pitch')
-    if (!limit.ok) return { error: 'rate_limited', retryAfterSeconds: limit.retryAfterSeconds, limit: limit.limit }
-
     const result = submissionSchema.safeParse(data)
     if (!result.success) return { error: 'Please complete all required fields before submitting' }
   }
 
   const ctx = await getCoachTeamId()
   if ('error' in ctx) return { error: ctx.error }
-  const { supabase, teamId } = ctx
+  const { supabase, user, teamId } = ctx
 
-  const payload = {
+  // Spec: max 3 pending submissions per rolling 7-day window
+  if (status === 'pending') {
+    const { count } = await supabase
+      .from('submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('team_id', teamId)
+      .eq('status', 'pending')
+      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+
+    if ((count ?? 0) >= 3) {
+      return { error: 'rate_limited', message: 'You may submit at most 3 proposals per 7-day window. Please wait for existing submissions to be reviewed.' }
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const payload: any = {
     team_id: teamId,
     sponsor_id: data.sponsorId,
     custom_pitch_alignment: data.customPitchAlignment ?? null,
     specific_needs_statement: data.specificNeedsStatement ?? null,
     local_connection_notes: data.localConnectionNotes ?? null,
     status,
+    variant_label: variantLabel,
   }
 
   if (submissionId) {
@@ -85,7 +99,18 @@ export async function saveSubmission(
     if (error) return { error: error.message }
   }
 
-  if (status === 'pending') redirect('/dashboard')
+  // Audit log for draft→pending transition (material state change)
+  if (status === 'pending') {
+    const admin = createAdminClient()
+    await admin.from('audit_log').insert({
+      actor_id: ctx.user.id,
+      action: 'submit_submission',
+      entity_type: 'submissions',
+      entity_id: submissionId ?? null,
+      metadata: { sponsor_id: data.sponsorId },
+    })
+    redirect('/dashboard')
+  }
   return { success: true }
 }
 
@@ -145,6 +170,46 @@ export async function autoSaveSubmissionDraft(
   const { data: inserted, error } = await supabase
     .from('submissions')
     .insert(payload)
+    .select('id')
+    .single()
+
+  if (error) return { error: error.message }
+  return { id: inserted.id }
+}
+
+/** Clone an existing draft to a new variant label (Application V2 versioning). */
+export async function cloneSubmission(
+  submissionId: string,
+  newVariantLabel: string
+): Promise<{ id?: string; error?: string }> {
+  const ctx = await getCoachTeamId()
+  if ('error' in ctx) return { error: ctx.error }
+  const { supabase, teamId } = ctx
+
+  const { data: source } = await supabase
+    .from('submissions')
+    .select('*')
+    .eq('id', submissionId)
+    .eq('team_id', teamId)
+    .single()
+
+  if (!source) return { error: 'Submission not found' }
+  if (source.status !== 'draft') return { error: 'Only draft submissions can be cloned' }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const clonePayload: any = {
+    team_id: teamId,
+    sponsor_id: source.sponsor_id,
+    custom_pitch_alignment: source.custom_pitch_alignment,
+    specific_needs_statement: source.specific_needs_statement,
+    local_connection_notes: source.local_connection_notes,
+    status: 'draft',
+    variant_label: newVariantLabel,
+  }
+
+  const { data: inserted, error } = await supabase
+    .from('submissions')
+    .insert(clonePayload)
     .select('id')
     .single()
 
