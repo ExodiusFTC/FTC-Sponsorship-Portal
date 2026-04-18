@@ -22,7 +22,7 @@ export async function lookupFTCTeam(
 export async function createTeam(data: TeamOnboardingInput) {
   const result = teamOnboardingSchema.safeParse(data)
   if (!result.success) {
-    return { error: 'Invalid data provided' }
+    return { error: 'Invalid data provided', details: result.error.format() }
   }
 
   const supabase = await createClient()
@@ -40,9 +40,15 @@ export async function createTeam(data: TeamOnboardingInput) {
     city,
     state,
     missionStatement,
-    is501c3,
+    taxStatus,
     communityInterestText,
     seedFundingGoalsCents,
+    technicalSummary,
+    outreachSummary,
+    mediaUrls,
+    youtubeUrl,
+    budgetItems,
+    financialAskCents,
   } = result.data
 
   if (status === 'existing' && ftcTeamNumber) {
@@ -63,9 +69,20 @@ export async function createTeam(data: TeamOnboardingInput) {
       city,
       state,
       mission_statement: missionStatement,
-      is_501c3: is501c3,
+      tax_status: taxStatus as any,
       community_interest_text: communityInterestText ?? null,
       seed_funding_goals_cents: seedFundingGoalsCents ?? 0,
+      technical_summary: technicalSummary,
+      outreach_summary: outreachSummary,
+      media_urls: mediaUrls || [],
+      youtube_url: youtubeUrl,
+      budget_items: (budgetItems || []).map(item => ({
+        label: item.label,
+        qty: item.qty,
+        unit_cost_cents: item.unitCostCents,
+        total_cents: item.totalCents
+      })),
+      financial_ask_cents: financialAskCents ?? 0,
     })
     .select()
     .single()
@@ -130,7 +147,18 @@ export async function updateTeam(id: string, data: Partial<TeamOnboardingInput>)
       city: data.city,
       state: data.state,
       mission_statement: data.missionStatement,
-      is_501c3: data.is501c3,
+      tax_status: data.taxStatus as any,
+      technical_summary: data.technicalSummary,
+      outreach_summary: data.outreachSummary,
+      media_urls: data.mediaUrls,
+      youtube_url: data.youtubeUrl,
+      budget_items: (data.budgetItems || []).map(item => ({
+        label: item.label,
+        qty: item.qty,
+        unit_cost_cents: item.unitCostCents,
+        total_cents: item.totalCents
+      })),
+      financial_ask_cents: data.financialAskCents,
     })
     .eq('id', id)
     .eq('owner_id', user.id)

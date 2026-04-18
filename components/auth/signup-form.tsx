@@ -50,7 +50,7 @@ export function SignupForm() {
       <CardHeader>
         <CardTitle>Create an Account</CardTitle>
         <CardDescription>
-          Sign up as a coach to start building pitches for your FTC team.
+          Sign up as a coach to start building portfolios for your FTC team.
         </CardDescription>
       </CardHeader>
       <CardContent>

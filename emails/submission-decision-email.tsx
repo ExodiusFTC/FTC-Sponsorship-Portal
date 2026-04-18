@@ -11,39 +11,39 @@ import {
 } from '@react-email/components'
 import * as React from 'react'
 
-type Decision = 'approved' | 'rejected' | 'changes_requested'
+type Decision = 'approved' | 'declined' | 'changes_requested'
 
-interface PitchDecisionEmailProps {
+interface SubmissionDecisionEmailProps {
   coachName: string
-  pitchTitle: string
+  submissionTitle: string
   decision: Decision
   feedback?: string | null
 }
 
 const DECISION_COPY: Record<Decision, { subject: string; headline: string; body: string }> = {
   approved: {
-    subject: 'Your pitch has been approved 🎉',
-    headline: 'Great news — your pitch is approved!',
-    body: "We've reviewed your pitch and it's been approved. Sponsor outreach emails are now being sent on your behalf. Replies from sponsors will go directly to your email.",
+    subject: 'Your submission has been approved 🎉',
+    headline: 'Great news — your submission is approved!',
+    body: "We've reviewed your submission and it's been approved. Sponsor outreach emails are now being sent on your behalf. Replies from sponsors will go directly to your email.",
   },
-  rejected: {
-    subject: 'Update on your pitch submission',
-    headline: 'Your pitch was not approved',
-    body: "After review, we were unable to approve this pitch at this time. Please see the admin's feedback below.",
+  declined: {
+    subject: 'Update on your submission',
+    headline: 'Your submission was not approved',
+    body: "After review, we were unable to approve this submission at this time. Please see the admin's feedback below.",
   },
   changes_requested: {
-    subject: 'Changes requested on your pitch',
-    headline: 'Your pitch needs some changes',
-    body: 'Our team reviewed your pitch and would like you to make a few changes before we can approve it. Please log in, update the pitch, and resubmit.',
+    subject: 'Changes requested on your submission',
+    headline: 'Your submission needs some changes',
+    body: 'Our team reviewed your submission and would like you to make a few changes before we can approve it. Please log in, update your portfolio or the custom pitch, and resubmit.',
   },
 }
 
-export default function PitchDecisionEmail({
+export default function SubmissionDecisionEmail({
   coachName,
-  pitchTitle,
+  submissionTitle,
   decision,
   feedback,
-}: PitchDecisionEmailProps) {
+}: SubmissionDecisionEmailProps) {
   const copy = DECISION_COPY[decision]
 
   return (
@@ -55,7 +55,7 @@ export default function PitchDecisionEmail({
           <Heading style={h1}>Hello {coachName},</Heading>
           <Heading style={h2}>{copy.headline}</Heading>
           <Text style={text}>
-            Pitch: <strong>{pitchTitle}</strong>
+            Submission: <strong>{submissionTitle}</strong>
           </Text>
           <Text style={text}>{copy.body}</Text>
 
@@ -68,7 +68,7 @@ export default function PitchDecisionEmail({
 
           <Hr style={hr} />
           <Text style={footer}>
-            FTC Sponsorship Portal · You received this email because you submitted a pitch on our platform.
+            Matchmaker · You received this email because you submitted a portfolio on our platform.
           </Text>
         </Container>
       </Body>

@@ -1,88 +1,71 @@
+import SubmissionEmail from '@/emails/submission-email'
 import { Resend } from 'resend'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { env } from '@/lib/env'
-import PitchEmail from '@/emails/pitch-email'
 
 const resend = new Resend(env.RESEND_API_KEY)
 
-export async function dispatchApprovedPitch(pitchId: string) {
-  const supabase = createAdminClient()
+export async function dispatchApprovedSubmission(submissionId: string) {
+  const supabase = await createClient()
 
-  // 1. Fetch pitch, team, and targets
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: pitch } = await (supabase as any)
-    .from('pitches')
+  // 1. Fetch submission, team, and targets
+  const { data: submission } = await supabase
+    .from('submissions')
     .select(`
       *,
-      teams (
+      teams:team_id (
         *,
-        profiles ( email )
+        profiles:owner_id (email, full_name)
       ),
-      pitch_sponsor_targets (
-        id, sponsor_id, sponsors ( contact_email, contact_name, company_name )
+      sponsors:sponsor_id (
+        *
       )
     `)
-    .eq('id', pitchId)
+    .eq('id', submissionId)
     .single()
 
-  if (!pitch || !pitch.pitch_sponsor_targets || pitch.pitch_sponsor_targets.length === 0) {
-    console.error('Pitch not found or no targets available')
-    return false
+  if (!submission || !submission.sponsors || !submission.teams) {
+    console.error('Submission not found or missing relations')
+    return { error: 'Submission not found' }
   }
 
-  // 2. Prepare emails (batch)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const targets = pitch.pitch_sponsor_targets as any[]
-  
-  for (const target of targets) {
-    try {
-      const { data, error } = await resend.emails.send({
+  const sponsor = submission.sponsors as any
+  const team = submission.teams as any
+
+  // 2. Dispatch email to sponsor
+  try {
+      const result = await resend.emails.send({
         from: env.RESEND_FROM_EMAIL,
-        to: target.sponsors.contact_email,
-        replyTo: pitch.teams.profiles.email,
-        subject: `Sponsorship Opportunity: ${pitch.teams.team_name} - ${pitch.title}`,
-        react: PitchEmail({
-          sponsorContactName: target.sponsors.contact_name,
-          teamName: pitch.teams.team_name,
-          pitchTitle: pitch.title,
-          pitchSummary: pitch.summary,
-          costExplanation: pitch.cost_explanation,
-          financialAskCents: pitch.financial_ask_cents,
-          lineItems: pitch.line_items as any,
+        to: sponsor.contact_email,
+        replyTo: team.profiles.email,
+        subject: `Sponsorship Opportunity: ${team.team_name}`,
+        react: SubmissionEmail({
+          teamName: team.team_name,
+          missionStatement: team.mission_statement,
+          technicalSummary: team.technical_summary,
+          outreachSummary: team.outreach_summary,
+          financialAskCents: team.financial_ask_cents,
+          budgetItems: team.budget_items as any,
+          customPitchAlignment: submission.custom_pitch_alignment || '',
+          specificNeedsStatement: submission.specific_needs_statement || '',
         }),
         tags: [
-          { name: 'pitch_id', value: pitch.id },
-          { name: 'sponsor_id', value: target.sponsor_id },
-          { name: 'target_id', value: target.id }
+          { name: 'submission_id', value: submission.id },
+          { name: 'sponsor_id', value: sponsor.id },
         ],
       })
 
-      if (error) {
-        console.error('Error sending email to', target.sponsors.contact_email, error)
+      if (result.data?.id) {
         await supabase
-          .from('pitch_sponsor_targets')
-          .update({ dispatch_status: 'failed' })
-          .eq('id', target.id)
-      } else {
-        await supabase
-          .from('pitch_sponsor_targets')
-          .update({ 
-            dispatch_status: 'sent',
-            resend_message_id: data?.id,
-            sent_at: new Date().toISOString()
-          })
-          .eq('id', target.id)
+          .from('submissions')
+          .update({ resend_message_id: result.data.id })
+          .eq('id', submissionId)
       }
-    } catch (e) {
-      console.error('Exception during email dispatch', e)
-    }
+
+      if (result.error) {
+        console.error('Failed to send email to', sponsor.contact_email, result.error)
+      }
+  } catch (e) {
+    console.error('Failed to dispatch email', e)
   }
-
-  // Update pitch status to dispatched
-  await supabase
-    .from('pitches')
-    .update({ status: 'dispatched' })
-    .eq('id', pitchId)
-
-  return true
 }

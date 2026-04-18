@@ -7,18 +7,16 @@ import { cn } from '@/lib/utils'
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   draft:             { label: 'Draft',             color: 'bg-muted text-muted-foreground' },
-  submitted:         { label: 'Submitted',         color: 'bg-blue-100 text-blue-800' },
-  changes_requested: { label: 'Changes Requested', color: 'bg-amber-100 text-amber-800' },
-  approved:          { label: 'Approved',          color: 'bg-emerald-100 text-emerald-800' },
-  rejected:          { label: 'Rejected',          color: 'bg-red-100 text-red-800' },
-  dispatched:        { label: 'Dispatched',        color: 'bg-purple-100 text-purple-800' },
+  pending:           { label: 'Pending Review',    color: 'bg-blue-100 text-blue-800' },
+  approved:          { label: 'Approved & Sent',   color: 'bg-emerald-100 text-emerald-800' },
+  declined:          { label: 'Declined',          color: 'bg-red-100 text-red-800' },
 }
 
 export default async function AnalyticsPage() {
   const supabase = await createClient()
 
   const { data: capacityData } = await supabase.from('v_sponsor_capacity').select('*')
-  const { data: pitchSummary } = await supabase.from('v_pitch_summary').select('*')
+  const { data: submissionSummary } = await (supabase as any).from('v_submission_summary').select('*')
   const { data: pendingCoaches } = await supabase
     .from('profiles')
     .select('id, full_name, created_at')
@@ -27,18 +25,24 @@ export default async function AnalyticsPage() {
     .not('coach_credentials_url', 'is', null)
     .order('created_at', { ascending: true })
 
-  const totalRequested = pitchSummary?.reduce((s, p) => s + p.financial_ask_cents, 0) ?? 0
-  const totalCapacity  = capacityData?.reduce((s, c) => s + c.funding_cap_cents, 0) ?? 0
-  const totalUsed      = capacityData?.reduce((s, c) => s + c.funding_used_cents, 0) ?? 0
-  const totalSent      = pitchSummary?.reduce((s, p) => s + Number(p.sent_count), 0) ?? 0
+  // totalRequested is the sum of unique team financial asks for all teams with at least one submission
+  const uniqueTeamAsks = new Map<string, number>()
+  submissionSummary?.forEach((s: any) => {
+    uniqueTeamAsks.set(s.team_name, s.financial_ask_cents)
+  })
+  const totalRequested = Array.from(uniqueTeamAsks.values()).reduce((sum, ask) => sum + ask, 0)
+  
+  const totalCapacity  = capacityData?.reduce((s, c) => s + (c.funding_cap_cents ?? 0), 0) ?? 0
+  const totalUsed      = capacityData?.reduce((s, c) => s + (c.funding_used_cents ?? 0), 0) ?? 0
+  const totalSent      = submissionSummary?.filter((s: any) => s.status === 'approved').length ?? 0
   const activeSponsors = capacityData?.filter(s => s.status === 'active').length ?? 0
   const pendingCount   = pendingCoaches?.length ?? 0
 
   const statusCounts: Record<string, number> = {}
-  for (const p of pitchSummary ?? []) {
-    statusCounts[p.status] = (statusCounts[p.status] ?? 0) + 1
+  for (const s of submissionSummary ?? []) {
+    statusCounts[s.status] = (statusCounts[s.status] ?? 0) + 1
   }
-  const totalPitches = pitchSummary?.length ?? 0
+  const totalSubmissions = submissionSummary?.length ?? 0
 
   return (
     <div className="container py-8 space-y-8">
@@ -58,7 +62,7 @@ export default async function AnalyticsPage() {
           value={`$${((totalCapacity - totalUsed) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
           sub={`of $${(totalCapacity / 100).toLocaleString('en-US')} limit`}
         />
-        <StatCard label="Proposals Sent" value={String(totalSent)} />
+        <StatCard label="Approved & Sent" value={String(totalSent)} />
         <StatCard label="Active Sponsors" value={String(activeSponsors)} />
         <StatCard
           label="Pending Verifications"
@@ -78,10 +82,10 @@ export default async function AnalyticsPage() {
               <div className="space-y-4">
                 {capacityData
                   .filter(s => s.status === 'active')
-                  .sort((a, b) => b.utilization_pct - a.utilization_pct)
+                  .sort((a, b) => (b.utilization_pct ?? 0) - (a.utilization_pct ?? 0))
                   .slice(0, 8)
                   .map(sponsor => {
-                    const pct = Math.min(Number(sponsor.utilization_pct), 100)
+                    const pct = Math.min(Number(sponsor.utilization_pct ?? 0), 100)
                     return (
                       <div key={sponsor.id}>
                         <div className="flex justify-between items-center mb-1 text-sm">
@@ -98,7 +102,7 @@ export default async function AnalyticsPage() {
                           />
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          ${((sponsor.funding_cap_cents - sponsor.funding_used_cents) / 100).toLocaleString('en-US')} remaining
+                          ${(((sponsor.funding_cap_cents ?? 0) - (sponsor.funding_used_cents ?? 0)) / 100).toLocaleString('en-US')} remaining
                         </p>
                       </div>
                     )
@@ -112,14 +116,14 @@ export default async function AnalyticsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Pitch Pipeline</CardTitle>
+            <CardTitle>Submission Pipeline</CardTitle>
           </CardHeader>
           <CardContent>
-            {totalPitches > 0 ? (
+            {totalSubmissions > 0 ? (
               <div className="space-y-3">
                 {Object.entries(STATUS_LABELS).map(([key, { label, color }]) => {
                   const count = statusCounts[key] ?? 0
-                  const pct = totalPitches > 0 ? Math.round((count / totalPitches) * 100) : 0
+                  const pct = totalSubmissions > 0 ? Math.round((count / totalSubmissions) * 100) : 0
                   return (
                     <div key={key}>
                       <div className="flex justify-between items-center mb-1 text-sm">
@@ -127,7 +131,7 @@ export default async function AnalyticsPage() {
                           {label}
                         </span>
                         <span className="text-muted-foreground">
-                          {count} pitch{count !== 1 ? 'es' : ''}
+                          {count} submission{count !== 1 ? 's' : ''}
                         </span>
                       </div>
                       <div className="w-full bg-muted rounded-full h-1.5">
@@ -141,44 +145,40 @@ export default async function AnalyticsPage() {
                 })}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">No pitches yet.</p>
+              <p className="text-sm text-muted-foreground text-center py-8">No submissions yet.</p>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent pitch activity table */}
+      {/* Recent submission activity table */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Pitch Activity</CardTitle>
+          <CardTitle>Recent Activity</CardTitle>
         </CardHeader>
         <CardContent>
-          {totalPitches > 0 ? (
+          {totalSubmissions > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-muted-foreground text-left">
                     <th className="pb-2 pr-4 font-medium">Team</th>
-                    <th className="pb-2 pr-4 font-medium">Title</th>
-                    <th className="pb-2 pr-4 font-medium">Ask</th>
-                    <th className="pb-2 pr-4 font-medium text-center">Targets</th>
-                    <th className="pb-2 pr-4 font-medium text-center">Sent</th>
+                    <th className="pb-2 pr-4 font-medium">Sponsor</th>
+                    <th className="pb-2 pr-4 font-medium">Portfolio Ask</th>
                     <th className="pb-2 font-medium">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {pitchSummary!
+                  {(submissionSummary as any[])!
                     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
                     .slice(0, 10)
-                    .map(pitch => {
-                      const meta = STATUS_LABELS[pitch.status] ?? { label: pitch.status, color: 'bg-muted' }
+                    .map(submission => {
+                      const meta = STATUS_LABELS[submission.status] ?? { label: submission.status, color: 'bg-muted' }
                       return (
-                        <tr key={pitch.id} className="border-b last:border-0">
-                          <td className="py-2 pr-4 font-medium">{pitch.team_name}</td>
-                          <td className="py-2 pr-4 max-w-[180px] truncate text-muted-foreground">{pitch.title}</td>
-                          <td className="py-2 pr-4">${(pitch.financial_ask_cents / 100).toLocaleString('en-US')}</td>
-                          <td className="py-2 pr-4 text-center">{Number(pitch.target_count)}</td>
-                          <td className="py-2 pr-4 text-center">{Number(pitch.sent_count)}</td>
+                        <tr key={submission.id} className="border-b last:border-0">
+                          <td className="py-2 pr-4 font-medium">{submission.team_name}</td>
+                          <td className="py-2 pr-4 max-w-[180px] truncate text-muted-foreground">{submission.company_name}</td>
+                          <td className="py-2 pr-4">${(submission.financial_ask_cents / 100).toLocaleString('en-US')}</td>
                           <td className="py-2">
                             <span className={cn('px-2 py-0.5 rounded text-xs font-medium', meta.color)}>
                               {meta.label}
@@ -191,7 +191,7 @@ export default async function AnalyticsPage() {
               </table>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-8">No pitches yet.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">No activity yet.</p>
           )}
         </CardContent>
       </Card>

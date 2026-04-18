@@ -1,6 +1,6 @@
-# FTC Sponsorship Portal
+# Matchmaker: The Common App for FTC
 
-A moderated, invite-only platform connecting FIRST Tech Challenge (FTC) robotics teams with verified corporate sponsors. Coaches build structured pitches; admins review and approve; Resend dispatches personalized outreach to sponsors. Replies go directly to the coach — no off-platform CRM needed.
+A "Dynamic Portfolio" and Verified Grant Portal connecting FIRST Tech Challenge (FTC) robotics teams with verified corporate sponsors. Teams maintain a professional "Base Resume" (Global Team Data) and generate Customized Submissions with unique, trackable URLs for sponsors. Admins vet the quality of the 'Custom Pitch' fields before dispatching links to sponsors.
 
 ## Architecture
 
@@ -24,8 +24,8 @@ A moderated, invite-only platform connecting FIRST Tech Challenge (FTC) robotics
 
 | Role | Description |
 |---|---|
-| `coach` | Adult advisor who registers, builds team profile, creates pitches |
-| `admin` | Platform operator who verifies coaches, reviews pitches, and triggers dispatch |
+| `coach` | Adult advisor who registers, builds team portfolio, creates submissions |
+| `admin` | Platform operator who verifies coaches, reviews submissions, and triggers dispatch |
 
 Sponsors have no platform login in v1 — they receive emails and reply directly to the coach.
 
@@ -81,13 +81,13 @@ App runs at [http://localhost:3000](http://localhost:3000).
 ```
 app/
   (auth)/          # Login, signup, verify-email, credential upload
-  (coach)/         # Dashboard, team edit, pitch builder, sponsor browser
+  (coach)/         # Dashboard, team edit, submission builder, sponsor browser
   (admin)/         # Moderation queue, sponsor management, analytics
   api/
     webhooks/      # Resend bounce/open webhook handler
 components/
-  pitch-builder/   # Multi-step pitch form with live line-item totals
-  team/            # Onboarding and team profile forms
+  portfolio-builder/ # Multi-step submission form
+  team/            # Onboarding and master portfolio forms
   sponsor/         # Sponsor application form
   ui/              # shadcn/ui primitives
 lib/
@@ -107,8 +107,8 @@ emails/            # React Email templates
 | Chunk | Status | Description |
 |---|---|---|
 | 1 | Done | Scaffold, auth, DB schema, RLS, Supabase clients, seed |
-| 2 | Pending | Team profiles, FTC roster validator, incubator flow |
-| 3 | Pending | Smart pitch builder with media upload and auto-save |
+| 2 | Done | Master Portfolio (Resume) flow, FTC roster validator, incubator flow |
+| 3 | Done | Submission builder with custom pitch alignment |
 | 4 | Pending | Sponsor database, targeting UI, opt-in application |
-| 5 | Pending | Admin moderation engine and Resend dispatch |
-| 6 | Pending | Analytics, COPPA hardening, E2E tests, launch prep |
+| 5 | Done | Admin moderation queue and Resend dispatch |
+| 6 | Pending | Analytics hardening, COPPA hardening, E2E tests, launch prep |

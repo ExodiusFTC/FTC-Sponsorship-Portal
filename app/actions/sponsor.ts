@@ -31,12 +31,12 @@ export async function submitSponsorApplication(data: SponsorApplicationInput) {
     return { error: error.message }
   }
 
-  await sendSponsorApplicationConfirmation({
-    contactEmail,
+  await sendSponsorApplicationConfirmation(
     companyName,
-    contactName,
-    proposedCapCents,
-  })
+    contactEmail,
+    contactName ?? 'Sponsor',
+    proposedCapCents
+  )
 
   return { success: true }
 }

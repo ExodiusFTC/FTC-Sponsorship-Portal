@@ -4,7 +4,7 @@
 BEGIN;
 
 -- Optional: Create pgTAP extension if it doesn't exist (Requires superuser, so we wrap it or assume it's installed by supabase)
--- CREATE EXTENSION IF NOT EXISTS pgtap;
+CREATE EXTENSION IF NOT EXISTS pgtap;
 
 -- To run these tests:
 -- SELECT * FROM runtests();

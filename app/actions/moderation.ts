@@ -2,11 +2,10 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { redirect } from 'next/navigation'
 import { dispatchApprovedPitch } from '@/lib/dispatch'
-import { sendPitchDecisionEmail } from '@/lib/notify'
+import { sendSubmissionDecisionEmail } from '@/lib/notify'
 
-export async function approvePitch(pitchId: string) {
+export async function approveSubmission(submissionId: string) {
   const authClient = await createClient()
   const { data: { user } } = await authClient.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
@@ -23,36 +22,36 @@ export async function approvePitch(pitchId: string) {
 
   const supabase = createAdminClient()
 
-  // 1. Update pitch status
-  const { error: pitchError } = await supabase
-    .from('pitches')
+  // 1. Update submission status
+  const { error: subError } = await supabase
+    .from('submissions')
     .update({ 
       status: 'approved',
       reviewed_by: user.id,
       reviewed_at: new Date().toISOString(),
     })
-    .eq('id', pitchId)
+    .eq('id', submissionId)
 
-  if (pitchError) return { error: pitchError.message }
+  if (subError) return { error: subError.message }
 
   // 2. Audit Log
   await supabase.from('audit_log').insert({
     actor_id: user.id,
-    action: 'approve_pitch',
-    entity_type: 'pitches',
-    entity_id: pitchId,
+    action: 'approve_submission',
+    entity_type: 'submissions',
+    entity_id: submissionId,
   })
 
-  // 3. Notify coach + dispatch to sponsors
+  // 3. Notify coach + dispatch to sponsor
   await Promise.all([
-    sendPitchDecisionEmail(pitchId, 'approved'),
-    dispatchApprovedPitch(pitchId),
+    sendSubmissionDecisionEmail(submissionId, 'approved'),
+    dispatchApprovedSubmission(submissionId),
   ])
 
   return { success: true }
 }
 
-export async function rejectPitch(pitchId: string, feedback: string) {
+export async function declineSubmission(submissionId: string, feedback: string) {
   const authClient = await createClient()
   const { data: { user } } = await authClient.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
@@ -68,31 +67,31 @@ export async function rejectPitch(pitchId: string, feedback: string) {
   const supabase = createAdminClient()
 
   const { error } = await supabase
-    .from('pitches')
+    .from('submissions')
     .update({ 
-      status: 'rejected',
+      status: 'declined',
       admin_feedback: feedback,
       reviewed_by: user.id,
       reviewed_at: new Date().toISOString(),
     })
-    .eq('id', pitchId)
+    .eq('id', submissionId)
 
   if (error) return { error: error.message }
 
   await supabase.from('audit_log').insert({
     actor_id: user.id,
-    action: 'reject_pitch',
-    entity_type: 'pitches',
-    entity_id: pitchId,
+    action: 'decline_submission',
+    entity_type: 'submissions',
+    entity_id: submissionId,
     metadata: { feedback },
   })
 
-  await sendPitchDecisionEmail(pitchId, 'rejected', feedback)
+  await sendSubmissionDecisionEmail(submissionId, 'declined', feedback)
 
   return { success: true }
 }
 
-export async function requestEdit(pitchId: string, feedback: string) {
+export async function requestEdit(submissionId: string, feedback: string) {
   const authClient = await createClient()
   const { data: { user } } = await authClient.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
@@ -108,26 +107,26 @@ export async function requestEdit(pitchId: string, feedback: string) {
   const supabase = createAdminClient()
 
   const { error } = await supabase
-    .from('pitches')
+    .from('submissions')
     .update({ 
       status: 'changes_requested',
       admin_feedback: feedback,
       reviewed_by: user.id,
       reviewed_at: new Date().toISOString(),
     })
-    .eq('id', pitchId)
+    .eq('id', submissionId)
 
   if (error) return { error: error.message }
 
   await supabase.from('audit_log').insert({
     actor_id: user.id,
-    action: 'request_edit_pitch',
-    entity_type: 'pitches',
-    entity_id: pitchId,
+    action: 'request_edit_submission',
+    entity_type: 'submissions',
+    entity_id: submissionId,
     metadata: { feedback },
   })
 
-  await sendPitchDecisionEmail(pitchId, 'changes_requested', feedback)
+  await sendSubmissionDecisionEmail(submissionId, 'changes_requested', feedback)
 
   return { success: true }
 }

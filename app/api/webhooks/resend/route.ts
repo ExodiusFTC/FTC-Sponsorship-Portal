@@ -50,8 +50,8 @@ export async function POST(req: Request) {
 
     if (statusToSet) {
       const { error } = await supabase
-        .from('pitch_sponsor_targets')
-        .update({ dispatch_status: statusToSet as any })
+        .from('submissions')
+        .update({ status: statusToSet as any })
         .eq('resend_message_id', data.email_id)
 
       if (error) {

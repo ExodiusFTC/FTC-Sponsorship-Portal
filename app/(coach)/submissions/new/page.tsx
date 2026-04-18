@@ -1,8 +1,8 @@
-import { PitchForm } from '@/components/pitch-builder/pitch-form'
+import { PortfolioForm } from '@/components/portfolio-builder/portfolio-form'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
-export default async function NewPitchPage({ searchParams }: { searchParams: Promise<{ sponsor?: string }> }) {
+export default async function NewSubmissionPage({ searchParams }: { searchParams: Promise<{ sponsor?: string }> }) {
   const params = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -33,7 +33,7 @@ export default async function NewPitchPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="container py-8">
-      <PitchForm
+      <PortfolioForm
         sponsors={sponsors ?? []}
         preselectedSponsorId={preselectedSponsorId}
       />

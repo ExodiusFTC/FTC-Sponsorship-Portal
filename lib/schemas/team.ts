@@ -8,9 +8,23 @@ export const teamOnboardingSchema = z.object({
   city: z.string().min(2, 'City is required'),
   state: z.string().min(2, 'State is required'),
   missionStatement: z.string().min(50, 'Mission statement should be at least 50 characters'),
-  is501c3: z.boolean(),
+  taxStatus: z.enum(['501c3', 'School', 'None']),
   communityInterestText: z.string().optional(),
   seedFundingGoalsCents: z.number().int().nonnegative().optional(),
+  
+  technicalSummary: z.string().optional(),
+  outreachSummary: z.string().optional(),
+  mediaUrls: z.array(z.string()).default([]),
+  youtubeUrl: z.string().optional().nullable(),
+  budgetItems: z.array(
+    z.object({
+      label: z.string().min(1, 'Label required'),
+      qty: z.number().int().positive('Must be positive'),
+      unitCostCents: z.number().int().nonnegative('Must be non-negative'),
+      totalCents: z.number().int().nonnegative(),
+    })
+  ).default([]),
+  financialAskCents: z.number().int().nonnegative().default(0),
 }).superRefine((data, ctx) => {
   if (data.status === 'existing' && !data.ftcTeamNumber) {
     ctx.addIssue({

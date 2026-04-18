@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
-import { PitchRejectionSummary } from '@/components/coach/pitch-rejection-summary'
+import { SubmissionRejectionSummary } from '@/components/coach/submission-rejection-summary'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -27,14 +27,13 @@ export default async function DashboardPage() {
     .select('*')
     .eq('team_id', team.id)
 
-  const { data: pitches } = await supabase
-    .from('pitches')
-    .select('id, title, status, financial_ask_cents, admin_feedback, updated_at')
-    .eq('team_id', team.id)
+  const { data: submissions } = await (supabase as any)
+    .from('v_submission_summary')
+    .eq('owner_id', user.id)
     .order('updated_at', { ascending: false })
 
-  const pitchesWithFeedback = pitches?.filter(
-    (p) => p.admin_feedback && (p.status === 'rejected' || p.status === 'changes_requested')
+  const submissionsWithFeedback = (submissions as any)?.filter(
+    (s: any) => s.status === 'declined' || s.status === 'changes_requested'
   )
 
   return (
@@ -46,9 +45,14 @@ export default async function DashboardPage() {
             {team.status === 'existing' ? `FTC Team #${team.ftc_team_number}` : 'Incubator Team'}
           </p>
         </div>
-        <Link href="/team/edit" className={buttonVariants({ variant: 'outline' })}>
-          Edit Profile
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/submissions/new" className={buttonVariants({ variant: 'default' })}>
+            Submit Portfolio
+          </Link>
+          <Link href="/team/edit" className={buttonVariants({ variant: 'outline' })}>
+            Edit Portfolio
+          </Link>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-8">
@@ -113,15 +117,19 @@ export default async function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Tax Status</p>
-                <p>{team.is_501c3 ? '501(c)(3) Non-profit' : 'Standard'}</p>
+                <p>{team.tax_status === '501c3' ? '501(c)(3) Non-profit' : team.tax_status}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Portfolio Ask</p>
+                <p>${((team.financial_ask_cents || 0) / 100).toLocaleString('en-US')}</p>
               </div>
             </CardContent>
           </Card>
 
-          {pitchesWithFeedback && pitchesWithFeedback.length > 0 && (
+          {submissionsWithFeedback && submissionsWithFeedback.length > 0 && (
             <div className="space-y-4">
-              {pitchesWithFeedback.map((p) => (
-                <PitchRejectionSummary key={p.id} pitch={p} />
+              {submissionsWithFeedback.map((s: any) => (
+                <SubmissionRejectionSummary key={s.id} submission={{...s, sponsor_name: s.company_name}} />
               ))}
             </div>
           )}
@@ -129,35 +137,33 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Pitches</CardTitle>
-                <CardDescription>Your sponsorship pitches.</CardDescription>
+                <CardTitle>Submissions</CardTitle>
+                <CardDescription>Status of your portfolios sent to sponsors.</CardDescription>
               </div>
-              <Link href="/pitches/new" className={buttonVariants({ size: 'sm' })}>
-                New
-              </Link>
             </CardHeader>
             <CardContent className="space-y-3">
-              {pitches && pitches.length > 0 ? (
-                pitches.map((p) => {
-                  const editable = p.status === 'draft' || p.status === 'changes_requested'
+              {submissions && submissions.length > 0 ? (
+                submissions.map((s: any) => {
+                  const editable = s.status === 'draft' || s.status === 'changes_requested'
                   return (
                     <Link
-                      key={p.id}
-                      href={`/pitches/${p.id}/edit`}
+                      key={s.id}
+                      href={`/submissions/${s.id}/edit`}
                       className="block rounded border p-3 hover:bg-muted/50 transition"
                     >
                       <div className="flex justify-between items-start gap-2">
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium truncate">{p.title}</p>
+                          <p className="font-medium truncate">{s.company_name}</p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            ${(p.financial_ask_cents / 100).toFixed(2)}
+                            {new Date(s.updated_at).toLocaleDateString()}
                           </p>
                         </div>
                         <span className={cn(
                           'text-xs px-2 py-1 rounded font-medium shrink-0',
+                          s.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
                           editable ? 'bg-amber-100 text-amber-800' : 'bg-muted text-muted-foreground'
                         )}>
-                          {p.status.replace('_', ' ')}
+                          {s.status.replace('_', ' ')}
                         </span>
                       </div>
                     </Link>
@@ -165,7 +171,7 @@ export default async function DashboardPage() {
                 })
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  No pitches yet. Create one to get started.
+                  No submissions yet. Choose a sponsor to get started.
                 </p>
               )}
             </CardContent>

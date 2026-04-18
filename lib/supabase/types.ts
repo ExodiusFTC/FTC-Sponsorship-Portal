@@ -6,22 +6,15 @@ export type UserRole = 'coach' | 'admin'
 export type TeamStatus = 'existing' | 'incubator'
 export type SponsorStatus = 'active' | 'inactive' | 'pending_review'
 export type SponsorSource = 'admin_added' | 'public_optin'
-export type PitchStatus =
-  | 'draft'
-  | 'submitted'
-  | 'under_review'
-  | 'changes_requested'
-  | 'approved'
-  | 'rejected'
-  | 'dispatched'
-export type DispatchStatus = 'pending' | 'sent' | 'failed' | 'bounced' | 'opened'
 export type ApplicationStatus = 'pending' | 'approved' | 'rejected'
+export type TaxStatus = '501c3' | 'School' | 'None'
+export type SubmissionStatus = 'draft' | 'pending' | 'approved' | 'declined' | 'changes_requested' | 'opened' | 'bounced' | 'delivered'
 
 // ---------------------------------------------------------------------------
-// Line item type for pitches.line_items JSONB
+// Line item type for teams.budget_items JSONB
 // ---------------------------------------------------------------------------
 
-export type PitchLineItem = {
+export type BudgetItem = {
   label: string
   qty: number
   unit_cost_cents: number
@@ -53,10 +46,16 @@ export type Team = {
   city: string | null
   state: string | null
   mission_statement: string | null
-  is_501c3: boolean
+  tax_status: TaxStatus
   logo_url: string | null
   community_interest_text: string | null
   seed_funding_goals_cents: number
+  technical_summary: string | null
+  outreach_summary: string | null
+  media_urls: string[]
+  youtube_url: string | null
+  budget_items: BudgetItem[]
+  financial_ask_cents: number
   created_at: string
   updated_at: string
 }
@@ -89,30 +88,18 @@ export type Sponsor = {
   updated_at: string
 }
 
-export type Pitch = {
+export type Submission = {
   id: string
   team_id: string
-  title: string
-  summary: string | null
-  financial_ask_cents: number
-  cost_explanation: string | null
-  line_items: PitchLineItem[]
-  media_urls: string[]
-  status: PitchStatus
+  sponsor_id: string
+  custom_pitch_alignment: string | null
+  specific_needs_statement: string | null
+  local_connection_notes: string | null
+  status: SubmissionStatus
+  resend_message_id: string | null
   admin_feedback: string | null
   reviewed_by: string | null
   reviewed_at: string | null
-  created_at: string
-  updated_at: string
-}
-
-export type PitchSponsorTarget = {
-  id: string
-  pitch_id: string
-  sponsor_id: string
-  dispatch_status: DispatchStatus
-  resend_message_id: string | null
-  sent_at: string | null
   created_at: string
   updated_at: string
 }
@@ -164,10 +151,16 @@ export type TeamInsert = {
   city?: string | null
   state?: string | null
   mission_statement?: string | null
-  is_501c3?: boolean
+  tax_status?: TaxStatus
   logo_url?: string | null
   community_interest_text?: string | null
   seed_funding_goals_cents?: number
+  technical_summary?: string | null
+  outreach_summary?: string | null
+  media_urls?: string[]
+  youtube_url?: string | null
+  budget_items?: BudgetItem[]
+  financial_ask_cents?: number
 }
 
 export type TeamAchievementInsert = {
@@ -193,26 +186,17 @@ export type SponsorInsert = {
   notes?: string | null
 }
 
-export type PitchInsert = {
+export type SubmissionInsert = {
   team_id: string
-  title: string
-  summary?: string | null
-  financial_ask_cents?: number
-  cost_explanation?: string | null
-  line_items?: PitchLineItem[]
-  media_urls?: string[]
-  status?: PitchStatus
+  sponsor_id: string
+  custom_pitch_alignment?: string | null
+  specific_needs_statement?: string | null
+  local_connection_notes?: string | null
+  status?: SubmissionStatus
+  resend_message_id?: string | null
   admin_feedback?: string | null
   reviewed_by?: string | null
   reviewed_at?: string | null
-}
-
-export type PitchSponsorTargetInsert = {
-  pitch_id: string
-  sponsor_id: string
-  dispatch_status?: DispatchStatus
-  resend_message_id?: string | null
-  sent_at?: string | null
 }
 
 export type SponsorApplicationInsert = {
@@ -255,10 +239,16 @@ export type TeamUpdate = {
   city?: string | null
   state?: string | null
   mission_statement?: string | null
-  is_501c3?: boolean
+  tax_status?: TaxStatus
   logo_url?: string | null
   community_interest_text?: string | null
   seed_funding_goals_cents?: number
+  technical_summary?: string | null
+  outreach_summary?: string | null
+  media_urls?: string[]
+  youtube_url?: string | null
+  budget_items?: BudgetItem[]
+  financial_ask_cents?: number
   updated_at?: string
 }
 
@@ -286,27 +276,17 @@ export type SponsorUpdate = {
   updated_at?: string
 }
 
-export type PitchUpdate = {
+export type SubmissionUpdate = {
   team_id?: string
-  title?: string
-  summary?: string | null
-  financial_ask_cents?: number
-  cost_explanation?: string | null
-  line_items?: PitchLineItem[]
-  media_urls?: string[]
-  status?: PitchStatus
+  sponsor_id?: string
+  custom_pitch_alignment?: string | null
+  specific_needs_statement?: string | null
+  local_connection_notes?: string | null
+  status?: SubmissionStatus
+  resend_message_id?: string | null
   admin_feedback?: string | null
   reviewed_by?: string | null
   reviewed_at?: string | null
-  updated_at?: string
-}
-
-export type PitchSponsorTargetUpdate = {
-  pitch_id?: string
-  sponsor_id?: string
-  dispatch_status?: DispatchStatus
-  resend_message_id?: string | null
-  sent_at?: string | null
   updated_at?: string
 }
 
@@ -335,27 +315,18 @@ export type SponsorCapacityView = {
   utilization_pct: number
 }
 
-export type PitchSummaryView = {
-  id: string
-  title: string
-  status: PitchStatus
-  financial_ask_cents: number
-  team_name: string
-  owner_id: string
-  target_count: number
-  sent_count: number
-  created_at: string
-  updated_at: string
-}
-
 // ---------------------------------------------------------------------------
 // Supabase Database type — passed as generic to createClient<Database>
 // ---------------------------------------------------------------------------
 
-// GenericTable (from @supabase/postgrest-js) requires Relationships: []
-// on every table and view, or TypeScript resolves query results to `never`.
-// Row types must be `type` aliases (not `interface`) to satisfy the
-// `Row: Record<string, unknown>` constraint in TypeScript 5.9+.
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
 export type Database = {
   public: {
     Tables: {
@@ -383,16 +354,10 @@ export type Database = {
         Update: SponsorUpdate
         Relationships: []
       }
-      pitches: {
-        Row: Pitch
-        Insert: PitchInsert
-        Update: PitchUpdate
-        Relationships: []
-      }
-      pitch_sponsor_targets: {
-        Row: PitchSponsorTarget
-        Insert: PitchSponsorTargetInsert
-        Update: PitchSponsorTargetUpdate
+      submissions: {
+        Row: Submission
+        Insert: SubmissionInsert
+        Update: SubmissionUpdate
         Relationships: []
       }
       sponsor_applications: {
@@ -413,22 +378,25 @@ export type Database = {
         Row: SponsorCapacityView
         Relationships: []
       }
-      v_pitch_summary: {
-        Row: PitchSummaryView
-        Relationships: []
-      }
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_coach_verified: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       user_role: UserRole
       team_status: TeamStatus
       sponsor_status: SponsorStatus
       sponsor_source: SponsorSource
-      pitch_status: PitchStatus
-      dispatch_status: DispatchStatus
       application_status: ApplicationStatus
+      tax_status_type: TaxStatus
+      submission_status: SubmissionStatus
     }
   }
 }

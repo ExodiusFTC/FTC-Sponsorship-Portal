@@ -3,25 +3,25 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
-interface PitchRejectionSummaryProps {
-  pitch: {
+interface SubmissionRejectionSummaryProps {
+  submission: {
     id: string
-    title: string
-    status: string // assuming 'draft' | 'submitted' | 'rejected' | 'changes_requested' | 'approved' | 'dispatched'
-    admin_feedback: string | null
+    sponsor_name: string
+    status: string // 'draft' | 'pending' | 'approved' | 'declined' | 'changes_requested'
+    admin_feedback?: string | null
     updated_at: string
   }
 }
 
-export function PitchRejectionSummary({ pitch }: PitchRejectionSummaryProps) {
+export function SubmissionRejectionSummary({ submission }: SubmissionRejectionSummaryProps) {
   if (
-    (pitch.status !== 'rejected' && pitch.status !== 'changes_requested') ||
-    !pitch.admin_feedback
+    (submission.status !== 'declined' && submission.status !== 'changes_requested') ||
+    !submission.admin_feedback
   ) {
     return null
   }
 
-  const isChangesRequested = pitch.status === 'changes_requested'
+  const isChangesRequested = submission.status === 'changes_requested'
 
   return (
     <Card
@@ -33,18 +33,18 @@ export function PitchRejectionSummary({ pitch }: PitchRejectionSummaryProps) {
     >
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-base font-medium">
-          Feedback on &ldquo;{pitch.title}&rdquo;
+          Feedback on submission to &ldquo;{submission.sponsor_name}&rdquo;
         </CardTitle>
         <Badge variant={isChangesRequested ? 'outline' : 'destructive'}>
-          {isChangesRequested ? 'Changes Requested' : 'Rejected'}
+          {isChangesRequested ? 'Changes Requested' : 'Declined'}
         </Badge>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm whitespace-pre-wrap">{pitch.admin_feedback}</p>
+        <p className="text-sm whitespace-pre-wrap">{submission.admin_feedback}</p>
         <div className="text-sm">
-          <Link href={`/pitches/${pitch.id}/edit`}>
+          <Link href={`/submissions/${submission.id}/edit`}>
             <Button variant={isChangesRequested ? 'default' : 'secondary'} size="sm">
-              Edit Pitch
+              Edit Submission
             </Button>
           </Link>
         </div>

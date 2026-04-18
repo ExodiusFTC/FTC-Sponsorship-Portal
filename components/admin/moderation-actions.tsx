@@ -13,35 +13,37 @@ import {
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { CardFooter } from '@/components/ui/card'
-import { requestEdit, rejectPitch, approvePitch } from '@/app/actions/moderation'
+import { requestEdit, declineSubmission, approveSubmission } from '@/app/actions/moderation'
 
-export function ModerationActions({ pitchId }: { pitchId: string }) {
+export function ModerationActions({ submissionId }: { submissionId: string }) {
   const [editOpen, setEditOpen] = useState(false)
-  const [rejectOpen, setRejectOpen] = useState(false)
+  const [declineOpen, setDeclineOpen] = useState(false)
   const [feedback, setFeedback] = useState('')
   const [isPending, startTransition] = useTransition()
 
   const handleRequestEdit = () => {
     startTransition(async () => {
-      await requestEdit(pitchId, feedback)
+      await requestEdit(submissionId, feedback)
       setEditOpen(false)
       setFeedback('')
     })
   }
 
-  const handleReject = () => {
+  const handleDecline = () => {
     startTransition(async () => {
-      await rejectPitch(pitchId, feedback)
-      setRejectOpen(false)
+      await declineSubmission(submissionId, feedback)
+      setDeclineOpen(false)
       setFeedback('')
     })
   }
 
   const handleApprove = () => {
     startTransition(async () => {
-      await approvePitch(pitchId)
+      await approveSubmission(submissionId)
     })
   }
+
+  const Trigger = DialogTrigger as any
 
   return (
     <CardFooter className="flex justify-end gap-3 border-t pt-4">
@@ -49,9 +51,9 @@ export function ModerationActions({ pitchId }: { pitchId: string }) {
         setEditOpen(open)
         if (!open) setFeedback('')
       }}>
-        <DialogTrigger render={<Button variant="outline" disabled={isPending} />}>
-          Request Edit
-        </DialogTrigger>
+        <Trigger asChild>
+          <Button variant="outline" disabled={isPending}>Request Edit</Button>
+        </Trigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Request Edit</DialogTitle>
@@ -76,18 +78,18 @@ export function ModerationActions({ pitchId }: { pitchId: string }) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={rejectOpen} onOpenChange={(open) => {
-        setRejectOpen(open)
+      <Dialog open={declineOpen} onOpenChange={(open) => {
+        setDeclineOpen(open)
         if (!open) setFeedback('')
       }}>
-        <DialogTrigger render={<Button variant="destructive" disabled={isPending} />}>
-          Reject
-        </DialogTrigger>
+        <Trigger asChild>
+          <Button variant="destructive" disabled={isPending}>Decline</Button>
+        </Trigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject Pitch</DialogTitle>
+            <DialogTitle>Decline Submission</DialogTitle>
             <DialogDescription>
-              Provide reasoning for why this pitch is being rejected. The team will be able to see this feedback.
+              Provide reasoning for why this submission is being declined. The team will be able to see this feedback.
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -97,18 +99,18 @@ export function ModerationActions({ pitchId }: { pitchId: string }) {
             className="min-h-[100px]"
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectOpen(false)} disabled={isPending}>
+            <Button variant="outline" onClick={() => setDeclineOpen(false)} disabled={isPending}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleReject} disabled={!feedback.trim() || isPending}>
-              Confirm Rejection
+            <Button variant="destructive" onClick={handleDecline} disabled={!feedback.trim() || isPending}>
+              Confirm Decline
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Button variant="default" onClick={handleApprove} disabled={isPending}>
-        {isPending ? 'Processing...' : 'Approve & Queue Dispatch'}
+        {isPending ? 'Processing...' : 'Approve & Dispatch to Sponsor'}
       </Button>
     </CardFooter>
   )

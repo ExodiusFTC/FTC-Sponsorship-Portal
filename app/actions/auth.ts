@@ -103,7 +103,10 @@ export async function uploadCredentials(formData: FormData) {
 
   // Notify admins. Fire-and-forget; failures are logged inside notify and must not
   // block the redirect. Note: redirect() throws, so this MUST run before it.
-  await sendCredentialUploadAlert({ coachId: user.id })
+  const { data: profile } = await supabase.from('profiles').select('full_name, email').eq('id', user.id).single()
+  if (profile) {
+    await sendCredentialUploadAlert(user.id, profile.full_name, profile.email)
+  }
 
   redirect('/awaiting-verification')
 }

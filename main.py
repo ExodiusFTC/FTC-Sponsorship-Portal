@@ -17,7 +17,7 @@ ROUTES = [
     ("Login",             "/login"),
     ("Signup",            "/signup"),
     ("Coach Dashboard",   "/dashboard"),
-    ("Pitch Builder",     "/pitches/new"),
+    ("Submission Builder", "/submissions/new"),
     ("Sponsor Browser",   "/sponsors/browse"),
     ("Sponsor Apply",     "/sponsors/apply"),
     ("Admin Moderation",  "/admin/moderation"),

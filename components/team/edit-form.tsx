@@ -1,28 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { teamOnboardingSchema, type TeamOnboardingInput } from '@/lib/schemas/team'
 import { updateTeam, uploadTeamLogo } from '@/app/actions/team'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Plus, Trash2 } from 'lucide-react'
 import type { Team } from '@/lib/supabase/types'
-
-const editSchema = z.object({
-  teamName: z.string().min(2, 'Team name must be at least 2 characters'),
-  organization: z.string().optional(),
-  city: z.string().min(2, 'City is required'),
-  state: z.string().min(2, 'State is required'),
-  missionStatement: z.string().min(50, 'Mission statement should be at least 50 characters'),
-  is501c3: z.boolean(),
-})
-
-type EditInput = z.infer<typeof editSchema>
 
 export function TeamEditForm({ team }: { team: Team }) {
   const [error, setError] = useState<string | null>(null)
@@ -32,19 +22,34 @@ export function TeamEditForm({ team }: { team: Team }) {
   const [logoUploading, setLogoUploading] = useState(false)
   const [logoUrl, setLogoUrl] = useState(team.logo_url)
 
-  const form = useForm<EditInput>({
-    resolver: zodResolver(editSchema),
+  const form = useForm<TeamOnboardingInput>({
+    resolver: zodResolver(teamOnboardingSchema) as any,
     defaultValues: {
+      status: team.status,
+      ftcTeamNumber: team.ftc_team_number ?? undefined,
       teamName: team.team_name,
       organization: team.organization ?? '',
       city: team.city ?? '',
       state: team.state ?? '',
       missionStatement: team.mission_statement ?? '',
-      is501c3: team.is_501c3,
+      taxStatus: team.tax_status,
+      communityInterestText: team.community_interest_text ?? '',
+      seedFundingGoalsCents: team.seed_funding_goals_cents ?? 0,
+      technicalSummary: team.technical_summary ?? '',
+      outreachSummary: team.outreach_summary ?? '',
+      mediaUrls: team.media_urls || [],
+      youtubeUrl: team.youtube_url ?? '',
+      budgetItems: team.budget_items || [],
+      financialAskCents: team.financial_ask_cents ?? 0,
     },
   })
 
-  async function onSubmit(values: EditInput) {
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'budgetItems'
+  })
+
+  async function onSubmit(values: TeamOnboardingInput) {
     setIsPending(true)
     setError(null)
     setSuccess(false)
@@ -55,6 +60,13 @@ export function TeamEditForm({ team }: { team: Team }) {
     } else {
       setSuccess(true)
     }
+  }
+
+  const calculateTotal = () => {
+    const items = form.getValues('budgetItems') || []
+    const total = items.reduce((sum, item) => sum + (item.totalCents || 0), 0)
+    form.setValue('financialAskCents', total)
+    return total
   }
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -74,7 +86,12 @@ export function TeamEditForm({ team }: { team: Team }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-4xl mx-auto">
+      <div>
+        <h1 className="text-3xl font-bold">Edit Master Portfolio</h1>
+        <p className="text-muted-foreground">Keep your team&apos;s professional identity up to date.</p>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Team Logo</CardTitle>
@@ -105,125 +122,175 @@ export function TeamEditForm({ team }: { team: Team }) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Team Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Core Identity</CardTitle>
+              <CardDescription>Basic information about your team.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
               {error && (
                 <Alert variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
               {success && (
-                <Alert>
-                  <AlertDescription>Team profile updated successfully.</AlertDescription>
+                <Alert className="bg-emerald-50 border-emerald-200">
+                  <AlertDescription className="text-emerald-800">Portfolio updated successfully.</AlertDescription>
                 </Alert>
               )}
 
               <FormField
-                control={form.control}
+                control={form.control as any}
                 name="teamName"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Team Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="organization"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>School / Organization (Optional)</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <FormControl><Input {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
               <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>City</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="state"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>State</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormField control={form.control as any} name="city" render={({ field }) => (
+                  <FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control as any} name="state" render={({ field }) => (
+                  <FormItem><FormLabel>State</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
               </div>
 
               <FormField
-                control={form.control}
-                name="missionStatement"
+                control={form.control as any}
+                name="taxStatus"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mission Statement</FormLabel>
+                    <FormLabel>Tax Status</FormLabel>
                     <FormControl>
-                      <Textarea className="min-h-[100px]" {...field} />
+                      <select {...field} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
+                        <option value="None">Standard / No tax-exempt status</option>
+                        <option value="501c3">501(c)(3) Non-profit</option>
+                        <option value="School">School / Educational Institution</option>
+                      </select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            </CardContent>
+          </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle>Narrative & Portfolio</CardTitle>
+              <CardDescription>These summaries are sent to every sponsor you apply to.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
               <FormField
-                control={form.control}
-                name="is501c3"
+                control={form.control as any}
+                name="missionStatement"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl>
-                      <input
-                        type="checkbox"
-                        checked={field.value}
-                        onChange={field.onChange}
-                        className="w-4 h-4 mt-1"
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>My organization has 501(c)(3) non-profit status</FormLabel>
-                      <p className="text-sm text-muted-foreground">
-                        This allows sponsors to make tax-deductible donations.
-                      </p>
-                    </div>
+                  <FormItem>
+                    <FormLabel>Mission Statement</FormLabel>
+                    <FormControl><Textarea className="min-h-[100px]" {...field} /></FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control as any}
+                name="technicalSummary"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Engineering & Technical Portfolio</FormLabel>
+                    <FormControl><Textarea className="min-h-[100px]" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control as any}
+                name="outreachSummary"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Community Outreach</FormLabel>
+                    <FormControl><Textarea className="min-h-[100px]" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
 
-              <Button type="submit" disabled={isPending}>
-                {isPending ? 'Saving...' : 'Save Changes'}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Budget & Financials</CardTitle>
+                <CardDescription>Itemized list of your funding needs.</CardDescription>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => append({ label: '', qty: 1, unitCostCents: 0, totalCents: 0 })}>
+                <Plus className="w-4 h-4 mr-1" /> Add Item
               </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                {fields.map((field, index) => (
+                  <div key={field.id} className="grid grid-cols-12 gap-2 items-end border p-3 rounded-md">
+                    <div className="col-span-5">
+                      <FormLabel className="text-xs">Item Label</FormLabel>
+                      <Input {...form.register(`budgetItems.${index}.label`)} />
+                    </div>
+                    <div className="col-span-2">
+                      <FormLabel className="text-xs">Qty</FormLabel>
+                      <Input type="number" {...form.register(`budgetItems.${index}.qty`, { valueAsNumber: true })} 
+                        onChange={(e) => {
+                          const qty = parseInt(e.target.value) || 0
+                          const unit = form.getValues(`budgetItems.${index}.unitCostCents`) || 0
+                          form.setValue(`budgetItems.${index}.totalCents`, qty * unit)
+                          calculateTotal()
+                        }}
+                      />
+                    </div>
+                    <div className="col-span-4">
+                      <FormLabel className="text-xs">Unit Cost ($)</FormLabel>
+                      <Input type="number" step="0.01" 
+                        defaultValue={(form.getValues(`budgetItems.${index}.unitCostCents`) || 0) / 100}
+                        onChange={(e) => {
+                          const dollars = parseFloat(e.target.value) || 0
+                          const unit = Math.round(dollars * 100)
+                          const qty = form.getValues(`budgetItems.${index}.qty`) || 0
+                          form.setValue(`budgetItems.${index}.unitCostCents`, unit)
+                          form.setValue(`budgetItems.${index}.totalCents`, qty * unit)
+                          calculateTotal()
+                        }}
+                      />
+                    </div>
+                    <div className="col-span-1 flex justify-center">
+                      <Button type="button" variant="ghost" size="icon" onClick={() => { remove(index); calculateTotal(); }} className="text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-muted p-4 rounded-md flex justify-between items-center font-bold">
+                <span>Total Portfolio Ask:</span>
+                <span className="text-xl">${(form.watch('financialAskCents') / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end gap-4">
+            <Button type="button" variant="outline" onClick={() => window.history.back()}>Cancel</Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? 'Saving...' : 'Save Portfolio Changes'}
+            </Button>
+          </div>
+        </form>
+      </Form>
     </div>
   )
 }

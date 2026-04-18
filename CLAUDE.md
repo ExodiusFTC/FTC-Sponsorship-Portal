@@ -4,6 +4,7 @@
 - **COPPA Compliance**: No student PII collected/exposed. Verified adult coaches only.
 - **Admin-Gatekept**: All outbound emails require Admin approval via moderation queue.
 - **Capacity Integrity**: Sponsor funding caps are strictly enforced.
+- **Data Architecture Distinction**: Strictly prioritize the distinction between Global Team Data (the Base Resume/Portfolio) and Submission-Specific Data (custom pitch alignment, specific needs, local connection).
 
 ## Tech Stack & Architecture
 - **Next.js 16.2** (App Router), React 19, Tailwind v4, shadcn/ui.
