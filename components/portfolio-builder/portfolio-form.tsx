@@ -24,11 +24,12 @@ type Props = {
     Submission,
     'id' | 'sponsor_id' | 'custom_pitch_alignment' | 'specific_needs_statement' | 'local_connection_notes' | 'status'
   >
+  initialValues?: Partial<SubmissionInput>
   sponsors?: Sponsor[]
   preselectedSponsorId?: string
 }
 
-export function PortfolioForm({ initialSubmission, sponsors = [], preselectedSponsorId }: Props) {
+export function PortfolioForm({ initialSubmission, initialValues, sponsors = [], preselectedSponsorId }: Props) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [rateLimitData, setRateLimitData] = useState<{ retryAfterSeconds: number; limit: number } | null>(null)
@@ -47,10 +48,10 @@ export function PortfolioForm({ initialSubmission, sponsors = [], preselectedSpo
   const form = useForm<SubmissionInput>({
     resolver: zodResolver(submissionSchema),
     defaultValues: {
-      sponsorId: initialSubmission?.sponsor_id ?? preselectedSponsorId ?? '',
-      customPitchAlignment: initialSubmission?.custom_pitch_alignment ?? '',
-      specificNeedsStatement: initialSubmission?.specific_needs_statement ?? '',
-      localConnectionNotes: initialSubmission?.local_connection_notes ?? '',
+      sponsorId: initialValues?.sponsorId ?? initialSubmission?.sponsor_id ?? preselectedSponsorId ?? '',
+      customPitchAlignment: initialValues?.customPitchAlignment ?? initialSubmission?.custom_pitch_alignment ?? '',
+      specificNeedsStatement: initialValues?.specificNeedsStatement ?? initialSubmission?.specific_needs_statement ?? '',
+      localConnectionNotes: initialValues?.localConnectionNotes ?? initialSubmission?.local_connection_notes ?? '',
     },
   })
 

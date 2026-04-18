@@ -54,6 +54,17 @@ export async function createTeam(data: TeamOnboardingInput) {
     drivetrain,
     buildSystem,
     programming,
+    cadSoftware,
+    controlSystem,
+    sensors,
+    githubLink,
+    autonomousDescription,
+    proudestMechanismName,
+    proudestMechanismProblem,
+    proudestMechanismSolution,
+    subteamBreakdown,
+    manufacturingCapabilities,
+    visualPitchItems,
   } = result.data
 
   if (status === 'existing' && ftcTeamNumber) {
@@ -91,6 +102,17 @@ export async function createTeam(data: TeamOnboardingInput) {
       total_cents: item.totalCents
     })),
     financial_ask_cents: financialAskCents ?? 0,
+    cad_software: cadSoftware ?? null,
+    control_system: controlSystem ?? null,
+    sensors: sensors ?? [],
+    github_link: githubLink ?? null,
+    autonomous_description: autonomousDescription ?? null,
+    proudest_mechanism_name: proudestMechanismName ?? null,
+    proudest_mechanism_problem: proudestMechanismProblem ?? null,
+    proudest_mechanism_solution: proudestMechanismSolution ?? null,
+    subteam_breakdown: subteamBreakdown ?? null,
+    manufacturing_capabilities: manufacturingCapabilities ?? [],
+    visual_pitch_items: visualPitchItems ?? [],
   }
 
   const { data: team, error } = await supabase
@@ -184,6 +206,17 @@ export async function updateTeam(id: string, data: Partial<TeamOnboardingInput>)
       total_cents: item.totalCents
     })),
     financial_ask_cents: data.financialAskCents,
+    cad_software: data.cadSoftware,
+    control_system: data.controlSystem,
+    sensors: data.sensors,
+    github_link: data.githubLink,
+    autonomous_description: data.autonomousDescription,
+    proudest_mechanism_name: data.proudestMechanismName,
+    proudest_mechanism_problem: data.proudestMechanismProblem,
+    proudest_mechanism_solution: data.proudestMechanismSolution,
+    subteam_breakdown: data.subteamBreakdown,
+    manufacturing_capabilities: data.manufacturingCapabilities,
+    visual_pitch_items: data.visualPitchItems,
   }
 
   const { error } = await supabase

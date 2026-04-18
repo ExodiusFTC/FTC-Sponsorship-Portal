@@ -149,3 +149,19 @@ export async function sendSponsorApplicationConfirmation(
     console.error('[notify] sendSponsorApplicationConfirmation failed', err)
   }
 }
+
+export async function createInAppNotification({
+  recipientId, type, title, body, submissionId,
+}: {
+  recipientId: string
+  type: 'submission_declined' | 'submission_approved' | 'submission_changes_requested' | 'general'
+  title: string
+  body?: string
+  submissionId?: string
+}) {
+  const supabase = createAdminClient()
+  await supabase.from('notifications').insert({
+    recipient_id: recipientId,
+    type, title, body, submission_id: submissionId,
+  })
+}

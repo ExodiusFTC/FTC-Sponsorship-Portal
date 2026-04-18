@@ -12,15 +12,11 @@ export default async function CoachLayout({ children }: { children: React.ReactN
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, coach_credentials_url, coach_verified')
+    .select('role')
     .eq('id', user.id)
     .single()
 
   if (profile?.role === 'admin') redirect('/admin')
-
-  if (!profile?.coach_credentials_url) redirect('/upload-credentials')
-
-  if (!profile?.coach_verified) redirect('/awaiting-verification')
 
   return <AppLayout>{children}</AppLayout>
 }

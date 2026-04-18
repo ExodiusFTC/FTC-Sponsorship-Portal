@@ -173,6 +173,30 @@ export function OnboardingForm({ isVerified }: { isVerified: boolean }) {
                 )}
               />
 
+              <FormField
+                control={form.control as any}
+                name="organization"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Organization / School</FormLabel>
+                    <FormControl><Input placeholder="e.g. Lincoln High School" {...field} value={field.value ?? ''} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control as any}
+                name="tagline"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Team Tagline (optional)</FormLabel>
+                    <FormControl><Input placeholder="Up to 250 characters" maxLength={250} {...field} value={field.value ?? ''} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control as any} name="city" render={({ field }) => (
                   <FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="e.g. Austin" {...field} /></FormControl><FormMessage /></FormItem>
@@ -199,6 +223,35 @@ export function OnboardingForm({ isVerified }: { isVerified: boolean }) {
                   </FormItem>
                 )}
               />
+              
+              {status === 'incubator' && (
+                <div className="space-y-4 pt-4 border-t border-dashed">
+                  <FormField
+                    control={form.control as any}
+                    name="communityInterestText"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Community Interest</FormLabel>
+                        <FormControl><Textarea placeholder="Describe the community support behind creating this team..." className="min-h-[80px]" {...field} value={field.value ?? ''} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control as any}
+                    name="seedFundingGoalsCents"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Seed Funding Goal ($)</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.01" onChange={(e) => field.onChange(Math.round(parseFloat(e.target.value) * 100) || 0)} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-6">

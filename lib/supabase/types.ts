@@ -56,6 +56,18 @@ export type Team = {
   youtube_url: string | null
   budget_items: BudgetItem[]
   financial_ask_cents: number
+  cad_software: string | null
+  control_system: string | null
+  github_link: string | null
+  autonomous_description: string | null
+  proudest_mechanism_name: string | null
+  proudest_mechanism_problem: string | null
+  proudest_mechanism_solution: string | null
+  subteam_breakdown: string | null
+  manufacturing_capabilities: string[]
+  sensors: string[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  visual_pitch_items: any[]
   created_at: string
   updated_at: string
 }
@@ -127,6 +139,17 @@ export type AuditLog = {
   created_at: string
 }
 
+export type Notification = {
+  id: string
+  recipient_id: string
+  type: 'submission_declined' | 'submission_approved' | 'submission_changes_requested' | 'general'
+  title: string
+  body: string | null
+  submission_id: string | null
+  read_at: string | null
+  created_at: string
+}
+
 // ---------------------------------------------------------------------------
 // Insert types — omit auto-generated fields (id, created_at, updated_at)
 // Make optional fields match DB defaults or nullability
@@ -161,6 +184,18 @@ export type TeamInsert = {
   youtube_url?: string | null
   budget_items?: BudgetItem[]
   financial_ask_cents?: number
+  cad_software?: string | null
+  control_system?: string | null
+  github_link?: string | null
+  autonomous_description?: string | null
+  proudest_mechanism_name?: string | null
+  proudest_mechanism_problem?: string | null
+  proudest_mechanism_solution?: string | null
+  subteam_breakdown?: string | null
+  manufacturing_capabilities?: string[]
+  sensors?: string[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  visual_pitch_items?: any[]
 }
 
 export type TeamAchievementInsert = {
@@ -249,6 +284,18 @@ export type TeamUpdate = {
   youtube_url?: string | null
   budget_items?: BudgetItem[]
   financial_ask_cents?: number
+  cad_software?: string | null
+  control_system?: string | null
+  github_link?: string | null
+  autonomous_description?: string | null
+  proudest_mechanism_name?: string | null
+  proudest_mechanism_problem?: string | null
+  proudest_mechanism_solution?: string | null
+  subteam_breakdown?: string | null
+  manufacturing_capabilities?: string[]
+  sensors?: string[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  visual_pitch_items?: any[]
   updated_at?: string
 }
 
@@ -370,6 +417,12 @@ export type Database = {
         Row: AuditLog
         Insert: AuditLogInsert
         Update: Record<string, never>
+        Relationships: []
+      }
+      notifications: {
+        Row: Notification
+        Insert: Omit<Notification, 'id' | 'created_at' | 'read_at'>
+        Update: Partial<Omit<Notification, 'id' | 'created_at'>>
         Relationships: []
       }
     }

@@ -13,6 +13,8 @@ import {
   Building2,
   Users,
   BarChart2,
+  BookOpen,
+  Wallet,
   ChevronDown,
   ChevronsUpDown,
   LogOut,
@@ -28,11 +30,14 @@ type Role = 'coach' | 'admin' | null
 type NavDef = { icon: LucideIcon; label: string; href: string; kbd?: string; showBadge?: boolean }
 
 const coachNavItems: NavDef[] = [
-  { icon: LayoutDashboard, label: 'Overview', href: '/dashboard', kbd: 'G D' },
-  { icon: FileText, label: 'My Application', href: '/submissions/new', kbd: 'G A' },
-  { icon: Target, label: 'Find Sponsors', href: '/sponsors/browse', kbd: 'G S' },
-  { icon: Clock, label: 'Pitch History', href: '/submissions/new', kbd: 'G H' },
-  { icon: Settings, label: 'Settings', href: '/settings', kbd: 'G ,' },
+  { icon: LayoutDashboard, label: 'Overview',      href: '/dashboard',                    kbd: 'G D' },
+  { icon: BookOpen,        label: 'Portfolio',     href: '/dashboard?tab=portfolio',      kbd: 'G P' },
+  { icon: Target,          label: 'Find Sponsors', href: '/dashboard?tab=find-sponsors',  kbd: 'G S' },
+  { icon: FileText,        label: 'Submissions',   href: '/dashboard?tab=submissions',    kbd: 'G H' },
+  { icon: Inbox,           label: 'Inbox',         href: '/dashboard?tab=inbox',          kbd: 'G N', showBadge: true },
+  { icon: BarChart2,       label: 'Insights',      href: '/dashboard?tab=insights',       kbd: 'G I' },
+  { icon: Wallet,          label: 'Ledger',        href: '/dashboard?tab=ledger',         kbd: 'G L' },
+  { icon: Settings,        label: 'Settings',      href: '/dashboard?tab=settings',       kbd: 'G ,' },
 ]
 
 const adminNavItems: NavDef[] = [
@@ -195,6 +200,7 @@ function UserRow({ name, email, role, onSignOut }: { name: string; email: string
 
 export function Sidebar() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const router = useRouter()
   const [role, setRole] = useState<Role>(null)
   const [userName, setUserName] = useState('User')
@@ -206,6 +212,13 @@ export function Sidebar() {
     { refreshInterval: 30000 }
   )
   const queueCount = queueData?.count ?? 0
+
+  const { data: inboxData } = useSWR<{ count: number }>(
+    role === 'coach' ? '/api/coach/notifications/unread' : null,
+    (url: string) => fetch(url).then((r) => r.json()),
+    { refreshInterval: 30000 }
+  )
+  const coachUnreadCount = inboxData?.count ?? 0
 
   useEffect(() => {
     const supabase = createClient()
@@ -253,14 +266,21 @@ export function Sidebar() {
           </div>
           <nav className="flex flex-col gap-0.5">
             {navItems.map((item) => {
-              const isActive =
-                pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
+              const activeTab = searchParams ? (searchParams.get('tab') ?? '') : ''
+              const isActive = item.href === '/dashboard'
+                ? pathname === '/dashboard' && !activeTab
+                : pathname + (activeTab ? `?tab=${activeTab}` : '') === item.href
+              
+              // for admin items
+              const isAdminActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
+              const finalIsActive = role === 'admin' ? isAdminActive : isActive
+
               return (
                 <NavItem
                   key={item.href + item.label}
                   item={item}
-                  isActive={isActive}
-                  badge={item.showBadge ? queueCount : undefined}
+                  isActive={finalIsActive}
+                  badge={item.showBadge ? (role === 'admin' ? queueCount : coachUnreadCount) : undefined}
                 />
               )
             })}

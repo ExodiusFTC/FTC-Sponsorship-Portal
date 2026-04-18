@@ -1,9 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { SubmissionRejectionSummary } from '@/components/coach/submission-rejection-summary'
 import { DashboardShell } from '@/components/coach/dashboard-shell'
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>
+}) {
+  const { tab: initialTab } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -19,6 +23,30 @@ export default async function DashboardPage() {
     redirect('/onboarding')
   }
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, role, email')
+    .eq('id', user.id)
+    .single()
+
+  const { data: sponsors } = await supabase
+    .from('sponsors')
+    .select('id, company_name, industry, funding_cap_cents, funding_used_cents, website')
+    .eq('status', 'active')
+
+  const { count: unreadCount } = await supabase
+    .from('notifications')
+    .select('*', { count: 'exact', head: true })
+    .eq('recipient_id', user.id)
+    .is('read_at', null)
+
+  const { data: notifications } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('recipient_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(50)
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: submissions } = await (supabase as any)
     .from('v_submission_summary')
@@ -26,45 +54,15 @@ export default async function DashboardPage() {
     .eq('owner_id', user.id)
     .order('updated_at', { ascending: false })
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const submissionsWithFeedback = (submissions as any)?.filter(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (s: any) => s.status === 'declined' || s.status === 'changes_requested'
-  )
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const activePitches = (submissions as any)?.filter((s: any) => s.status === 'pending' || s.status === 'approved').length ?? 0
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const totalFunded = (submissions as any)?.filter((s: any) => s.status === 'approved').length ?? 0
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const normalized = ((submissions as any) ?? []).map((s: any) => ({
-    id: s.id,
-    company_name: s.company_name,
-    status: s.status,
-    updated_at: s.updated_at,
-  }))
-
   return (
     <DashboardShell
-      teamName={team.team_name}
-      teamNumber={team.status === 'existing' ? team.ftc_team_number : null}
-      city={team.city ?? ''}
-      state={team.state ?? ''}
-      organization={team.organization}
-      portfolioAsk={team.financial_ask_cents || 0}
-      submissions={normalized}
-      activePitches={activePitches}
-      totalFunded={totalFunded}
-    >
-      {submissionsWithFeedback && submissionsWithFeedback.length > 0 ? (
-        <div className="space-y-4">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {submissionsWithFeedback.map((s: any) => (
-            <SubmissionRejectionSummary key={s.id} submission={{ ...s, sponsor_name: s.company_name }} />
-          ))}
-        </div>
-      ) : null}
-    </DashboardShell>
+      team={team as any}
+      profile={profile as any}
+      sponsors={sponsors as any ?? []}
+      notifications={notifications as any ?? []}
+      unreadCount={unreadCount ?? 0}
+      submissions={submissions as any ?? []}
+      initialTab={initialTab}
+    />
   )
 }

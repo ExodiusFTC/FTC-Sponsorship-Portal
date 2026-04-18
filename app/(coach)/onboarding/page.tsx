@@ -12,13 +12,9 @@ export default async function OnboardingPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('coach_verified, coach_credentials_url')
+    .select('coach_verified')
     .eq('id', user.id)
     .single()
-
-  if (!profile?.coach_credentials_url) {
-    redirect('/upload-credentials')
-  }
 
   return (
     <div className="container mx-auto py-12">

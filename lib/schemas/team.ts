@@ -39,6 +39,17 @@ export const teamOnboardingSchema = z.object({
     })
   ).default([]),
   financialAskCents: z.number().int().nonnegative().default(0),
+  cadSoftware: z.string().max(200).optional(),
+  controlSystem: z.enum(['rev_control_hub', 'android_phone', 'other']).optional().or(z.literal('')),
+  sensors: z.array(z.enum(['odometry','pid','computer_vision','custom_algorithms'])).default([]),
+  githubLink: z.string().url().optional().or(z.literal('')),
+  autonomousDescription: z.string().max(750).optional(),
+  proudestMechanismName: z.string().max(200).optional(),
+  proudestMechanismProblem: z.string().max(500).optional(),
+  proudestMechanismSolution: z.string().max(1000).optional(),
+  subteamBreakdown: z.string().max(1000).optional(),
+  manufacturingCapabilities: z.array(z.enum(['3d_printing','cnc','lathe','laser_cutter'])).default([]),
+  visualPitchItems: z.array(z.object({ url: z.string(), caption: z.string().max(100) })).default([]),
 }).superRefine((data, ctx) => {
   if (data.status === 'existing' && !data.ftcTeamNumber) {
     ctx.addIssue({

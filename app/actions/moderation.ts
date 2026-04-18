@@ -3,7 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { dispatchApprovedSubmission } from '@/lib/dispatch'
-import { sendSubmissionDecisionEmail } from '@/lib/notify'
+import { sendSubmissionDecisionEmail, createInAppNotification } from '@/lib/notify'
+import { revalidatePath } from 'next/cache'
 
 export async function approveSubmission(submissionId: string) {
   const authClient = await createClient()
@@ -55,6 +56,24 @@ export async function approveSubmission(submissionId: string) {
     dispatchApprovedSubmission(submissionId, result.token),
   ])
 
+  const { data: sub } = await supabase
+    .from('submissions')
+    .select('team_id, teams:team_id(owner_id), sponsors:sponsor_id(company_name)')
+    .eq('id', submissionId).single()
+
+  const coachId = (sub?.teams as any)?.owner_id
+  const sponsorName = (sub?.sponsors as any)?.company_name ?? 'a sponsor'
+
+  await createInAppNotification({
+    recipientId: coachId,
+    type: 'submission_approved',
+    title: `Your application to ${sponsorName} was approved`,
+    submissionId,
+  })
+
+  revalidatePath('/moderation')
+  revalidatePath('/dashboard')
+
   return { success: true }
 }
 
@@ -95,6 +114,25 @@ export async function declineSubmission(submissionId: string, feedback: string) 
 
   await sendSubmissionDecisionEmail(submissionId, 'declined', feedback)
 
+  const { data: sub } = await supabase
+    .from('submissions')
+    .select('team_id, teams:team_id(owner_id), sponsors:sponsor_id(company_name)')
+    .eq('id', submissionId).single()
+
+  const coachId = (sub?.teams as any)?.owner_id
+  const sponsorName = (sub?.sponsors as any)?.company_name ?? 'a sponsor'
+
+  await createInAppNotification({
+    recipientId: coachId,
+    type: 'submission_declined',
+    title: `Your application to ${sponsorName} was declined`,
+    body: feedback,
+    submissionId,
+  })
+
+  revalidatePath('/moderation')
+  revalidatePath('/dashboard')
+
   return { success: true }
 }
 
@@ -134,6 +172,25 @@ export async function requestEdit(submissionId: string, feedback: string) {
   })
 
   await sendSubmissionDecisionEmail(submissionId, 'changes_requested', feedback)
+
+  const { data: sub } = await supabase
+    .from('submissions')
+    .select('team_id, teams:team_id(owner_id), sponsors:sponsor_id(company_name)')
+    .eq('id', submissionId).single()
+
+  const coachId = (sub?.teams as any)?.owner_id
+  const sponsorName = (sub?.sponsors as any)?.company_name ?? 'a sponsor'
+
+  await createInAppNotification({
+    recipientId: coachId,
+    type: 'submission_changes_requested',
+    title: `Changes requested for your application to ${sponsorName}`,
+    body: feedback,
+    submissionId,
+  })
+
+  revalidatePath('/moderation')
+  revalidatePath('/dashboard')
 
   return { success: true }
 }
