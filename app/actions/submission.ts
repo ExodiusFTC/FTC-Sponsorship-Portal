@@ -5,6 +5,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { submissionSchema, type SubmissionInput } from '@/lib/schemas/submission'
 import { redirect } from 'next/navigation'
 
+const EDITABLE_SUBMISSION_STATUSES = ['draft', 'declined', 'changes_requested'] as const
+
 async function getCoachTeamId() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -69,7 +71,7 @@ export async function saveSubmission(
       .single()
 
     if (!existing) return { error: 'Submission not found' }
-    if (!['draft', 'declined'].includes(existing.status)) {
+    if (!EDITABLE_SUBMISSION_STATUSES.includes(existing.status as typeof EDITABLE_SUBMISSION_STATUSES[number])) {
       return { error: 'This submission can no longer be edited.' }
     }
 
@@ -144,7 +146,7 @@ export async function autoSaveSubmissionDraft(
       .single()
 
     if (!existing) return { error: 'Submission not found' }
-    if (!['draft', 'declined'].includes(existing.status)) {
+    if (!EDITABLE_SUBMISSION_STATUSES.includes(existing.status as typeof EDITABLE_SUBMISSION_STATUSES[number])) {
       return { error: 'Cannot auto-save a non-draft submission' }
     }
 

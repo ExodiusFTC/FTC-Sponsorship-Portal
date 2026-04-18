@@ -68,7 +68,7 @@ CREATE POLICY "submissions_insert" ON submissions FOR INSERT
 CREATE POLICY "submissions_update_coach" ON submissions FOR UPDATE
     USING (
         EXISTS (SELECT 1 FROM teams t WHERE t.id = team_id AND t.owner_id = auth.uid())
-        AND status IN ('draft', 'declined')
+        AND status IN ('draft', 'declined', 'changes_requested')
     )
     WITH CHECK (
         status IN ('draft', 'pending')

@@ -42,6 +42,7 @@ export async function updateSession(request: NextRequest) {
     pathname === '/' ||
     pathname.startsWith('/legal') ||
     pathname.startsWith('/sponsors/apply') ||
+    pathname.startsWith('/sponsor-view/') ||
     pathname.startsWith('/auth/')
 
   if (!user && !isAuthPage && !isPublicRoute) {

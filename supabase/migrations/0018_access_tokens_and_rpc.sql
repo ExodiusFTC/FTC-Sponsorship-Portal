@@ -23,11 +23,8 @@ ALTER TABLE submission_access_tokens ENABLE ROW LEVEL SECURITY;
 --   1. Locks the sponsor row with SELECT FOR UPDATE
 --   2. Verifies the sponsor still has capacity
 --   3. Updates submissions.status → 'approved'
---   4. Increments sponsors.funding_used_cents
---   5. Auto-inactivates sponsor when cap is hit
---   6. Writes to transactions_ledger
---   7. Writes to audit_log
---   8. Mints a new submission_access_token for the sponsor link
+--   4. Writes to audit_log
+--   5. Mints a new submission_access_token for the sponsor link
 -- Returns: { ok, error, token }
 -- ---------------------------------------------------------------------------
 
@@ -77,25 +74,12 @@ BEGIN
   SET status = 'approved', reviewed_by = p_admin_id, reviewed_at = now()
   WHERE id = p_submission_id;
 
-  -- 2. Debit sponsor
-  UPDATE sponsors
-  SET funding_used_cents = funding_used_cents + v_ask_cents,
-      status = CASE
-        WHEN (funding_used_cents + v_ask_cents) >= funding_cap_cents THEN 'inactive'::sponsor_status
-        ELSE status
-      END
-  WHERE id = v_sponsor.id;
-
-  -- 3. Ledger entry
-  INSERT INTO transactions_ledger(sponsor_id, team_id, submission_id, amount_cents, decision_type, actor_type)
-  VALUES (v_sponsor.id, v_team.id, p_submission_id, v_ask_cents, 'full', 'admin');
-
-  -- 4. Audit log
+  -- 2. Audit log
   INSERT INTO audit_log(actor_id, action, entity_type, entity_id, metadata)
   VALUES (p_admin_id, 'approve_submission', 'submissions', p_submission_id,
     jsonb_build_object('amount_cents', v_ask_cents, 'sponsor_id', v_sponsor.id));
 
-  -- 5. Mint access token (random 32-byte hex, SHA-256 hashed for storage)
+  -- 3. Mint access token (random 32-byte hex, SHA-256 hashed for storage)
   v_token_plain := encode(gen_random_bytes(32), 'hex');
   v_token_hash  := encode(digest(v_token_plain, 'sha256'), 'hex');
 
@@ -105,6 +89,3 @@ BEGIN
   RETURN jsonb_build_object('ok', true, 'token', v_token_plain, 'amount_cents', v_ask_cents);
 END;
 $$;
-
--- pgcrypto is required for digest() and gen_random_bytes()
-CREATE EXTENSION IF NOT EXISTS pgcrypto;

@@ -43,17 +43,15 @@ export function ModerationActions({ submissionId }: { submissionId: string }) {
     })
   }
 
-  const Trigger = DialogTrigger as any
-
   return (
     <CardFooter className="flex justify-end gap-3 border-t pt-4">
       <Dialog open={editOpen} onOpenChange={(open) => {
         setEditOpen(open)
         if (!open) setFeedback('')
       }}>
-        <Trigger asChild>
-          <Button variant="outline" disabled={isPending}>Request Edit</Button>
-        </Trigger>
+        <DialogTrigger render={<Button variant="outline" disabled={isPending} />}>
+          Request Edit
+        </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Request Edit</DialogTitle>
@@ -82,9 +80,9 @@ export function ModerationActions({ submissionId }: { submissionId: string }) {
         setDeclineOpen(open)
         if (!open) setFeedback('')
       }}>
-        <Trigger asChild>
-          <Button variant="destructive" disabled={isPending}>Decline</Button>
-        </Trigger>
+        <DialogTrigger render={<Button variant="destructive" disabled={isPending} />}>
+          Decline
+        </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Decline Submission</DialogTitle>

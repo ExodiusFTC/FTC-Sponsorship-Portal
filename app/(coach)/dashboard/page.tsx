@@ -29,6 +29,7 @@ export default async function DashboardPage() {
 
   const { data: submissions } = await (supabase as any)
     .from('v_submission_summary')
+    .select('*')
     .eq('owner_id', user.id)
     .order('updated_at', { ascending: false })
 

@@ -39,8 +39,9 @@ export function PortfolioForm({ initialSubmission, sponsors = [], preselectedSpo
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastSerialized = useRef<string>('')
 
+  const editableStatuses = ['draft', 'declined', 'changes_requested'] as const
   const readOnly = initialSubmission
-    ? !['draft', 'declined'].includes(initialSubmission.status)
+    ? !editableStatuses.includes(initialSubmission.status as typeof editableStatuses[number])
     : false
 
   const form = useForm<SubmissionInput>({
