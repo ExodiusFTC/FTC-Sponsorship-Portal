@@ -3,12 +3,21 @@
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 
+/**
+ * Crisp word-morphing component.
+ *
+ * Blur fix: the original stacked two blur sources — a feGaussianBlur SVG filter
+ * on the container AND Tailwind's blur-sm on each word — producing compound
+ * blurriness that the feColorMatrix couldn't fully recover. Solution: drop the
+ * SVG gooey filter entirely and drive the transition with opacity + translateY
+ * only, which gives a clean "slot-machine" morph with zero blur artefacts.
+ */
 export function GooeyText({
   texts,
   interval = 2400,
   className,
 }: {
-  texts: string[]
+  texts: readonly string[]
   interval?: number
   className?: string
 }) {
@@ -19,44 +28,32 @@ export function GooeyText({
     return () => clearInterval(id)
   }, [texts.length, interval])
 
+  const longest = [...texts].sort((a, b) => b.length - a.length)[0]
+
   return (
     <span className={cn('relative inline-block align-baseline', className)}>
-      <svg className="absolute h-0 w-0" aria-hidden="true">
-        <defs>
-          <filter id="gooey-filter">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
-            <feColorMatrix
-              in="blur"
-              mode="matrix"
-              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -11"
-              result="gooey"
-            />
-            <feComposite in="SourceGraphic" in2="gooey" operator="atop" />
-          </filter>
-        </defs>
-      </svg>
-      <span
-        className="relative inline-block"
-        style={{ filter: 'url(#gooey-filter)' }}
-      >
-        {texts.map((t, i) => (
-          <span
-            key={t}
-            aria-hidden={i !== index}
-            className={cn(
-              'absolute inset-0 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]',
-              i === index
-                ? 'opacity-100 translate-y-0 blur-0'
-                : 'opacity-0 translate-y-4 blur-sm'
-            )}
-          >
-            {t}
-          </span>
-        ))}
-        {/* width reservation */}
-        <span className="invisible whitespace-nowrap">
-          {texts.reduce((a, b) => (a.length > b.length ? a : b))}
+      {/* width reserved by the longest word so the line never shifts */}
+      <span className="invisible whitespace-nowrap" aria-hidden>{longest}</span>
+
+      {texts.map((t, i) => (
+        <span
+          key={t}
+          aria-hidden={i !== index}
+          className={cn(
+            'absolute inset-0 whitespace-nowrap transition-all duration-500',
+            'ease-[cubic-bezier(0.22,1,0.36,1)]',
+            i === index
+              ? 'opacity-100 translate-y-0'
+              : 'opacity-0 translate-y-3'
+          )}
+        >
+          {t}
         </span>
+      ))}
+
+      {/* accessible live region announces word changes to screen readers */}
+      <span className="sr-only" aria-live="polite" aria-atomic="true">
+        {texts[index]}
       </span>
     </span>
   )

@@ -8,7 +8,7 @@ const features = [
   {
     icon: FileCog,
     title: 'One portfolio, every pitch',
-    body: 'Ship a single Base Resume and fork it per sponsor — budget, ask, and local angle stay custom without rewriting your story.',
+    body: 'Ship a single team portfolio and fork it per sponsor — budget, ask, and local angle stay custom without rewriting your story.',
   },
   {
     icon: ShieldCheck,
@@ -41,8 +41,7 @@ export function FeatureGrid() {
   return (
     <section id="product" className="mx-auto max-w-6xl px-6 py-24">
       <FadeUp className="max-w-2xl">
-        <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{'/// Platform'}</div>
-        <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-50">
+        <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-50">
           Built for coaches who don&apos;t have time to send 200 cold emails.
         </h2>
         <p className="mt-4 text-zinc-400 leading-relaxed">

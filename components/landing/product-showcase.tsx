@@ -4,6 +4,7 @@ import { Check } from 'lucide-react'
 import { FadeUp } from '@/components/motion/fade-up'
 import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
+import { PORTFOLIO_MOCK, MODERATION_MOCK_ROWS } from '@/lib/site-config'
 
 export function ProductShowcase({
   eyebrow,
@@ -24,7 +25,7 @@ export function ProductShowcase({
     <section className="mx-auto max-w-6xl px-6 py-24">
       <div className={cn('grid gap-12 lg:grid-cols-2 lg:gap-16 items-center', flipped && 'lg:[&>*:first-child]:order-2')}>
         <FadeUp>
-          <div className="text-xs font-mono uppercase tracking-[0.2em] text-indigo-300/80">{`/// ${eyebrow}`}</div>
+          <p className="text-xs font-mono uppercase tracking-[0.15em] text-indigo-300/70">{eyebrow}</p>
           <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-50">{title}</h2>
           <p className="mt-4 text-zinc-400 leading-relaxed">{body}</p>
           <ul className="mt-8 space-y-3">
@@ -46,6 +47,7 @@ export function ProductShowcase({
 }
 
 export function PortfolioMock() {
+  const { teamNumber, teamName, budgetItems } = PORTFOLIO_MOCK
   return (
     <div className="relative rounded-2xl border border-zinc-800 bg-zinc-950/80 p-3 shadow-2xl shadow-indigo-500/5 backdrop-blur">
       <div className="flex items-center gap-1.5 px-2 py-1.5">
@@ -57,8 +59,8 @@ export function PortfolioMock() {
       <div className="rounded-lg border border-zinc-900 bg-zinc-950 p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-xs text-zinc-500">Team 14523</div>
-            <div className="text-sm font-medium text-zinc-100">Circuit Breakers</div>
+            <div className="text-xs text-zinc-500">Team {teamNumber}</div>
+            <div className="text-sm font-medium text-zinc-100">{teamName}</div>
           </div>
           <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-900/60 bg-emerald-500/5 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
@@ -76,14 +78,10 @@ export function PortfolioMock() {
           ))}
         </div>
         <div className="space-y-2 pt-2">
-          {[
-            { k: 'Outreach, Q3 2025', v: '$2,400 / $5,000' },
-            { k: 'Robot build', v: '$1,100 / $2,800' },
-            { k: 'Travel to States', v: '$0 / $3,200' },
-          ].map((r) => (
-            <div key={r.k} className="flex items-center justify-between rounded-md border border-zinc-900 bg-zinc-950 px-3 py-2 text-xs">
-              <span className="text-zinc-400">{r.k}</span>
-              <span className="font-mono text-zinc-300 tabular-nums">{r.v}</span>
+          {budgetItems.map((r) => (
+            <div key={r.label} className="flex items-center justify-between rounded-md border border-zinc-900 bg-zinc-950 px-3 py-2 text-xs">
+              <span className="text-zinc-400">{r.label}</span>
+              <span className="font-mono text-zinc-300 tabular-nums">{r.funded} / {r.goal}</span>
             </div>
           ))}
         </div>
@@ -93,12 +91,6 @@ export function PortfolioMock() {
 }
 
 export function ModerationMock() {
-  const rows = [
-    { to: 'sponsorships@acme.io', team: 'Circuit Breakers', status: 'pending' },
-    { to: 'gcrane@beacon.org', team: 'Iron Phalanx', status: 'approved' },
-    { to: 'community@hertz.co', team: 'Quantum 7', status: 'pending' },
-    { to: 'give@lockheed.com', team: 'Circuit Breakers', status: 'changes' },
-  ] as const
   return (
     <div className="relative rounded-2xl border border-zinc-800 bg-zinc-950/80 p-3 shadow-2xl shadow-emerald-500/5 backdrop-blur">
       <div className="flex items-center justify-between px-2 py-1.5">
@@ -112,10 +104,12 @@ export function ModerationMock() {
       <div className="rounded-lg border border-zinc-900 bg-zinc-950">
         <div className="flex items-center justify-between border-b border-zinc-900 px-4 py-3">
           <div className="text-sm font-medium text-zinc-100">Moderation Queue</div>
-          <span className="rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-0.5 text-[10px] font-mono text-zinc-400">4 pending</span>
+          <span className="rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-0.5 text-[10px] font-mono text-zinc-400">
+            {MODERATION_MOCK_ROWS.length} pending
+          </span>
         </div>
         <div className="divide-y divide-zinc-900">
-          {rows.map((r, i) => (
+          {MODERATION_MOCK_ROWS.map((r, i) => (
             <div key={i} className="flex items-center justify-between px-4 py-3 text-xs">
               <div>
                 <div className="font-mono text-zinc-300">{r.to}</div>
@@ -136,10 +130,15 @@ function StatusPill({ status }: { status: 'pending' | 'approved' | 'changes' }) 
     approved: 'border-emerald-900/60 bg-emerald-500/5 text-emerald-300',
     changes: 'border-rose-900/60 bg-rose-500/5 text-rose-300',
   } as const
+  const dot = {
+    pending: 'bg-amber-400',
+    approved: 'bg-emerald-400',
+    changes: 'bg-rose-400',
+  } as const
   const label = { pending: 'Pending', approved: 'Approved', changes: 'Needs changes' }[status]
   return (
     <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium', map[status])}>
-      <span className={cn('h-1.5 w-1.5 rounded-full', status === 'pending' ? 'bg-amber-400' : status === 'approved' ? 'bg-emerald-400' : 'bg-rose-400')} />
+      <span className={cn('h-1.5 w-1.5 rounded-full', dot[status])} />
       {label}
     </span>
   )

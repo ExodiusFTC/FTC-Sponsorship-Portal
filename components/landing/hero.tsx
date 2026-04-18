@@ -4,6 +4,13 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { GooeyText } from '@/components/ui/gooey-text'
+import {
+  DISPATCH_SEASON_LABEL,
+  HERO_MORPHING_WORDS,
+  HERO_TITLE_TOP,
+  HERO_TITLE_BOTTOM,
+  HERO_DESCRIPTION
+} from '@/lib/site-config'
 
 export function Hero() {
   const reduce = useReducedMotion()
@@ -12,7 +19,7 @@ export function Hero() {
 
   return (
     <section className="relative pt-40 pb-24 overflow-hidden">
-      {/* grid backdrop */}
+      {/* dot-grid backdrop */}
       <div
         aria-hidden
         className="absolute inset-0 -z-10 opacity-[0.18]"
@@ -23,10 +30,11 @@ export function Hero() {
           maskImage: 'radial-gradient(ellipse 80% 50% at 50% 30%, #000 40%, transparent 100%)',
         }}
       />
-      {/* glow */}
+      {/* ambient glow */}
       <div aria-hidden className="absolute left-1/2 top-20 -z-10 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-indigo-500/10 blur-3xl" />
 
       <div className="mx-auto max-w-4xl px-6 text-center">
+        {/* season pill */}
         <motion.div
           initial={init}
           animate={show}
@@ -37,35 +45,31 @@ export function Hero() {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
           </span>
-          Season 2026 dispatch window open
+          {DISPATCH_SEASON_LABEL}
         </motion.div>
 
         <motion.h1
           initial={init}
           animate={show}
           transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-8 text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-zinc-50 leading-[1.02]"
+          className="mt-8 text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-zinc-50 leading-[1.1]"
         >
-          Every sponsor{' '}
-          <GooeyText
-            texts={['pitch', 'deck', 'email', 'ask']}
-            className="text-indigo-300"
-          />
-          ,
+          {HERO_TITLE_TOP} {' '}
+          <GooeyText texts={HERO_MORPHING_WORDS} className="text-indigo-400" />
           <br />
-          reviewed before it ships.
+          <span className="text-zinc-400 font-medium">{HERO_TITLE_BOTTOM}</span>
         </motion.h1>
 
         <motion.p
           initial={init}
           animate={show}
           transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="mx-auto mt-6 max-w-2xl text-base sm:text-lg leading-relaxed text-zinc-400"
+          className="mx-auto mt-6 max-w-2xl text-base sm:text-lg leading-relaxed text-zinc-400/90"
         >
-          Matchmaker is the moderated sponsorship pipeline for FIRST Tech Challenge coaches.
-          Build one portfolio. Send tailored pitches. Ship nothing that hasn&apos;t been approved.
+          {HERO_DESCRIPTION}
         </motion.p>
 
+        {/* CTAs — equal visual weight: both solid, light vs. dark fill */}
         <motion.div
           initial={init}
           animate={show}
@@ -78,11 +82,14 @@ export function Hero() {
           >
             Get started
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={1.8} />
-            <kbd className="ml-1 inline-flex items-center rounded bg-zinc-900/30 px-1.5 text-[10px] font-mono text-zinc-700 border border-zinc-900/20">⌘↵</kbd>
           </Link>
+          {/*
+            Sponsor button: solid bg-zinc-800 matches the filled weight of the
+            primary button without competing for top-priority attention.
+          */}
           <Link
             href="/sponsors/apply"
-            className="inline-flex items-center gap-2 rounded-md border border-zinc-800 bg-zinc-950/60 px-5 py-2.5 text-sm font-medium text-zinc-200 hover:bg-zinc-900 hover:border-zinc-700 transition-colors backdrop-blur"
+            className="inline-flex items-center gap-2 rounded-md bg-zinc-800 border border-zinc-700 px-5 py-2.5 text-sm font-medium text-zinc-100 hover:bg-zinc-700 hover:border-zinc-600 transition-colors active:scale-[0.98]"
           >
             Sponsor a team
           </Link>

@@ -1,36 +1,16 @@
 import Link from 'next/link'
 import { Globe, Mail, AtSign } from 'lucide-react'
+import { FOOTER_COLUMNS, FOOTER_SOCIALS, CURRENT_SEASON } from '@/lib/site-config'
 
-const columns = [
-  {
-    title: 'Product',
-    links: [
-      { label: 'For coaches', href: '/signup' },
-      { label: 'For sponsors', href: '/sponsors/apply' },
-      { label: 'Sign in', href: '/login' },
-    ],
-  },
-  {
-    title: 'Resources',
-    links: [
-      { label: 'How it works', href: '#how' },
-      { label: 'FAQ', href: '#faq' },
-    ],
-  },
-  {
-    title: 'Legal',
-    links: [
-      { label: 'Terms', href: '/legal/terms' },
-      { label: 'Privacy', href: '/legal/privacy' },
-    ],
-  },
-]
+const ICON_MAP = { Globe, Mail, AtSign } as const
+type IconKey = keyof typeof ICON_MAP
 
 export function LandingFooter() {
   return (
     <footer className="border-t border-zinc-900 mt-12">
       <div className="mx-auto max-w-6xl px-6 py-14">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
+          {/* brand column */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="text-zinc-100">
@@ -44,19 +24,24 @@ export function LandingFooter() {
               enforced by row-level security.
             </p>
             <div className="mt-6 flex items-center gap-2">
-              {[Globe, Mail, AtSign].map((Icon, i) => (
-                <a
-                  key={i}
-                  href="#"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-800 bg-zinc-950/60 text-zinc-500 transition-colors hover:border-zinc-700 hover:text-zinc-100"
-                  aria-label="social"
-                >
-                  <Icon className="h-4 w-4" strokeWidth={1.5} />
-                </a>
-              ))}
+              {FOOTER_SOCIALS.map((s) => {
+                const Icon = ICON_MAP[s.icon as IconKey]
+                return (
+                  <a
+                    key={s.label}
+                    href={s.href}
+                    aria-label={s.label}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-800 bg-zinc-950/60 text-zinc-500 transition-colors hover:border-zinc-700 hover:text-zinc-100"
+                  >
+                    <Icon className="h-4 w-4" strokeWidth={1.5} />
+                  </a>
+                )
+              })}
             </div>
           </div>
-          {columns.map((col) => (
+
+          {/* link columns */}
+          {FOOTER_COLUMNS.map((col) => (
             <div key={col.title}>
               <div className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">{col.title}</div>
               <ul className="mt-4 space-y-2.5">
@@ -71,9 +56,10 @@ export function LandingFooter() {
             </div>
           ))}
         </div>
+
         <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-900 pt-6 text-xs text-zinc-600">
           <span suppressHydrationWarning>© {new Date().getFullYear()} Matchmaker · FTC Sponsorship Portal</span>
-          <span className="font-mono">Built for Season 2026</span>
+          <span className="font-mono">Built for Season {CURRENT_SEASON}</span>
         </div>
       </div>
     </footer>

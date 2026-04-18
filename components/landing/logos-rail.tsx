@@ -1,13 +1,12 @@
 'use client'
 
 import { FadeUp } from '@/components/motion/fade-up'
-
-const logos = [
-  'Lockheed', 'Boeing', 'Hertz', 'Acme Robotics', 'Beacon Foundation',
-  'Quantum Labs', 'NorthStar', 'Helion', 'Meridian', 'Polaris',
-]
+import { MARQUEE_SPONSORS } from '@/lib/site-config'
 
 export function LogosRail() {
+  // Duplicate once so the marquee loop is seamless
+  const items = [...MARQUEE_SPONSORS, ...MARQUEE_SPONSORS]
+
   return (
     <section className="mx-auto max-w-6xl px-6 py-14">
       <FadeUp>
@@ -15,22 +14,32 @@ export function LogosRail() {
           Trusted by sponsors across robotics, aerospace, and local philanthropy
         </div>
       </FadeUp>
-      <div className="relative mt-8 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
-        <div className="flex gap-12 animate-[marquee_40s_linear_infinite]">
-          {[...logos, ...logos].map((name, i) => (
+
+      <div
+        className="relative mt-8 overflow-hidden"
+        style={{
+          maskImage: 'linear-gradient(to right, transparent, black 12%, black 88%, transparent)',
+        }}
+      >
+        <div
+          className="flex gap-12"
+          style={{ animation: 'marquee 40s linear infinite' }}
+        >
+          {items.map((name, i) => (
             <span
               key={i}
-              className="shrink-0 font-serif text-xl tracking-widest text-zinc-600 hover:text-zinc-300 transition-colors"
+              className="shrink-0 font-serif text-xl tracking-widest text-zinc-600 hover:text-zinc-300 transition-colors select-none"
             >
               {name}
             </span>
           ))}
         </div>
       </div>
-      <style jsx>{`
+
+      <style>{`
         @keyframes marquee {
           from { transform: translateX(0); }
-          to { transform: translateX(-50%); }
+          to   { transform: translateX(-50%); }
         }
       `}</style>
     </section>
