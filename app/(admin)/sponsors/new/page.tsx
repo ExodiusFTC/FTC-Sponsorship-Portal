@@ -21,7 +21,7 @@ export default async function NewSponsorPage() {
   }
 
   return (
-    <div className="container max-w-2xl py-8 space-y-6">
+    <div className="container mx-auto max-w-2xl py-8 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Add Sponsor</h1>
         <Link href="/sponsors" className={buttonVariants({ variant: 'outline' })}>

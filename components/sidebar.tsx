@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -16,236 +16,151 @@ import {
   Sun,
   Moon,
   ChevronDown,
+  ChevronsUpDown,
+  LogOut,
   type LucideIcon,
 } from 'lucide-react'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import useSWR from 'swr'
 import { createClient } from '@/lib/supabase/client'
 import { useTheme } from './theme-provider'
+import { cn } from '@/lib/utils'
 
 type Role = 'coach' | 'admin' | null
 
-interface NavItemProps {
-  icon: LucideIcon
-  label: string
-  href: string
-  badge?: number
-  isActive: boolean
-}
+type NavDef = { icon: LucideIcon; label: string; href: string; kbd?: string; showBadge?: boolean }
 
-function NavItem({ icon: Icon, label, href, badge, isActive }: NavItemProps) {
-  const [popKey, setPopKey] = useState(0)
+const coachNavItems: NavDef[] = [
+  { icon: LayoutDashboard, label: 'Overview', href: '/dashboard', kbd: 'G D' },
+  { icon: FileText, label: 'My Application', href: '/submissions/new', kbd: 'G A' },
+  { icon: Target, label: 'Find Sponsors', href: '/sponsors/browse', kbd: 'G S' },
+  { icon: Clock, label: 'Pitch History', href: '/submissions/new', kbd: 'G H' },
+  { icon: Settings, label: 'Settings', href: '/team/edit', kbd: 'G ,' },
+]
 
-  function handleClick() {
-    setPopKey((k) => k + 1)
-  }
+const adminNavItems: NavDef[] = [
+  { icon: LayoutDashboard, label: 'Dashboard', href: '/analytics', kbd: 'G D' },
+  { icon: Inbox, label: 'Moderation', href: '/moderation', showBadge: true, kbd: 'G M' },
+  { icon: Building2, label: 'Sponsors', href: '/sponsors', kbd: 'G S' },
+  { icon: Users, label: 'Teams', href: '/coaches', kbd: 'G T' },
+  { icon: BarChart2, label: 'Analytics', href: '/analytics', kbd: 'G A' },
+]
 
+function NavItem({ item, isActive, badge }: { item: NavDef; isActive: boolean; badge?: number }) {
+  const Icon = item.icon
   return (
     <Link
-      href={href}
-      onClick={handleClick}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        padding: '7px 10px',
-        borderRadius: '6px',
-        cursor: 'pointer',
-        transition: 'background 100ms ease',
-        textDecoration: 'none',
-        background: isActive ? 'var(--bg-hover)' : 'transparent',
-      }}
-      onMouseEnter={(e) => {
-        if (!isActive) (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'
-      }}
-      onMouseLeave={(e) => {
-        if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'
-      }}
+      href={item.href}
+      className={cn(
+        'group relative flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors',
+        isActive ? 'text-zinc-100' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900/60'
+      )}
     >
-      <span
-        key={popKey}
-        style={{
-          display: 'inline-flex',
-          transition: 'transform 150ms ease-out',
-          animation: popKey > 0 ? 'navPop 200ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards' : 'none',
-          color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
-        }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.1)' }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)' }}
-      >
-        <Icon size={16} />
-      </span>
-      <span
-        style={{
-          fontSize: '14px',
-          fontWeight: isActive ? 500 : 400,
-          color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-          flex: 1,
-        }}
-      >
-        {label}
-      </span>
-      {badge !== undefined && badge > 0 && (
-        <AdminBadge count={badge} />
+      {isActive && (
+        <motion.span
+          layoutId="sidebar-active"
+          className="absolute inset-0 rounded-md bg-zinc-900 ring-1 ring-zinc-800"
+          transition={{ type: 'spring', stiffness: 450, damping: 36 }}
+        />
+      )}
+      {isActive && (
+        <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-zinc-200" />
+      )}
+      <Icon
+        className={cn('relative h-4 w-4 transition-colors', isActive ? 'text-zinc-100' : 'text-zinc-500 group-hover:text-zinc-200')}
+        strokeWidth={1.5}
+      />
+      <span className="relative flex-1 truncate">{item.label}</span>
+      {typeof badge === 'number' && badge > 0 && <Badge count={badge} />}
+      {item.kbd && typeof badge !== 'number' && (
+        <kbd className="relative hidden font-mono text-[10px] text-zinc-600 group-hover:inline-flex">
+          {item.kbd}
+        </kbd>
       )}
     </Link>
   )
 }
 
-function AdminBadge({ count }: { count: number }) {
-  const prevRef = useRef(count)
+function Badge({ count }: { count: number }) {
+  const prev = useRef(count)
   const [pulse, setPulse] = useState(false)
-
   useEffect(() => {
-    if (prevRef.current !== count) {
+    if (prev.current !== count) {
       setPulse(true)
       const t = setTimeout(() => setPulse(false), 300)
-      prevRef.current = count
+      prev.current = count
       return () => clearTimeout(t)
     }
   }, [count])
-
   return (
-    <span
-      style={{
-        background: 'var(--bg-elevated)',
-        color: 'var(--text-primary)',
-        fontSize: '11px',
-        fontWeight: 600,
-        padding: '1px 7px',
-        borderRadius: '9999px',
-        border: '1px solid var(--border-color)',
-        marginLeft: 'auto',
-        animation: pulse ? 'badgePulse 300ms ease-out' : 'none',
-      }}
+    <motion.span
+      animate={pulse ? { scale: [1, 1.15, 1] } : { scale: 1 }}
+      transition={{ duration: 0.3 }}
+      className="relative inline-flex items-center rounded-full border border-zinc-800 bg-zinc-900 px-1.5 py-0.5 font-mono text-[10px] text-zinc-300"
     >
       {count}
-    </span>
+    </motion.span>
   )
 }
 
-const coachNavItems = [
-  { icon: LayoutDashboard, label: 'Overview', href: '/dashboard' },
-  { icon: FileText, label: 'My Application', href: '/submissions/new' },
-  { icon: Target, label: 'Find Sponsors', href: '/sponsors/browse' },
-  { icon: Clock, label: 'Pitch History', href: '/submissions/new' },
-  { icon: Settings, label: 'Settings', href: '/team/edit' },
-]
-
-const adminNavItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/analytics' },
-  { icon: Inbox, label: 'Moderation Queue', href: '/moderation', showBadge: true },
-  { icon: Building2, label: 'Sponsors', href: '/sponsors' },
-  { icon: Users, label: 'Teams', href: '/coaches' },
-  { icon: BarChart2, label: 'Analytics', href: '/analytics' },
-]
-
-function LogoBlock() {
+function WorkspacePill({ role }: { role: Role }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '4px 10px',
-        cursor: 'default',
-        transition: 'transform 150ms ease-out',
-      }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.05)' }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)' }}
+    <button
+      type="button"
+      className="flex w-full items-center gap-2 rounded-md border border-zinc-800 bg-zinc-950/60 px-2.5 py-1.5 text-left transition-colors hover:border-zinc-700 hover:bg-zinc-900/60"
     >
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ color: 'var(--text-primary)' }}>
-        <path
-          d="M9 1L16.5 5.5V12.5L9 17L1.5 12.5V5.5L9 1Z"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          fill="none"
-        />
-        <path
-          d="M9 4L14 7V11.5L9 14.5L4 11.5V7L9 4Z"
-          stroke="currentColor"
-          strokeWidth="1"
-          fill="none"
-          opacity="0.5"
-        />
-      </svg>
-      <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
-        Matchmaker
-      </span>
-    </div>
+      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-indigo-400 to-indigo-600 text-[10px] font-bold text-zinc-950">
+        M
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[11px] uppercase tracking-wider text-zinc-500">Workspace</div>
+        <div className="text-xs font-medium text-zinc-100 truncate">
+          {role === 'admin' ? 'Matchmaker · Admin' : 'Matchmaker · Team'}
+        </div>
+      </div>
+      <ChevronsUpDown className="h-3.5 w-3.5 text-zinc-500" strokeWidth={1.5} />
+    </button>
   )
 }
 
 function ThemeToggle() {
   const { theme, toggle } = useTheme()
-  const [iconKey, setIconKey] = useState(0)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  function handleClick() {
-    setIconKey((k) => k + 1)
-    toggle()
-  }
-
-  if (!mounted) {
-    return (
-      <div style={{ width: '32px', height: '32px' }} />
-    )
-  }
-
   return (
     <button
-      onClick={handleClick}
-      style={{
-        width: '32px',
-        height: '32px',
-        borderRadius: '6px',
-        border: 'none',
-        background: 'transparent',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'var(--text-muted)',
-        transition: 'background 100ms ease',
-      }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)' }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
-      title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode (M)`}
+      onClick={toggle}
+      suppressHydrationWarning
+      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-900 hover:text-zinc-100"
+      title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
     >
-      <span
-        key={iconKey}
-        className="icon-enter"
-        style={{
-          display: 'inline-flex',
-          opacity: 1,
-          transform: 'rotate(0deg)',
-          transition: 'opacity 200ms ease-out, transform 200ms ease-out',
-        }}
-      >
-        {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-      </span>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={theme}
+          suppressHydrationWarning
+          initial={{ rotate: -90, opacity: 0 }}
+          animate={{ rotate: 0, opacity: 1 }}
+          exit={{ rotate: 90, opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="flex"
+        >
+          {theme === 'dark' ? <Sun className="h-4 w-4" strokeWidth={1.5} /> : <Moon className="h-4 w-4" strokeWidth={1.5} />}
+        </motion.span>
+      </AnimatePresence>
     </button>
   )
 }
 
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? '')
-    .join('')
+function getInitials(name: string) {
+  return name.split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
 }
 
-function UserRow({ name, onSignOut }: { name: string; onSignOut: () => void }) {
+function UserRow({ name, email, role, onSignOut }: { name: string; email: string; role: Role; onSignOut: () => void }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const reduce = useReducedMotion()
 
   useEffect(() => {
     if (!open) return
-    function handler(e: MouseEvent) {
+    const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
     document.addEventListener('mousedown', handler)
@@ -253,102 +168,55 @@ function UserRow({ name, onSignOut }: { name: string; onSignOut: () => void }) {
   }, [open])
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          width: '100%',
-          padding: '6px 10px',
-          borderRadius: '6px',
-          border: 'none',
-          background: 'transparent',
-          cursor: 'pointer',
-          transition: 'background 100ms ease',
-        }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)' }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+        className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors hover:bg-zinc-900/70"
       >
-        <div
-          style={{
-            width: '26px',
-            height: '26px',
-            borderRadius: '50%',
-            background: 'var(--bg-elevated)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '11px',
-            fontWeight: 600,
-            color: 'var(--text-primary)',
-            flexShrink: 0,
-          }}
-        >
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-[11px] font-semibold text-zinc-200 ring-1 ring-zinc-800">
           {getInitials(name)}
         </div>
-        <span style={{ fontSize: '14px', color: 'var(--text-primary)', flex: 1, textAlign: 'left' }}>
-          {name}
-        </span>
-        <ChevronDown size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+        <div className="flex-1 min-w-0 text-left">
+          <div className="truncate text-xs font-medium text-zinc-100">{name}</div>
+          <div className="truncate text-[10px] text-zinc-500">
+            {role === 'admin' ? 'Admin' : role === 'coach' ? 'Coach' : 'Member'}
+          </div>
+        </div>
+        <ChevronDown className="h-3.5 w-3.5 text-zinc-500" strokeWidth={1.5} />
       </button>
 
-      {open && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '100%',
-            left: 0,
-            right: 0,
-            marginBottom: '4px',
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '6px',
-            padding: '4px',
-            minWidth: '160px',
-            zIndex: 100,
-          }}
-        >
-          <button
-            onClick={onSignOut}
-            style={{
-              display: 'block',
-              width: '100%',
-              padding: '7px 10px',
-              textAlign: 'left',
-              fontSize: '14px',
-              color: 'var(--text-primary)',
-              background: 'transparent',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              transition: 'background 100ms ease',
-            }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)' }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={reduce ? { opacity: 1 } : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
+            transition={{ duration: 0.15 }}
+            className="absolute bottom-full left-0 right-0 mb-2 rounded-lg border border-zinc-800 bg-zinc-950/95 p-1.5 shadow-xl backdrop-blur z-50"
           >
-            Sign Out
-          </button>
-          <Link
-            href="/team/edit"
-            onClick={() => setOpen(false)}
-            style={{
-              display: 'block',
-              padding: '7px 10px',
-              fontSize: '14px',
-              color: 'var(--text-primary)',
-              textDecoration: 'none',
-              borderRadius: '4px',
-              transition: 'background 100ms ease',
-            }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)' }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
-          >
-            Settings
-          </Link>
-        </div>
-      )}
+            <div className="px-2 py-1.5">
+              <div className="truncate text-xs font-medium text-zinc-100">{name}</div>
+              <div className="truncate text-[10px] text-zinc-500">{email}</div>
+            </div>
+            <div className="my-1 h-px bg-zinc-900" />
+            <Link
+              href="/team/edit"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-900 hover:text-zinc-100"
+            >
+              <Settings className="h-3.5 w-3.5" strokeWidth={1.5} />
+              Settings
+            </Link>
+            <button
+              onClick={onSignOut}
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-900 hover:text-zinc-100"
+            >
+              <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
+              Sign out
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -358,6 +226,7 @@ export function Sidebar() {
   const router = useRouter()
   const [role, setRole] = useState<Role>(null)
   const [userName, setUserName] = useState('User')
+  const [userEmail, setUserEmail] = useState('')
 
   const { data: queueData } = useSWR<{ count: number }>(
     role === 'admin' ? '/api/admin/queue/count' : null,
@@ -370,6 +239,7 @@ export function Sidebar() {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
+      setUserEmail(user.email ?? '')
       supabase
         .from('profiles')
         .select('role, full_name')
@@ -391,45 +261,44 @@ export function Sidebar() {
   const navItems = role === 'admin' ? adminNavItems : role === 'coach' ? coachNavItems : []
 
   return (
-    <aside
-      style={{
-        width: '240px',
-        borderRight: '1px solid var(--border-color)',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        padding: '16px 12px',
-        height: '100vh',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        background: 'var(--bg-app)',
-        zIndex: 30,
-      }}
-    >
-      <div>
-        <div style={{ marginBottom: '24px' }}>
-          <LogoBlock />
+    <aside className="fixed left-0 top-0 z-30 flex h-screen w-[240px] flex-col justify-between border-r border-zinc-900 bg-zinc-950 p-3">
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center justify-between px-1 pt-1">
+          <Link href="/" className="flex items-center gap-2">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="text-zinc-100">
+              <path d="M9 1L16.5 5.5V12.5L9 17L1.5 12.5V5.5L9 1Z" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M9 4L14 7V11.5L9 14.5L4 11.5V7L9 4Z" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+            </svg>
+            <span className="text-sm font-semibold tracking-tight text-zinc-100">Matchmaker</span>
+          </Link>
+          <ThemeToggle />
         </div>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          {navItems.map((item) => (
-            <NavItem
-              key={item.href + item.label}
-              icon={item.icon}
-              label={item.label}
-              href={item.href}
-              isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
-              badge={'showBadge' in item && item.showBadge ? queueCount : undefined}
-            />
-          ))}
-        </nav>
+
+        <WorkspacePill role={role} />
+
+        <div>
+          <div className="px-2 pb-2 text-[10px] font-mono uppercase tracking-widest text-zinc-600">
+            {role === 'admin' ? 'Admin' : 'Coach'}
+          </div>
+          <nav className="flex flex-col gap-0.5">
+            {navItems.map((item) => {
+              const isActive =
+                pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
+              return (
+                <NavItem
+                  key={item.href + item.label}
+                  item={item}
+                  isActive={isActive}
+                  badge={item.showBadge ? queueCount : undefined}
+                />
+              )
+            })}
+          </nav>
+        </div>
       </div>
 
-      <div>
-        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <ThemeToggle />
-          <UserRow name={userName} onSignOut={handleSignOut} />
-        </div>
+      <div className="border-t border-zinc-900 pt-2">
+        <UserRow name={userName} email={userEmail} role={role} onSignOut={handleSignOut} />
       </div>
     </aside>
   )

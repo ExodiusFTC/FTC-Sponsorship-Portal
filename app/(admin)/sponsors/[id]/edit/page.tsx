@@ -20,7 +20,7 @@ export default async function EditSponsorPage({ params }: { params: Promise<{ id
   if (!sponsor) notFound()
 
   return (
-    <div className="container max-w-2xl py-8 space-y-6">
+    <div className="container mx-auto max-w-2xl py-8 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Edit Sponsor</h1>
         <div className="flex items-center gap-2">

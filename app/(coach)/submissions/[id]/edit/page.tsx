@@ -43,7 +43,7 @@ export default async function EditSubmissionPage({ params }: { params: Promise<{
   const sponsors = allSponsors?.filter((s) => s.funding_cap_cents > s.funding_used_cents || s.id === submission.sponsor_id) ?? []
 
   return (
-    <div className="container py-8 space-y-6">
+    <div className="container mx-auto py-8 space-y-6">
       <PortfolioForm initialSubmission={submission} sponsors={sponsors} />
     </div>
   )

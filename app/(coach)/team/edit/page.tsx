@@ -19,7 +19,7 @@ export default async function TeamEditPage() {
   if (!team) redirect('/onboarding')
 
   return (
-    <div className="container max-w-2xl py-8 space-y-6">
+    <div className="container mx-auto max-w-2xl py-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Edit Team Profile</h1>

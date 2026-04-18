@@ -32,7 +32,7 @@ export default async function NewSubmissionPage({ searchParams }: { searchParams
   const preselectedSponsorId = params.sponsor
 
   return (
-    <div className="container py-8">
+    <div className="container mx-auto py-8">
       <PortfolioForm
         sponsors={sponsors ?? []}
         preselectedSponsorId={preselectedSponsorId}

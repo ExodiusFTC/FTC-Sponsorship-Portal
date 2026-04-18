@@ -2,34 +2,10 @@ import { Sidebar } from './sidebar'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'row',
-        height: '100vh',
-        overflow: 'hidden',
-        background: 'var(--bg-app)',
-      }}
-    >
+    <div className="flex h-screen overflow-hidden bg-zinc-950 text-zinc-200 [color-scheme:dark]">
       <Sidebar />
-      <main
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '40px 48px',
-          marginLeft: '240px',
-        }}
-      >
-        <div
-          style={{
-            maxWidth: '1100px',
-            margin: '0 auto',
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '32px',
-          }}
-        >
+      <main className="flex-1 overflow-y-auto" style={{ marginLeft: 240 }}>
+        <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-8 px-12 py-10">
           {children}
         </div>
       </main>

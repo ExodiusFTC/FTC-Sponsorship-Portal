@@ -21,7 +21,7 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <div className="container py-12">
+    <div className="container mx-auto py-12">
       <OnboardingForm isVerified={profile.coach_verified} />
     </div>
   )

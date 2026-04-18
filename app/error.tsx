@@ -27,7 +27,7 @@ export default function Error({
   const showDetails = process.env.NODE_ENV !== 'production'
 
   return (
-    <div className="container flex min-h-[60vh] items-center justify-center py-16">
+    <div className="container mx-auto flex min-h-[60vh] items-center justify-center py-16">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Something went wrong</CardTitle>

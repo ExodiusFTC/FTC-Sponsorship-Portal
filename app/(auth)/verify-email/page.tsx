@@ -5,7 +5,7 @@ import Link from 'next/link'
 
 export default function VerifyEmailPage() {
   return (
-    <div className="container flex items-center justify-center min-h-screen py-12">
+    <div className="container mx-auto flex items-center justify-center min-h-screen py-12">
       <Card className="w-full max-w-md mx-auto text-center">
         <CardHeader>
           <CardTitle>Check your email</CardTitle>

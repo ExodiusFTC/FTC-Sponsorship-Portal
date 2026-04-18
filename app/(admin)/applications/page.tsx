@@ -21,7 +21,7 @@ export default async function ApplicationsPage() {
   const reviewed = applications?.filter(a => a.status !== 'pending') ?? []
 
   return (
-    <div className="container py-8 space-y-8">
+    <div className="container mx-auto py-8 space-y-8">
       <div>
         <h1 className="text-3xl font-bold">Sponsor Applications</h1>
         <p className="text-muted-foreground">
