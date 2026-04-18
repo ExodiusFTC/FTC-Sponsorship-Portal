@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition, useState } from 'react'
+import { useTransition } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { teamOnboardingSchema, type TeamOnboardingInput, DRIVETRAIN_OPTIONS, BUILD_SYSTEM_OPTIONS, PROGRAMMING_OPTIONS } from '@/lib/schemas/team'
@@ -9,14 +9,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Trash, Image as ImageIcon, ChevronLeft, ChevronRight, Upload } from 'lucide-react'
+import { Trash, Image as ImageIcon, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import type { Team } from '@/lib/supabase/types'
 import { createClient } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
 
 const SENSOR_OPTIONS = [
   { id: 'odometry', label: 'Odometry' },
@@ -134,38 +133,38 @@ export function PortfolioTab({ team }: { team: Team }) {
             <FormField control={form.control} name="drivetrain" render={({ field }) => (
               <FormItem>
                 <FormLabel>Drivetrain</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select Drivetrain" /></SelectTrigger></FormControl>
-                  <SelectContent>
-                    {DRIVETRAIN_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <NativeSelect {...field} value={field.value ?? ''}>
+                    <option value="" disabled>Select Drivetrain</option>
+                    {DRIVETRAIN_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                  </NativeSelect>
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="buildSystem" render={({ field }) => (
               <FormItem>
                 <FormLabel>Build System</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select System" /></SelectTrigger></FormControl>
-                  <SelectContent>
-                    {BUILD_SYSTEM_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <NativeSelect {...field} value={field.value ?? ''}>
+                    <option value="" disabled>Select System</option>
+                    {BUILD_SYSTEM_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                  </NativeSelect>
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="controlSystem" render={({ field }) => (
               <FormItem>
                 <FormLabel>Control System</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select Control" /></SelectTrigger></FormControl>
-                  <SelectContent>
-                    <SelectItem value="rev_control_hub">REV Control Hub</SelectItem>
-                    <SelectItem value="android_phone">Android Phone</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <NativeSelect {...field} value={field.value ?? ''}>
+                    <option value="" disabled>Select Control</option>
+                    <option value="rev_control_hub">REV Control Hub</option>
+                    <option value="android_phone">Android Phone</option>
+                    <option value="other">Other</option>
+                  </NativeSelect>
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -193,12 +192,12 @@ export function PortfolioTab({ team }: { team: Team }) {
             <FormField control={form.control} name="programming" render={({ field }) => (
               <FormItem>
                 <FormLabel>Primary Language</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select Language" /></SelectTrigger></FormControl>
-                  <SelectContent>
-                    {PROGRAMMING_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <NativeSelect {...field} value={field.value ?? ''}>
+                    <option value="" disabled>Select Language</option>
+                    {PROGRAMMING_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                  </NativeSelect>
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -357,5 +356,26 @@ export function PortfolioTab({ team }: { team: Team }) {
         </div>
       </form>
     </Form>
+  )
+}
+
+function NativeSelect({
+  className,
+  children,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select
+      className={cn(
+        'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm',
+        'ring-offset-background focus-visible:outline-none focus-visible:ring-2',
+        'focus-visible:ring-ring focus-visible:ring-offset-2',
+        'disabled:cursor-not-allowed disabled:opacity-50',
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </select>
   )
 }

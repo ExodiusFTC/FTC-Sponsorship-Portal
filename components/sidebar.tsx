@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   LayoutDashboard,
   FileText,
