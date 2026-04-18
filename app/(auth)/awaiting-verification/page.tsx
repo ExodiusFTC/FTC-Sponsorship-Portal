@@ -26,8 +26,8 @@ export default async function AwaitingVerificationPage() {
     <div className="container mx-auto max-w-md py-20">
       <Card className="text-center">
         <CardHeader>
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-3xl">
-            ⏳
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-10 text-3xl">
+            ⏱︎
           </div>
           <CardTitle>Application under review</CardTitle>
           <CardDescription className="text-base">
