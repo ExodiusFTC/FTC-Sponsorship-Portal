@@ -38,13 +38,11 @@ const TableRow = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tr
     ref={ref}
-    className={cn("group/row transition-[background] duration-100 linear", className)}
+    className={cn("group/row transition-[background] duration-100 linear hover:bg-[var(--bg-hover)]", className)}
     style={{
       height: "44px",
       borderBottom: "1px solid var(--border-color)",
     }}
-    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)" }}
-    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent" }}
     {...props}
   />
 ))

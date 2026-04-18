@@ -43,7 +43,8 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/legal') ||
     pathname.startsWith('/sponsors/apply') ||
     pathname.startsWith('/sponsor-view/') ||
-    pathname.startsWith('/auth/')
+    pathname.startsWith('/auth/') ||
+    pathname.startsWith('/dev-login')
 
   if (!user && !isAuthPage && !isPublicRoute) {
     return NextResponse.redirect(new URL('/login', request.url))

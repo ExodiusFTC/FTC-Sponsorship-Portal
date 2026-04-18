@@ -46,7 +46,7 @@ export default async function AdminSponsorsPage() {
             {sponsors?.map((sponsor) => (
               <TableRow key={sponsor.id}>
                 <TableCell isFirst>
-                  <Link href={`/sponsors/${sponsor.id}/edit`} style={{ color: 'var(--text-primary)', textDecoration: 'none' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.textDecoration = 'underline' }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.textDecoration = 'none' }}>
+                  <Link href={`/sponsors/${sponsor.id}/edit`} style={{ color: 'var(--text-primary)', textDecoration: 'none' }} className="hover:underline">
                     {sponsor.company_name}
                   </Link>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{sponsor.industry}</div>

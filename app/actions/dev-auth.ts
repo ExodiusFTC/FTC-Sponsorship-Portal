@@ -5,8 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
 const DEV_CREDENTIALS = {
-  coach: { email: 'devcoach@test.local', password: 'devpassword123!', name: 'Dev Coach' },
-  admin: { email: 'devadmin@test.local', password: 'devpassword123!', name: 'Dev Admin' },
+  coach: { email: 'noreply+coach-1776482921139@exodiusftc.com', password: 'devpassword123!', name: 'Smoke Coach' },
+  admin: { email: 'anish.yarrakonda456@gmail.com', password: 'devpassword123!', name: 'Dev Admin' },
 } as const
 
 type Role = 'coach' | 'admin'
@@ -47,10 +47,11 @@ export async function devSignIn(role: Role) {
     }
   } else if (role === 'admin') {
     // Ensure existing dev admin has correct role
-    await admin
+    const updateRes = await admin
       .from('profiles')
       .update({ role: 'admin', coach_verified: true })
       .eq('id', existing.id)
+    if (updateRes.error) console.error("Admin update error:", updateRes.error)
   }
 
   // Sign in via normal password auth

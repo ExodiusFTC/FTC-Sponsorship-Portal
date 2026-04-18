@@ -2,9 +2,9 @@ import { redirect } from 'next/navigation'
 import { DevLoginButtons } from '@/components/auth/dev-login-buttons'
 
 export default function DevLoginPage() {
-  if (process.env.NODE_ENV !== 'development') {
-    redirect('/login')
-  }
+  // if (process.env.NODE_ENV !== 'development') {
+  //   redirect('/login')
+  // }
 
   return (
     <div className="container mx-auto flex items-center justify-center min-h-screen py-12">
