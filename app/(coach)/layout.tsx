@@ -16,7 +16,7 @@ export default async function CoachLayout({ children }: { children: React.ReactN
     .eq('id', user.id)
     .single()
 
-  if (profile?.role === 'admin') redirect('/moderation')
+  if (profile?.role === 'admin') redirect('/admin')
 
   if (!profile?.coach_credentials_url) redirect('/upload-credentials')
 

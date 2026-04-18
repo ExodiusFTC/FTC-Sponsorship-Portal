@@ -17,4 +17,4 @@
 ## Commands
 - Dev: `npm run dev`, `npm run build`
 - Validate: `npm run lint`, `npm run typecheck`
-- Test: Playwright (E2E), Vitest (Unit), pgtap (RLS).
+- Test: `npx playwright test` (E2E), Vitest (Unit), pgtap (RLS).

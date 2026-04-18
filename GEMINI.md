@@ -15,7 +15,7 @@ These four rules take absolute precedence over all other architectural and featu
 ### Recommended Tech Stack
 | Layer | Choice | Justification |
 |---|---|---|
-| **Frontend** | **Next.js 15 (App Router) + React 19 + TypeScript** | Server Components, Server Actions, and React 19 features. |
+| **Frontend** | **Next.js 16 (App Router) + React 19 + TypeScript** | Server Components, Server Actions, and React 19 features. |
 | **Styling / UI** | **Tailwind CSS 4 + shadcn/ui + Radix primitives** | Fast iteration with accessible, ownable components. |
 | **Backend** | **Next.js Route Handlers + Server Actions** | Unified server-side logic and validation. |
 | **Database** | **Supabase (managed Postgres)** | RLS for security; JSONB for flexible pitch data. |
@@ -50,36 +50,36 @@ These four rules take absolute precedence over all other architectural and featu
 ## 3. Implementation Roadmap
 
 ### Chunk 1 — Foundations: Project Scaffolding, Auth, and Database
-- [ ] Initialize Next.js 15 + TypeScript + Tailwind + shadcn/ui.
-- [ ] Provision Supabase; apply initial migrations (RLS enabled).
-- [ ] Implement coach signup + credentials upload workflow.
-- [ ] Setup seed scripts and core `lib/supabase/` infrastructure.
+- [x] Initialize Next.js 16 + TypeScript + Tailwind + shadcn/ui.
+- [x] Provision Supabase; apply initial migrations (RLS enabled).
+- [x] Implement coach signup + credentials upload workflow.
+- [x] Setup seed scripts and core `lib/supabase/` infrastructure.
 
 ### Chunk 2 — Team Profiles & The Incubator
-- [ ] Coach onboarding wizard (Existing vs. Incubator).
-- [ ] FIRST team-number validator/cache.
-- [ ] Team profile CRUD (mission, achievements, logo).
+- [x] Coach onboarding wizard (Existing vs. Incubator).
+- [x] FIRST team-number validator/cache.
+- [x] Team profile CRUD (mission, achievements, logo).
 
 ### Chunk 3 — The Smart Pitch Builder
-- [ ] Multi-step form (RHF + Zod) with drafts.
-- [ ] Dynamic line-item calculation.
-- [ ] Media uploader (Supabase Storage).
-- [ ] React Email template rendering.
+- [x] Multi-step form (RHF + Zod) with drafts.
+- [x] Dynamic line-item calculation.
+- [x] Media uploader (Supabase Storage).
+- [x] React Email template rendering.
 
 ### Chunk 4 — Sponsor Database & Targeting UI
-- [ ] Admin CRUD for sponsors.
-- [ ] Public sponsor opt-in page (`/sponsors/apply`).
-- [ ] Team-facing sponsor browser (filtered by RLS and capacity).
+- [x] Admin CRUD for sponsors.
+- [x] Public sponsor opt-in page (`/sponsors/apply`).
+- [x] Team-facing sponsor browser (filtered by RLS and capacity).
 
 ### Chunk 5 — Admin Review Engine & SMTP Dispatch
-- [ ] Admin dashboard and review queue.
-- [ ] Approve & Dispatch workflow (Resend integration).
-- [ ] Webhook handler for tracking (bounces/opens).
+- [x] Admin dashboard and review queue.
+- [x] Approve & Dispatch workflow (Resend integration).
+- [x] Webhook handler for tracking (bounces/opens).
 
 ### Chunk 6 — Analytics, Compliance Hardening & Launch Prep
-- [ ] Admin analytics dashboard.
+- [/] Admin analytics dashboard.
 - [ ] COPPA/legal artifact completion (TOS, Privacy Policy).
-- [ ] Rate limiting and automated security testing (pgtap, Playwright).
+- [x] Rate limiting and automated security testing (pgtap, Playwright).
 
 ---
 

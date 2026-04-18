@@ -7,7 +7,6 @@ import { loginSchema, type LoginInput } from '@/lib/schemas/auth'
 import { signIn } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -83,13 +82,21 @@ export function LoginForm() {
           </form>
         </Form>
       </CardContent>
-      <CardFooter className="flex justify-center">
+      <CardFooter className="flex flex-col items-center gap-2">
         <p className="text-sm text-muted-foreground">
           Don&apos;t have an account?{' '}
           <Link href="/signup" className="text-primary hover:underline">
             Sign up
           </Link>
         </p>
+        {process.env.NODE_ENV === 'development' && (
+          <Link
+            href="/dev-login"
+            className="text-xs text-yellow-500 hover:text-yellow-400 border border-yellow-900/40 rounded px-2 py-0.5"
+          >
+            ⚡ Dev: skip email verification
+          </Link>
+        )}
       </CardFooter>
     </Card>
   )

@@ -1,8 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { buttonVariants } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/page-header'
 
 const STATUS_LABELS: Record<string, { label: string; bg: string; text: string }> = {
@@ -18,13 +15,6 @@ export default async function AnalyticsPage() {
   const { data: capacityData } = await supabase.from('v_sponsor_capacity').select('*')
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: submissionSummary } = await (supabase as any).from('v_submission_summary').select('*')
-  const { data: pendingCoaches } = await supabase
-    .from('profiles')
-    .select('id, full_name, created_at')
-    .eq('role', 'coach')
-    .eq('coach_verified', false)
-    .not('coach_credentials_url', 'is', null)
-    .order('created_at', { ascending: true })
 
   const uniqueTeamAsks = new Map<string, number>()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -38,7 +28,6 @@ export default async function AnalyticsPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const totalSent      = submissionSummary?.filter((s: any) => s.status === 'approved').length ?? 0
   const activeSponsors = capacityData?.filter(s => s.status === 'active').length ?? 0
-  const pendingCount   = pendingCoaches?.length ?? 0
 
   const statusCounts: Record<string, number> = {}
   for (const s of submissionSummary ?? []) {
@@ -48,10 +37,10 @@ export default async function AnalyticsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      <PageHeader title="Dashboard" subtitle="Platform-wide metrics and conversion funnel." />
+      <PageHeader title="Analytics" subtitle="Platform-wide metrics, capacity utilization, and conversion funnel." />
 
       {/* KPI row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
         <StatCard label="Total Requested" value={`$${(totalRequested / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} />
         <StatCard
           label="Capacity Remaining"
@@ -60,7 +49,7 @@ export default async function AnalyticsPage() {
         />
         <StatCard label="Approved & Sent" value={String(totalSent)} />
         <StatCard label="Active Sponsors" value={String(activeSponsors)} />
-        <StatCard label="Pending Verifications" value={String(pendingCount)} highlight={pendingCount > 0} />
+        <StatCard label="Conversion Rate" value={totalSubmissions > 0 ? `${Math.round((totalSent / totalSubmissions) * 100)}%` : '—'} sub="Approved ÷ Total submissions" />
       </div>
 
       {/* Charts row */}
@@ -181,45 +170,6 @@ export default async function AnalyticsPage() {
         </CardContent>
       </Card>
 
-      {pendingCount > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              Coaches Awaiting Verification
-              <span style={{ background: 'var(--badge-warning-bg)', color: 'var(--badge-warning-text)', fontSize: '12px', fontWeight: 600, padding: '1px 7px', borderRadius: '9999px' }}>{pendingCount}</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-              These coaches uploaded credentials and are waiting for admin approval.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {pendingCoaches?.map(coach => (
-                <div key={coach.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '12px' }}>
-                  <div>
-                    <p style={{ fontWeight: 500, fontSize: '14px', color: 'var(--text-primary)' }}>{coach.full_name}</p>
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{coach.id}</p>
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)' }} suppressHydrationWarning>
-                      Applied {new Date(coach.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Link
-                    href="https://supabase.com/dashboard"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={cn(buttonVariants({ size: 'sm', variant: 'secondary' }))}
-                  >
-                    Open Supabase ↗
-                  </Link>
-                </div>
-              ))}
-            </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', background: 'var(--bg-elevated)', borderRadius: '6px', padding: '8px', fontFamily: 'var(--font-mono)' }}>
-              {'UPDATE profiles SET coach_verified = true WHERE id = \'<id above>\';'}
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

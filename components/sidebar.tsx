@@ -32,15 +32,16 @@ const coachNavItems: NavDef[] = [
   { icon: FileText, label: 'My Application', href: '/submissions/new', kbd: 'G A' },
   { icon: Target, label: 'Find Sponsors', href: '/sponsors/browse', kbd: 'G S' },
   { icon: Clock, label: 'Pitch History', href: '/submissions/new', kbd: 'G H' },
-  { icon: Settings, label: 'Settings', href: '/team/edit', kbd: 'G ,' },
+  { icon: Settings, label: 'Settings', href: '/settings', kbd: 'G ,' },
 ]
 
 const adminNavItems: NavDef[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/analytics', kbd: 'G D' },
+  { icon: LayoutDashboard, label: 'Dashboard', href: '/admin', kbd: 'G D' },
   { icon: Inbox, label: 'Inbox', href: '/moderation', showBadge: true, kbd: 'G M' },
   { icon: Building2, label: 'Sponsors', href: '/sponsors', kbd: 'G S' },
   { icon: Users, label: 'Teams', href: '/coaches', kbd: 'G T' },
   { icon: BarChart2, label: 'Analytics', href: '/analytics', kbd: 'G A' },
+  { icon: Settings, label: 'Settings', href: '/settings', kbd: 'G ,' },
 ]
 
 function NavItem({ item, isActive, badge }: { item: NavDef; isActive: boolean; badge?: number }) {
@@ -171,7 +172,7 @@ function UserRow({ name, email, role, onSignOut }: { name: string; email: string
             </div>
             <div className="my-1 h-px bg-zinc-900" />
             <Link
-              href="/team/edit"
+              href="/settings"
               onClick={() => setOpen(false)}
               className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-900 hover:text-zinc-100"
             >

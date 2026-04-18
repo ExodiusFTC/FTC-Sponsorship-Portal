@@ -73,6 +73,11 @@ export async function uploadCredentials(formData: FormData) {
     return { error: 'No file provided' }
   }
 
+  const MAX_SIZE = 5 * 1024 * 1024 // 5MB
+  if (file.size > MAX_SIZE) {
+    return { error: 'File too large. Maximum size is 5MB.' }
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 

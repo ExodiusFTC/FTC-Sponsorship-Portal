@@ -6,7 +6,7 @@ A "Dynamic Portfolio" and Verified Grant Portal connecting FIRST Tech Challenge 
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 15 (App Router) + TypeScript + Tailwind CSS v4 + shadcn/ui |
+| Frontend | Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + shadcn/ui |
 | Database & Auth | Supabase (Postgres + RLS + Auth + Storage) |
 | Email Dispatch | Resend + React Email |
 | Validation | Zod + React Hook Form |
@@ -27,7 +27,7 @@ A "Dynamic Portfolio" and Verified Grant Portal connecting FIRST Tech Challenge 
 | `coach` | Adult advisor who registers, builds team portfolio, creates submissions |
 | `admin` | Platform operator who verifies coaches, reviews submissions, and triggers dispatch |
 
-Sponsors have no platform login in v1 — they receive emails and reply directly to the coach.
+Sponsors have no platform login in v1 — they receive emails with a unique, trackable link to view the pitch.
 
 ## Getting Started
 
@@ -82,9 +82,11 @@ App runs at [http://localhost:3000](http://localhost:3000).
 app/
   (auth)/          # Login, signup, verify-email, credential upload
   (coach)/         # Dashboard, team edit, submission builder, sponsor browser
-  (admin)/         # Review queue, sponsor management, analytics
+  (admin)/         # Review queue, moderation, sponsor management, analytics
+  sponsor-view/    # Public, token-authenticated pitch viewer
   api/
     webhooks/      # Resend bounce/open webhook handler
+    cron/          # Scheduled jobs (e.g. expiring submissions)
 components/
   portfolio-builder/ # Multi-step submission form
   team/            # Onboarding and master portfolio forms
@@ -109,6 +111,6 @@ emails/            # React Email templates
 | 1 | Done | Scaffold, auth, DB schema, RLS, Supabase clients, seed |
 | 2 | Done | Master Portfolio flow, FTC roster validator, incubator flow |
 | 3 | Done | Submission builder with custom pitch alignment |
-| 4 | Pending | Sponsor database, targeting UI, opt-in application |
+| 4 | Done | Sponsor database, targeting UI, opt-in application |
 | 5 | Done | Admin review queue and Resend dispatch |
-| 6 | Pending | Analytics hardening, COPPA hardening, E2E tests, launch prep |
+| 6 | In Progress | Analytics hardening, COPPA hardening, E2E tests, launch prep |

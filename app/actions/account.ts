@@ -1,0 +1,69 @@
+'use server'
+
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { redirect } from 'next/navigation'
+import { z } from 'zod'
+
+const updateProfileSchema = z.object({
+  fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
+})
+
+const updatePasswordSchema = z.object({
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+})
+
+export async function updateProfile(data: { fullName: string }) {
+  const result = updateProfileSchema.safeParse(data)
+  if (!result.success) {
+    return { error: result.error.issues[0].message }
+  }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const { error: authError } = await supabase.auth.updateUser({
+    data: { full_name: result.data.fullName },
+  })
+  if (authError) return { error: authError.message }
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ full_name: result.data.fullName })
+    .eq('id', user.id)
+
+  if (profileError) return { error: profileError.message }
+
+  return { success: true }
+}
+
+export async function updatePassword(data: { password: string }) {
+  const result = updatePasswordSchema.safeParse(data)
+  if (!result.success) {
+    return { error: result.error.issues[0].message }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.updateUser({ password: result.data.password })
+  if (error) return { error: error.message }
+
+  return { success: true }
+}
+
+export async function deleteAccount() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const adminClient = createAdminClient()
+
+  // Delete auth user (cascades to profile via DB trigger/FK)
+  const { error } = await adminClient.auth.admin.deleteUser(user.id)
+  if (error) return { error: error.message }
+
+  // Sign out local session
+  await supabase.auth.signOut()
+
+  redirect('/login?deleted=1')
+}
