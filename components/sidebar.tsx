@@ -32,14 +32,14 @@ type Role = 'coach' | 'admin' | null
 type NavDef = { icon: LucideIcon; label: string; href: string; kbd?: string; showBadge?: boolean }
 
 const coachNavItems: NavDef[] = [
-  { icon: LayoutDashboard, label: 'Overview',      href: '/dashboard',                    kbd: 'Shift+D' },
-  { icon: BookOpen,        label: 'Portfolio',     href: '/dashboard?tab=portfolio',      kbd: 'Shift+P' },
-  { icon: Target,          label: 'Find Sponsors', href: '/dashboard?tab=find-sponsors',  kbd: 'Shift+S' },
-  { icon: FileText,        label: 'Submissions',   href: '/dashboard?tab=submissions',    kbd: 'Shift+H' },
-  { icon: Inbox,           label: 'Inbox',         href: '/dashboard?tab=inbox',          kbd: 'Shift+N', showBadge: true },
-  { icon: BarChart2,       label: 'Insights',      href: '/dashboard?tab=insights',       kbd: 'Shift+I' },
-  { icon: Wallet,          label: 'Ledger',        href: '/dashboard?tab=ledger',         kbd: 'Shift+L' },
-  { icon: Settings,        label: 'Settings',      href: '/dashboard?tab=settings',       kbd: 'Shift+,' },
+  { icon: LayoutDashboard, label: 'Overview', href: '/dashboard', kbd: 'Shift+O' },
+  { icon: BookOpen, label: 'Portfolio', href: '/dashboard?tab=portfolio', kbd: 'Shift+P' },
+  { icon: Target, label: 'Find Sponsors', href: '/dashboard?tab=find-sponsors', kbd: 'Shift+S' },
+  { icon: FileText, label: 'Submissions', href: '/dashboard?tab=submissions', kbd: 'Shift+H' },
+  { icon: Inbox, label: 'Inbox', href: '/dashboard?tab=inbox', kbd: 'Shift+N', showBadge: true },
+  { icon: BarChart2, label: 'Insights', href: '/dashboard?tab=insights', kbd: 'Shift+I' },
+  { icon: Wallet, label: 'Ledger', href: '/dashboard?tab=ledger', kbd: 'Shift+L' },
+  { icon: Settings, label: 'Settings', href: '/dashboard?tab=settings', kbd: 'Shift+,' },
 ]
 
 const adminNavItems: NavDef[] = [
@@ -77,7 +77,7 @@ function NavItem({ item, isActive, badge }: { item: NavDef; isActive: boolean; b
       />
       <span className="relative flex-1 truncate">{item.label}</span>
       {typeof badge === 'number' && badge > 0 && <Badge count={badge} />}
-      {item.kbd && typeof badge !== 'number' && (
+      {item.kbd && (
         <kbd className="relative font-mono text-[10px] text-muted-foreground/60 group-hover:text-muted-foreground inline-flex items-center gap-0.5 transition-colors">
           {item.kbd}
         </kbd>
@@ -216,7 +216,7 @@ export function Sidebar() {
       document.documentElement.setAttribute('data-theme', 'light')
       setTheme('light')
     }
-    
+
     // Sync if changed externally
     const handleStorage = () => {
       const current = document.documentElement.getAttribute('data-theme') ?? 'dark'
@@ -249,7 +249,7 @@ export function Sidebar() {
       const tag = (e.target as HTMLElement).tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return
       if (!e.shiftKey) return
-      
+
       const key = e.key.toUpperCase()
       const routes: Record<string, string> = {
         'O': '/dashboard',
@@ -260,6 +260,7 @@ export function Sidebar() {
         'I': '/dashboard?tab=insights',
         'L': '/dashboard?tab=ledger',
         ',': '/dashboard?tab=settings',
+        '<': '/dashboard?tab=settings',
       }
 
       if (routes[key]) {
@@ -338,7 +339,7 @@ export function Sidebar() {
               const isActive = item.href === '/dashboard'
                 ? pathname === '/dashboard' && !activeTab
                 : pathname + (activeTab ? `?tab=${activeTab}` : '') === item.href
-              
+
               // for admin items
               const isAdminActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
               const finalIsActive = role === 'admin' ? isAdminActive : isActive
@@ -357,13 +358,6 @@ export function Sidebar() {
       </div>
 
       <div className="border-t border-border pt-2 space-y-1">
-        {/* Global shortcut hints */}
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2.5 py-1 border-b border-border mb-1 pb-2">
-          <span className="text-[10px] text-muted-foreground whitespace-nowrap">Shift+O overview</span>
-          <span className="text-[10px] text-muted-foreground whitespace-nowrap">Shift+P portfolio</span>
-          <span className="text-[10px] text-muted-foreground whitespace-nowrap">Shift+S sponsors</span>
-          <span className="text-[10px] text-muted-foreground whitespace-nowrap">Shift+M theme</span>
-        </div>
         <div className="flex items-center gap-1">
           <div className="flex-1 min-w-0">
             <UserRow name={userName} email={userEmail} role={role} onSignOut={handleSignOut} />

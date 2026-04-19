@@ -111,7 +111,7 @@
   --text-primary: #FFFFFF;
   --text-secondary: #A1A1AA;
   --text-muted: #52525B;
-  --accent-error: #7F1D1D;
+  --accent-error: #E52020;
   --badge-success-bg: #14532D;
   --badge-success-text: #86EFAC;
   --badge-pending-bg: #1C1917;
@@ -168,6 +168,7 @@
   --text-primary: #0B0B0C;
   --text-secondary: #52525B;
   --text-muted: #71717A;
+  --accent-error: #E52020;
   --badge-success-bg: #DCFCE7;
   --badge-success-text: #166534;
   --badge-pending-bg: #F5F5F4;

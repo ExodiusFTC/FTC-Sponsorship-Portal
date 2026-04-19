@@ -41,14 +41,14 @@ type Sponsor = {
 }
 
 const TABS = [
-  { id: 'overview',      label: 'Overview' },
-  { id: 'portfolio',     label: 'Portfolio' },
+  { id: 'overview', label: 'Overview' },
+  { id: 'portfolio', label: 'Portfolio' },
   { id: 'find-sponsors', label: 'Find Sponsors' },
-  { id: 'submissions',   label: 'Submissions' },
-  { id: 'inbox',         label: 'Inbox' },
-  { id: 'insights',      label: 'Insights' },
-  { id: 'ledger',        label: 'Ledger' },
-  { id: 'settings',      label: 'Settings' },
+  { id: 'submissions', label: 'Submissions' },
+  { id: 'inbox', label: 'Inbox' },
+  { id: 'insights', label: 'Insights' },
+  { id: 'ledger', label: 'Ledger' },
+  { id: 'settings', label: 'Settings' },
 ]
 
 export function DashboardShell({
@@ -89,7 +89,7 @@ export function DashboardShell({
   }
 
   const activePitches = submissions.filter(s => s.status === 'pending' || s.status === 'approved').length
-  const totalFunded   = submissions.filter(s => s.status === 'approved').length
+  const totalFunded = submissions.filter(s => s.status === 'approved').length
 
   return (
     <div className="flex flex-col gap-8">
@@ -110,7 +110,7 @@ export function DashboardShell({
           key={tab}
           initial={reduce ? { opacity: 1 } : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={reduce  ? { opacity: 0 } : { opacity: 0, y: -4 }}
+          exit={reduce ? { opacity: 0 } : { opacity: 0, y: -4 }}
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
         >
           {tab === 'overview' && (
@@ -123,13 +123,13 @@ export function DashboardShell({
               submissions={submissions}
             />
           )}
-          {tab === 'portfolio'     && <PortfolioTab team={team} />}
+          {tab === 'portfolio' && <PortfolioTab team={team} />}
           {tab === 'find-sponsors' && <FindSponsorsTab sponsors={sponsors} />}
-          {tab === 'submissions'   && <SubmissionsTab submissions={submissions} />}
-          {tab === 'inbox'         && <InboxTab notifications={notifications} switchTab={setTab} />}
-          {tab === 'insights'      && <InsightsTab submissions={submissions} />}
-          {tab === 'ledger'        && <LedgerTab team={team} />}
-          {tab === 'settings'      && (
+          {tab === 'submissions' && <SubmissionsTab submissions={submissions} />}
+          {tab === 'inbox' && <InboxTab notifications={notifications} switchTab={setTab} />}
+          {tab === 'insights' && <InsightsTab submissions={submissions} />}
+          {tab === 'ledger' && <LedgerTab team={team} />}
+          {tab === 'settings' && (
             <div className="max-w-[600px] mx-auto">
               <AccountSettings currentName={profile?.full_name} email={profile?.email} role={profile?.role} />
             </div>
@@ -154,11 +154,11 @@ function KpiCard({ label, value, hint }: { label: string; value: string | number
 
 function StatusChip({ status }: { status: string }) {
   const statusConfig: Record<string, { bg: string; text: string; border: string }> = {
-    approved:          { bg: 'var(--badge-success-bg)',        text: 'var(--badge-success-text)',        border: 'var(--badge-success-text)' },
-    pending:           { bg: 'var(--badge-warning-bg)',        text: 'var(--badge-warning-text)',        border: 'var(--badge-warning-text)' },
-    changes_requested: { bg: 'var(--badge-warning-bg)',        text: 'var(--badge-warning-text)',        border: 'var(--badge-warning-text)' },
-    declined:          { bg: 'var(--badge-rejected-bg)',       text: 'var(--badge-rejected-text)',       border: 'var(--badge-rejected-text)' },
-    draft:             { bg: 'var(--badge-pending-bg)',        text: 'var(--badge-pending-text)',        border: 'var(--badge-pending-text)' },
+    approved: { bg: 'var(--badge-success-bg)', text: 'var(--badge-success-text)', border: 'var(--badge-success-text)' },
+    pending: { bg: 'var(--badge-warning-bg)', text: 'var(--badge-warning-text)', border: 'var(--badge-warning-text)' },
+    changes_requested: { bg: 'var(--badge-warning-bg)', text: 'var(--badge-warning-text)', border: 'var(--badge-warning-text)' },
+    declined: { bg: 'var(--badge-rejected-bg)', text: 'var(--badge-rejected-text)', border: 'var(--badge-rejected-text)' },
+    draft: { bg: 'var(--badge-pending-bg)', text: 'var(--badge-pending-text)', border: 'var(--badge-pending-text)' },
   }
   const config = statusConfig[status] ?? statusConfig.draft
   return (
@@ -218,7 +218,7 @@ function OverviewTab({
                 </div>
                 <Link
                   href={`/submissions/${s.id}/edit`}
-                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md bg-destructive text-destructive-foreground px-3 h-9 shrink-0 text-sm font-medium transition-colors hover:opacity-90"
+                  className="inline-flex items-center justify-center whitespace-nowrap rounded-[6px] bg-[var(--accent-error)] text-white px-3 h-9 shrink-0 text-sm font-medium transition-all hover:brightness-105 active:scale-95 shadow-[0_0_12px_rgba(229,32,32,0.18)]"
                 >
                   Review Submission
                 </Link>
@@ -229,10 +229,10 @@ function OverviewTab({
       )}
 
       <FadeUp className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Active pitches"  value={activePitches}   hint="In review or approved" />
-        <KpiCard label="Submissions"     value={submissionsCount} hint="All-time sponsor outreach" />
-        <KpiCard label="Funded"          value={totalFunded}      hint="Approved by sponsors" />
-        <KpiCard label="Portfolio ask"   value={`$${(portfolioAsk / 100).toLocaleString('en-US')}`} hint="Season target" />
+        <KpiCard label="Active pitches" value={activePitches} hint="In review or approved" />
+        <KpiCard label="Submissions" value={submissionsCount} hint="All-time sponsor outreach" />
+        <KpiCard label="Funded" value={totalFunded} hint="Approved by sponsors" />
+        <KpiCard label="Portfolio ask" value={`$${(portfolioAsk / 100).toLocaleString('en-US')}`} hint="Season target" />
       </FadeUp>
 
       {/* Trackable URLs panel — centered */}
@@ -275,10 +275,10 @@ function OverviewTab({
 /* ── Find Sponsors tab ──────────────────────────────────────────────────────── */
 
 const FUNDING_RANGES = [
-  { label: 'Any',          min: 0,       max: Infinity },
-  { label: 'Under $1k',    min: 0,       max: 100_000 },
-  { label: '$1k – $5k',    min: 100_000, max: 500_000 },
-  { label: '$5k+',         min: 500_000, max: Infinity },
+  { label: 'Any', min: 0, max: Infinity },
+  { label: 'Under $1k', min: 0, max: 100_000 },
+  { label: '$1k – $5k', min: 100_000, max: 500_000 },
+  { label: '$5k+', min: 500_000, max: Infinity },
 ]
 
 function SponsorInitials({ name, logoUrl }: { name: string; logoUrl?: string | null }) {
@@ -295,8 +295,8 @@ function SponsorInitials({ name, logoUrl }: { name: string; logoUrl?: string | n
 }
 
 function FindSponsorsTab({ sponsors }: { sponsors: Sponsor[] }) {
-  const [query,       setQuery]       = useState('')
-  const [industry,    setIndustry]    = useState('all')
+  const [query, setQuery] = useState('')
+  const [industry, setIndustry] = useState('all')
   const [fundingRange, setFundingRange] = useState(0) // index into FUNDING_RANGES
 
   const industries = ['all', ...Array.from(new Set(sponsors.map(s => s.industry).filter(Boolean) as string[]))]
@@ -304,7 +304,7 @@ function FindSponsorsTab({ sponsors }: { sponsors: Sponsor[] }) {
   const { min, max } = FUNDING_RANGES[fundingRange]
 
   const results = sponsors.filter(s => {
-    const q         = query.trim().toLowerCase()
+    const q = query.trim().toLowerCase()
     const remaining = s.funding_cap_cents - s.funding_used_cents
     return (
       (!q || s.company_name.toLowerCase().includes(q)) &&
@@ -376,7 +376,7 @@ function FindSponsorsTab({ sponsors }: { sponsors: Sponsor[] }) {
           <AnimatePresence mode="popLayout">
             {results.map(s => {
               const remaining = s.funding_cap_cents - s.funding_used_cents
-              const pct       = s.funding_cap_cents > 0 ? Math.round((s.funding_used_cents / s.funding_cap_cents) * 100) : 0
+              const pct = s.funding_cap_cents > 0 ? Math.round((s.funding_used_cents / s.funding_cap_cents) * 100) : 0
               return (
                 <motion.div
                   key={s.id}
@@ -463,19 +463,19 @@ function FindSponsorsTab({ sponsors }: { sponsors: Sponsor[] }) {
 type SubmissionFilter = 'all' | 'approved' | 'declined' | 'pending' | 'draft'
 
 const SUBMISSION_FILTERS: { id: SubmissionFilter; label: string }[] = [
-  { id: 'all',      label: 'All' },
+  { id: 'all', label: 'All' },
   { id: 'approved', label: 'Accepted' },
-  { id: 'pending',  label: 'Pending' },
+  { id: 'pending', label: 'Pending' },
   { id: 'declined', label: 'Rejected' },
-  { id: 'draft',    label: 'Drafts' },
+  { id: 'draft', label: 'Drafts' },
 ]
 
 function SubmissionsTab({ submissions }: { submissions: Submission[] }) {
-  const [filter,     setFilter]     = useState<SubmissionFilter>('all')
+  const [filter, setFilter] = useState<SubmissionFilter>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const filtered = submissions.filter(s => {
-    if (filter === 'all')      return true
+    if (filter === 'all') return true
     if (filter === 'declined') return s.status === 'declined' || s.status === 'changes_requested'
     return s.status === filter
   })
@@ -488,8 +488,8 @@ function SubmissionsTab({ submissions }: { submissions: Submission[] }) {
           const count = f.id === 'all'
             ? submissions.length
             : f.id === 'declined'
-            ? submissions.filter(s => s.status === 'declined' || s.status === 'changes_requested').length
-            : submissions.filter(s => s.status === f.id).length
+              ? submissions.filter(s => s.status === 'declined' || s.status === 'changes_requested').length
+              : submissions.filter(s => s.status === f.id).length
           return (
             <button
               key={f.id}
@@ -511,7 +511,7 @@ function SubmissionsTab({ submissions }: { submissions: Submission[] }) {
       <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/60 divide-y divide-zinc-900">
         {filtered.map(s => {
           const isEditable = ['draft', 'declined', 'changes_requested'].includes(s.status)
-          const expanded   = expandedId === s.id
+          const expanded = expandedId === s.id
           return (
             <div key={s.id} className="transition-colors hover:bg-zinc-900/20">
               <div
@@ -537,7 +537,7 @@ function SubmissionsTab({ submissions }: { submissions: Submission[] }) {
                     <Link
                       href={`/submissions/${s.id}/edit`}
                       onClick={e => e.stopPropagation()}
-                      className="text-xs px-3 py-1.5 bg-zinc-100 border border-zinc-100 rounded hover:bg-white text-zinc-900 font-medium"
+                      className="text-xs px-3 py-1.5 bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded hover:bg-[var(--bg-hover)] text-[var(--text-primary)] font-medium transition-colors"
                     >
                       Edit
                     </Link>
@@ -545,7 +545,7 @@ function SubmissionsTab({ submissions }: { submissions: Submission[] }) {
                     <Link
                       href={`/submissions/${s.id}/edit`}
                       onClick={e => e.stopPropagation()}
-                      className="text-xs px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded hover:border-zinc-600 text-zinc-300"
+                      className="text-xs px-3 py-1.5 bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded hover:bg-[var(--bg-hover)] text-[var(--text-primary)] font-medium transition-colors"
                     >
                       View
                     </Link>
@@ -597,7 +597,7 @@ function SubmissionsTab({ submissions }: { submissions: Submission[] }) {
 type BudgetItem = { label: string; qty: number; unit_cost_cents: number; total_cents: number }
 
 function LedgerTab({ team }: { team: Team }) {
-  const [items, setItems]   = useState<BudgetItem[]>(() =>
+  const [items, setItems] = useState<BudgetItem[]>(() =>
     (team.budget_items as BudgetItem[] | null) ?? []
   )
   const [isPending, startTransition] = useTransition()
@@ -611,9 +611,9 @@ function LedgerTab({ team }: { team: Team }) {
         next[index] = { ...next[index], label: raw }
       } else {
         const dollars = parseFloat(raw) || 0
-        const cents   = Math.round(dollars * 100)
+        const cents = Math.round(dollars * 100)
         if (field === 'qty') {
-          const qty  = parseInt(raw) || 0
+          const qty = parseInt(raw) || 0
           const unit = next[index].unit_cost_cents
           next[index] = { ...next[index], qty, total_cents: qty * unit }
         } else if (field === 'unit_cost_cents') {
@@ -635,10 +635,10 @@ function LedgerTab({ team }: { team: Team }) {
   function save() {
     startTransition(async () => {
       const budgetItems = items.map(i => ({
-        label:        i.label,
-        qty:          i.qty,
+        label: i.label,
+        qty: i.qty,
         unitCostCents: i.unit_cost_cents,
-        totalCents:   i.total_cents,
+        totalCents: i.total_cents,
       }))
       const total = items.reduce((a, i) => a + i.total_cents, 0)
       const result = await updateTeam(team.id, { budgetItems, financialAskCents: total } as any)

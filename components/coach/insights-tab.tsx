@@ -25,11 +25,10 @@ function StatCard({
 }) {
   return (
     <div
-      className={`relative rounded-xl border p-5 overflow-hidden transition-colors hover:border-border/80 ${
-        accent
+      className={`relative rounded-xl border p-5 overflow-hidden transition-colors hover:border-border/80 ${accent
           ? 'border-primary/20 bg-primary/5'
           : 'border-border bg-card'
-      }`}
+        }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -39,9 +38,8 @@ function StatCard({
           </div>
           {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
         </div>
-        <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${
-          accent ? 'bg-primary/10 text-primary' : 'bg-accent text-muted-foreground'
-        }`}>
+        <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${accent ? 'bg-primary/10 text-primary' : 'bg-accent text-muted-foreground'
+          }`}>
           <Icon className="h-4 w-4" strokeWidth={1.5} />
         </div>
       </div>
@@ -53,7 +51,7 @@ const STATUS_COLORS: Record<string, string> = {
   approved: '#10b981',
   pending: '#6366f1',
   changes_requested: '#f59e0b',
-  declined: '#ef4444',
+  declined: '#fe0707ff',
   draft: '#52525b',
 }
 const STATUS_LABELS: Record<string, string> = {
@@ -64,7 +62,7 @@ const STATUS_LABELS: Record<string, string> = {
   draft: 'Draft',
 }
 
-const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 function getMonthKey(dateStr: string) {
   const d = new Date(dateStr)
@@ -90,15 +88,15 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function InsightsTab({ submissions }: { submissions: Submission[] }) {
   // ── Core stats ──────────────────────────────────────────────────────────────
-  const totalFunded        = submissions.filter(s => s.status === 'approved').reduce((a, s) => a + (s.financial_ask_cents || 0), 0)
-  const approvedCount      = submissions.filter(s => s.status === 'approved').length
-  const declinedCount      = submissions.filter(s => s.status === 'declined').length
-  const pendingCount       = submissions.filter(s => s.status === 'pending').length
-  const changesCount       = submissions.filter(s => s.status === 'changes_requested').length
-  const draftCount         = submissions.filter(s => s.status === 'draft').length
-  const decidedCount       = approvedCount + declinedCount
-  const acceptanceRate     = decidedCount === 0 ? 0 : Math.round((approvedCount / decidedCount) * 100)
-  const avgAsk             = submissions.length > 0
+  const totalFunded = submissions.filter(s => s.status === 'approved').reduce((a, s) => a + (s.financial_ask_cents || 0), 0)
+  const approvedCount = submissions.filter(s => s.status === 'approved').length
+  const declinedCount = submissions.filter(s => s.status === 'declined').length
+  const pendingCount = submissions.filter(s => s.status === 'pending').length
+  const changesCount = submissions.filter(s => s.status === 'changes_requested').length
+  const draftCount = submissions.filter(s => s.status === 'draft').length
+  const decidedCount = approvedCount + declinedCount
+  const acceptanceRate = decidedCount === 0 ? 0 : Math.round((approvedCount / decidedCount) * 100)
+  const avgAsk = submissions.length > 0
     ? Math.round(submissions.reduce((a, s) => a + (s.financial_ask_cents || 0), 0) / submissions.length)
     : 0
 

@@ -1,8 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/page-header'
-import dynamic from 'next/dynamic'
-
-const AnalyticsCharts = dynamic(() => import('@/components/admin/analytics-charts'), { ssr: false })
+import { AnalyticsChartsWrapper } from '@/components/admin/analytics-charts-wrapper'
 
 const STATUS_LABELS: Record<string, { label: string; bg: string; text: string }> = {
   draft:             { label: 'Draft',           bg: 'var(--badge-pending-bg)',  text: 'var(--badge-pending-text)' },
@@ -105,7 +103,7 @@ export default async function AnalyticsPage() {
       </section>
 
       {/* ── Enhanced Charts Section ── */}
-      <AnalyticsCharts />
+      <AnalyticsChartsWrapper />
 
       {/* ── Section 3: Submission Pipeline ── */}
       <section>

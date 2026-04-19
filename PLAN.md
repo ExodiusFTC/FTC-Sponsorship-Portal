@@ -83,7 +83,7 @@ These answers are **final** — do not re-litigate them during implementation.
 --text-primary: #09090B
 --text-secondary: #71717A
 --text-muted: #A1A1AA
---accent-error: #EF4444
+--accent-error: #ff1717ff
 --badge-success-bg: #F0FDF4
 --badge-success-text: #166534
 --badge-pending-bg: #FAFAF9
