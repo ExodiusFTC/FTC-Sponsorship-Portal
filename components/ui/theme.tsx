@@ -7,7 +7,7 @@ import {
   Check,
   ChevronDown,
   Monitor,
-  Moon, 
+  Moon,
   Sun,
   Sunset,
   Trees,
@@ -37,10 +37,10 @@ export type ThemeToggleVariant =
   | "button"
   | "switch"
   | "dropdown"
-  | "tabs" 
+  | "tabs"
   | "grid"
-  | "radial"  
-  | "cards" 
+  | "radial"
+  | "cards"
 export type ThemeToggleSize = "sm" | "md" | "lg"
 
 interface ThemeToggleProps {
@@ -52,7 +52,7 @@ interface ThemeToggleProps {
 }
 
 function subscribe() {
-  return () => {}
+  return () => { }
 }
 
 export function Theme({
@@ -460,7 +460,7 @@ export function Theme({
       </div>
     )
   }
-   
+
 
   return null
 }

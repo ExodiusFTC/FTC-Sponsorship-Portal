@@ -25,7 +25,7 @@ export function InitialLoader() {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.6, ease: "easeInOut" }}
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background pointer-events-none"
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background"
           style={{ willChange: "opacity" }}
         >
           <div className="flex flex-col items-center justify-center w-full max-w-sm h-full">
