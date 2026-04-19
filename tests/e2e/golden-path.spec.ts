@@ -57,33 +57,10 @@ test.describe('Golden Path — Coach Flow', () => {
     // This test assumes the coach was pre-verified by admin via DB:
     //   UPDATE profiles SET coach_verified = true WHERE email = '...'
     await signIn(page, COACH_EMAIL, COACH_PASSWORD)
-    await expect(page).toHaveURL(/\/(dashboard|onboarding)/, { timeout: 10_000 })
+    await expect(page).toHaveURL(/\/(dashboard)/, { timeout: 10_000 })
   })
 
-  test('3. Coach completes incubator onboarding', async ({ page }) => {
-    await signIn(page, COACH_EMAIL, COACH_PASSWORD)
-    await page.waitForURL(/\/(dashboard|onboarding)/)
-
-    if (page.url().includes('/dashboard')) {
-      // Team already exists — skip onboarding
-      return
-    }
-
-    await expect(page.getByRole('heading', { name: /onboarding/i })).toBeVisible()
-
-    // Select Incubator path
-    await page.getByRole('button', { name: /incubator/i }).click()
-    await page.getByLabel(/team name/i).fill('Golden Path Robotics')
-    await page.getByLabel(/city/i).fill('Austin')
-    await page.getByLabel(/state/i).fill('TX')
-    await page.getByLabel(/mission/i).fill('We inspire students through competitive robotics.')
-    await page.getByRole('button', { name: /create team/i }).click()
-
-    await expect(page).toHaveURL(/\/dashboard/, { timeout: 10_000 })
-    await expect(page.getByRole('heading', { name: /Golden Path Robotics/i })).toBeVisible()
-  })
-
-  test('4. Coach creates and saves a draft pitch', async ({ page }) => {
+  test('3. Coach creates and saves a draft pitch', async ({ page }) => {
     await signIn(page, COACH_EMAIL, COACH_PASSWORD)
     await page.waitForURL(/\/dashboard/)
 

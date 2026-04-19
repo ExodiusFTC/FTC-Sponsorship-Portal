@@ -316,7 +316,7 @@ function AnimatedArcs() {
       {arcs.map((arc, i) => (
         <group key={`arc-${i}`}>
           {/* Arc line */}
-          <primitive 
+          <primitive
             key={`arc-line-${i}`}
             object={new THREE.Line(
               new THREE.BufferGeometry().setFromPoints(arc.curve.getPoints(64)),

@@ -18,7 +18,7 @@ export default async function NewAchievementPage() {
     .limit(1)
     .maybeSingle()
 
-  if (!team) redirect('/onboarding')
+  if (!team) redirect('/awaiting-verification')
 
   return (
     <div className="container mx-auto max-w-xl py-8 space-y-6">

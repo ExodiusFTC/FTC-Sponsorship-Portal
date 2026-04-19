@@ -22,7 +22,6 @@ ROUTES = [
     ("Sponsor Apply",     "/sponsors/apply"),
     ("Admin Moderation",  "/admin/moderation"),
     ("Admin Analytics",   "/admin/analytics"),
-    ("Onboarding",        "/onboarding"),
 ]
 
 def print_urls():

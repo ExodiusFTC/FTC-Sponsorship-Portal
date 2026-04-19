@@ -143,13 +143,31 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
         landFeaturesRef.current = data
 
         const dots: { lng: number; lat: number; visible: boolean }[] = []
-        data.features.forEach((feature: any) => {
-          const generated = generateDotsInPolygon(feature, 16)
+        
+        // Processing features incrementally to avoid blocking the main thread
+        const processFeatures = (index: number) => {
+          if (index >= data.features.length) {
+            allDotsRef.current = dots
+            setIsLoading(false)
+            return
+          }
+
+          const feature = data.features[index]
+          const generated = generateDotsInPolygon(feature, 20)
           generated.forEach(([lng, lat]) => {
             dots.push({ lng, lat, visible: true })
           })
-        })
-        allDotsRef.current = dots
+
+          // Yield more aggressively to ensure smooth gooey animation
+          // Every 2 features we give a full breath to the main thread
+          if (index % 2 === 0) {
+            setTimeout(() => processFeatures(index + 1), 0)
+          } else {
+            processFeatures(index + 1)
+          }
+        }
+
+        processFeatures(0)
 
         const conns: [number, number][][] = []
         for (let i = 0; i < 28; i++) {
@@ -160,7 +178,6 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
         }
         connectionsRef.current = conns
 
-        setIsLoading(false)
       } catch (err) {
         setError("Failed to load land map data")
         setIsLoading(false)

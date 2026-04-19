@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { motion, useReducedMotion } from 'framer-motion'
@@ -17,8 +18,18 @@ const RotatingEarth = dynamic(
 
 export function Hero() {
   const reduce = useReducedMotion()
+  const [shouldShowGlobe, setShouldShowGlobe] = useState(false)
   const init = reduce ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
   const show = { opacity: 1, y: 0 }
+
+  useEffect(() => {
+    // Wait for 1s before starting to load the globe chunk.
+    // This avoids the initial hydration and first-word jolt.
+    const timer = setTimeout(() => {
+      setShouldShowGlobe(true)
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [])
 
   return (
     <section className="relative pt-28 pb-20 lg:pt-32 lg:pb-28 overflow-hidden">
@@ -107,7 +118,11 @@ export function Hero() {
             transition={{ duration: 1.2, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="relative h-[400px] sm:h-[480px] lg:h-[560px] xl:h-[620px] w-full"
           >
-            <RotatingEarth className="w-full h-full" />
+            {shouldShowGlobe ? (
+              <RotatingEarth className="w-full h-full" />
+            ) : (
+              <div className="w-full h-full" />
+            )}
           </motion.div>
         </div>
       </div>

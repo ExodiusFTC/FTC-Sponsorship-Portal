@@ -203,6 +203,26 @@ export async function createInAppNotification({
 }
 
 /** Send a congratulations email when an admin verifies a coach's credentials. */
+import CoachDenialEmail from '@/emails/coach-denial-email'
+
+export async function sendCoachDenialEmail(to: string, coachName: string, reason: string) {
+  try {
+    const { data, error } = await resend.emails.send({
+      from: env.RESEND_FROM_EMAIL,
+      to,
+      subject: 'Application Update Required — FTC Sponsorship Portal',
+      react: CoachDenialEmail({ coachName, reason }),
+    })
+
+    if (error) {
+      console.error('Failed to send coach denial email:', error)
+    }
+    return { data, error }
+  } catch (error) {
+    console.error('Unexpected error sending coach denial email:', error)
+    return { error }
+  }
+}
 export async function sendCoachVerificationEmail(coachId: string, coachName: string) {
   try {
     const supabase = createAdminClient()
@@ -211,15 +231,21 @@ export async function sendCoachVerificationEmail(coachId: string, coachName: str
       .select('email')
       .eq('id', coachId)
       .single()
-    if (!profile?.email) return
 
-    await resend.emails.send({
+    if (!profile?.email) return { error: 'No email found' }
+
+    const { data, error } = await resend.emails.send({
       from: env.RESEND_FROM_EMAIL,
       to: profile.email,
-      subject: 'Your Matchmaker coach account has been verified 🎉',
+      subject: 'Welcome to the FTC Sponsorship Portal!',
       react: CoachVerificationEmail({ coachName }),
     })
-  } catch (err) {
-    console.error('[notify] sendCoachVerificationEmail failed', err)
+    if (error) console.error('Failed to send verification email:', error)
+    return { data, error }
+  } catch (error) {
+    console.error('Unexpected error sending verification email:', error)
+    return { error }
   }
 }
+
+

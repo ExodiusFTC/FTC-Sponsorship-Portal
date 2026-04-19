@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createInAppNotification, sendCoachVerificationEmail } from '@/lib/notify'
+import { createInAppNotification, sendCoachVerificationEmail, sendCoachDenialEmail } from '@/lib/notify'
 import { getClientIp, validateRateLimit, requireAdmin } from '@/lib/actions-utils'
 import { z } from 'zod'
 
@@ -31,9 +31,20 @@ export async function verifyCoach(coachId: string, verified: boolean) {
   const limit = await validateRateLimit(`admin_verify_coach_${user.id}_${ip}`)
   if ('error' in limit) return limit
 
+  // Fetch coach profile to get pending data and name
+  const { data: coachProfile } = await adminClient
+    .from('profiles')
+    .select('full_name, pending_team_data')
+    .eq('id', coachId)
+    .single()
+
   const { error } = await adminClient
     .from('profiles')
-    .update({ coach_verified: verified })
+    .update({ 
+      coach_verified: verified,
+      // Clear pending data if verifying
+      ...(verified ? { pending_team_data: null } : {})
+    })
     .eq('id', coachId)
 
   if (error) return { error: error.message }
@@ -46,21 +57,64 @@ export async function verifyCoach(coachId: string, verified: boolean) {
   })
 
   if (verified) {
-    // Fetch coach profile for name
-    const { data: coachProfile } = await adminClient
-      .from('profiles')
-      .select('full_name')
-      .eq('id', coachId)
-      .single()
-
     const coachName = coachProfile?.full_name ?? 'Coach'
+    
+    // Provision team from pending data
+    if (coachProfile?.pending_team_data) {
+      const payloadData = coachProfile.pending_team_data as Record<string, unknown>
+      const rawBudgetItems = (payloadData.budgetItems as Array<Record<string, unknown>> | undefined) || []
+      const normalizedBudgetItems = rawBudgetItems.map((item) => ({
+        label: (item.label as string | undefined)?.trim() || '',
+        qty: (item.qty as number | undefined) || 1,
+        unit_cost_cents: (item.unitCostCents as number | undefined) || 0,
+        total_cents: (item.totalCents as number | undefined) || 0,
+      }))
+      const totalAsk = normalizedBudgetItems.reduce((sum: number, item) => sum + item.total_cents, 0)
+      
+      const teamPayload = {
+        owner_id: coachId,
+        status: (payloadData.status as string) || 'existing',
+        ftc_team_number: (payloadData.ftcTeamNumber as number | undefined) ?? null,
+        team_name: ((payloadData.teamName as string | undefined) || '').trim(),
+        organization: (payloadData.organization as string | undefined)?.trim() || null,
+        city: ((payloadData.city as string | undefined) || '').trim(),
+        state: ((payloadData.state as string | undefined) || '').trim(),
+        tagline: (payloadData.tagline as string | undefined)?.trim() || null,
+        mission_statement: ((payloadData.missionStatement as string | undefined) || '').trim(),
+        tax_status: (payloadData.taxStatus as string | undefined) || 'None',
+        community_interest_text: (payloadData.communityInterestText as string | undefined)?.trim() || null,
+        seed_funding_goals_cents: (payloadData.seedFundingGoalsCents as number | undefined) ?? 0,
+        technical_summary: (payloadData.technicalSummary as string | undefined)?.trim() || null,
+        outreach_summary: (payloadData.outreachSummary as string | undefined)?.trim() || null,
+        drivetrain: (payloadData.drivetrain as string | undefined)?.trim() || null,
+        build_system: (payloadData.buildSystem as string | undefined)?.trim() || null,
+        programming: (payloadData.programming as string | undefined)?.trim() || null,
+        media_urls: (payloadData.mediaUrls as string[] | undefined) || [],
+        youtube_url: (payloadData.youtubeUrl as string | undefined) || null,
+        budget_items: normalizedBudgetItems,
+        financial_ask_cents: totalAsk,
+        cad_software: (payloadData.cadSoftware as string | undefined)?.trim() || null,
+        control_system: (payloadData.controlSystem as string | undefined)?.trim() || null,
+        sensors: payloadData.sensors ? (Array.isArray(payloadData.sensors) ? payloadData.sensors : (payloadData.sensors as string).split(',').map(v => v.trim()).filter(Boolean)) : [],
+        github_link: (payloadData.githubLink as string | undefined)?.trim() || null,
+        autonomous_description: (payloadData.autonomousDescription as string | undefined)?.trim() || null,
+        subteam_breakdown: (payloadData.subteamBreakdown as string | undefined)?.trim() || null,
+        manufacturing_capabilities: payloadData.manufacturingCapabilities ? (Array.isArray(payloadData.manufacturingCapabilities) ? payloadData.manufacturingCapabilities : (payloadData.manufacturingCapabilities as string).split(',').map(v => v.trim()).filter(Boolean)) : [],
+        visual_pitch_items: payloadData.visualPitchItems ?? [],
+        proudest_mechanism_name: (payloadData.proudestMechanismName as string | undefined)?.trim() || null,
+        proudest_mechanism_problem: (payloadData.proudestMechanismProblem as string | undefined)?.trim() || null,
+        proudest_mechanism_solution: (payloadData.proudestMechanismSolution as string | undefined)?.trim() || null,
+      }
+
+      await adminClient.from('teams').insert(teamPayload as never)
+    }
 
     await Promise.all([
       createInAppNotification({
         recipientId: coachId,
         type: 'coach_verified',
         title: 'Your account has been verified!',
-        body: 'You can now create your team portfolio and submit sponsorship applications.',
+        body: 'Your team portfolio has been successfully created. You can now submit sponsorship applications.',
       }),
       sendCoachVerificationEmail(coachId, coachName),
     ])
@@ -69,6 +123,84 @@ export async function verifyCoach(coachId: string, verified: boolean) {
   revalidatePath('/coaches')
   revalidatePath('/analytics')
   revalidatePath('/admin')
+  return { success: true }
+}
+
+export async function denyCoach(coachId: string, reason: string) {
+  if (!reason.trim()) return { error: 'Denial reason is required' }
+
+  let user, adminClient
+  try {
+    const auth = await requireAdmin()
+    user = auth.user
+    adminClient = auth.adminClient
+  } catch (e: any) {
+    return { error: e.message }
+  }
+
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`admin_deny_coach_${user.id}_${ip}`)
+  if ('error' in limit) return limit
+
+  // Fetch coach info to get their email/name and current credentials path
+  const { data: coachProfile } = await adminClient
+    .from('profiles')
+    .select('full_name, email, coach_credentials_url')
+    .eq('id', coachId)
+    .single()
+
+  if (!coachProfile) return { error: 'Coach not found' }
+
+  // Optionally delete the physical file from storage
+  if (coachProfile.coach_credentials_url) {
+    const { error: deleteError } = await adminClient.storage
+      .from('coach-credentials')
+      .remove([coachProfile.coach_credentials_url])
+    
+    if (deleteError) {
+      console.error('Failed to delete credentials file during denial:', deleteError)
+      // Continue anyway; DB state is more important
+    }
+  }
+
+  // Update profile: clear data and keep verified = false
+  const { error } = await adminClient
+    .from('profiles')
+    .update({ 
+      coach_verified: false,
+      coach_credentials_url: null,
+      pending_team_data: null
+    })
+    .eq('id', coachId)
+
+  if (error) return { error: error.message }
+
+  await adminClient.from('audit_log').insert({
+    actor_id: user.id,
+    action: 'deny_coach',
+    entity_type: 'profiles',
+    entity_id: coachId,
+    metadata: { reason }
+  })
+
+  // Send the denial email
+  if (coachProfile.email) {
+    await sendCoachDenialEmail(
+      coachProfile.email, 
+      coachProfile.full_name ?? 'Coach', 
+      reason
+    )
+    
+    // Also send an in-app notification
+    await createInAppNotification({
+      recipientId: coachId,
+      type: 'coach_verified', // Re-using type since we don't have a distinct 'coach_denied' type yet
+      title: 'Application Update Required',
+      body: 'There was an issue verifying your coach application. Please check your email for details.',
+    })
+  }
+
+  revalidatePath('/coaches')
   return { success: true }
 }
 

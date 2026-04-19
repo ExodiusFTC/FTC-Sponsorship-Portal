@@ -10,6 +10,8 @@ export default async function CoachesPage() {
     .from('profiles')
     .select(`
       id, full_name, email, created_at, coach_verified, coach_credentials_url,
+      date_of_birth, phone_number, address_line1, city, state, zip_code, referral_source,
+      coppa_acknowledged, tos_accepted, pending_team_data,
       teams:teams(team_name, ftc_team_number, city, state)
     `)
     .eq('role', 'coach')
@@ -64,7 +66,7 @@ export default async function CoachesPage() {
         ) : (
           <div className="flex flex-col gap-3">
             {pending.map(coach => (
-              <CoachVerificationCard key={coach.id} coach={coach as any} />
+              <CoachVerificationCard key={coach.id} coach={coach as unknown as import('@/components/admin/coach-verification-card').CoachData} />
             ))}
           </div>
         )}
@@ -80,7 +82,7 @@ export default async function CoachesPage() {
         ) : (
           <div className="flex flex-col gap-3">
             {verified.map(coach => (
-              <CoachVerificationCard key={coach.id} coach={coach as any} />
+              <CoachVerificationCard key={coach.id} coach={coach as unknown as import('@/components/admin/coach-verification-card').CoachData} />
             ))}
           </div>
         )}
@@ -94,7 +96,7 @@ export default async function CoachesPage() {
           </h2>
           <div className="flex flex-col gap-3">
             {waiting.map(coach => (
-              <CoachVerificationCard key={coach.id} coach={coach as any} />
+              <CoachVerificationCard key={coach.id} coach={coach as unknown as import('@/components/admin/coach-verification-card').CoachData} />
             ))}
           </div>
         </section>

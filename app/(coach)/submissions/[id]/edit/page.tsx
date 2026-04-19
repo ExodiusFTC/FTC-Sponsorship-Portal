@@ -20,7 +20,7 @@ export default async function EditSubmissionPage({ params }: { params: Promise<{
     .maybeSingle()
 
   if (!team) {
-    redirect('/onboarding')
+    redirect('/awaiting-verification')
   }
 
   const { data: submission } = await supabase

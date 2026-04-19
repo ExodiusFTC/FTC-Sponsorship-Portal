@@ -8,6 +8,7 @@ import { HowItWorks } from '@/components/landing/how-it-works'
 import { FAQ } from '@/components/landing/faq'
 import { LandingFooter } from '@/components/landing/footer'
 import { SponsorsShowcase } from '@/components/landing/sponsors-showcase'
+import { InitialLoader } from '@/components/landing/initial-loader'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -18,15 +19,20 @@ export default async function HomePage() {
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, coach_verified')
       .eq('id', user.id)
       .single()
+    
     if (profile?.role === 'admin') redirect('/admin')
+    if (profile?.role === 'coach' && !profile.coach_verified) {
+      redirect('/awaiting-verification')
+    }
     redirect('/dashboard')
   }
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased transition-colors duration-300">
+      <InitialLoader />
       <TopNav />
       <main>
         <Hero />

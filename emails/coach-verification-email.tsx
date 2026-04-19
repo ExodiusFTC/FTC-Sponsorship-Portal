@@ -45,7 +45,7 @@ export default function CoachVerificationEmail({
             </Text>
           </Section>
 
-          <Button style={button} href={`${appUrl}/onboarding`}>
+          <Button style={button} href={`${appUrl}/dashboard`}>
             Get Started →
           </Button>
 

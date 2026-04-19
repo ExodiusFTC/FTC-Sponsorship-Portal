@@ -20,20 +20,33 @@ export default async function AwaitingVerificationPage() {
     .eq('id', user.id)
     .single()
 
-  // If already verified, push them forward
-  if (profile?.coach_verified) redirect('/dashboard')
+  const { data: team } = await supabase
+    .from('teams')
+    .select('id')
+    .eq('owner_id', user.id)
+    .maybeSingle()
+
+  // If already verified AND has a team, push them forward
+  if (profile?.coach_verified && team) redirect('/dashboard')
+
+  const isVerifiedWithoutTeam = profile?.coach_verified && !team
 
   return (
     <div className="container mx-auto max-w-md py-20">
       <Card className="text-center">
         <CardHeader>
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100/10 text-3xl">
-            ⏱︎
+          <div className={cn(
+            "mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full text-3xl",
+            isVerifiedWithoutTeam ? "bg-emerald-100/10" : "bg-amber-100/10"
+          )}>
+            {isVerifiedWithoutTeam ? '✓' : '⏱︎'}
           </div>
-          <CardTitle>Application under review</CardTitle>
+          <CardTitle>{isVerifiedWithoutTeam ? 'Account Verified!' : 'Application under review'}</CardTitle>
           <CardDescription className="text-base">
-            We received your credentials. A platform admin will verify your account — typically
-            within one business day. You&apos;ll be able to build pitches once approved.
+            {isVerifiedWithoutTeam 
+              ? "Your account is verified. We are just finishing setting up your team portfolio. This should only take a moment."
+              : "We received your credentials. A platform admin will verify your account — typically within one business day. You'll be able to build pitches once approved."
+            }
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

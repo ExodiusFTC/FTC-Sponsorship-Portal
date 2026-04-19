@@ -1,46 +1,125 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { signupSchema, loginSchema, type SignupInput, type LoginInput } from '@/lib/schemas/auth'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { signupSchema } from '@/lib/schemas/auth'
 import { redirect } from 'next/navigation'
 import { env } from '@/lib/env'
 import { sendCredentialUploadAlert } from '@/lib/notify'
-import { getClientIp, validateRateLimit, requireAuth } from '@/lib/actions-utils'
+import { getClientIp, validateRateLimit } from '@/lib/actions-utils'
 
-export async function signUp(data: SignupInput) {
-  const result = signupSchema.safeParse(data)
-  if (!result.success) {
-    return { error: 'Invalid data provided' }
+export async function signUp(formData: FormData) {
+  // Parse JSON data
+  const dataString = formData.get('data') as string
+  if (!dataString) return { error: 'No data provided' }
+  
+  let rawData;
+  try {
+    rawData = JSON.parse(dataString)
+  } catch {
+    return { error: 'Invalid JSON data' }
   }
 
-  const { fullName, email, password } = result.data
+  // Parse File
+  const file = formData.get('photoIdFile') as File | null
+  if (!file) return { error: 'Photo ID upload is required' }
+
+  // Validate File
+  const MAX_SIZE = 5 * 1024 * 1024 // 5MB
+  if (file.size > MAX_SIZE) return { error: 'Photo ID file too large. Maximum size is 5MB.' }
+
+  const allowedMimes = ['application/pdf', 'image/jpeg', 'image/png']
+  if (!allowedMimes.includes(file.type)) {
+    return { error: 'Invalid file type for Photo ID. Only PDF, JPG, and PNG are allowed.' }
+  }
+
+  const buffer = await file.arrayBuffer()
+  const bytes = new Uint8Array(buffer).subarray(0, 4)
+  const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
+  
+  let isValid = false
+  if (file.type === 'application/pdf' && hex.startsWith('25504446')) isValid = true
+  if (file.type === 'image/jpeg' && hex.startsWith('ffd8ff')) isValid = true
+  if (file.type === 'image/png' && hex === '89504e47') isValid = true
+  
+  if (!isValid) return { error: 'Invalid Photo ID file format.' }
+
+  // Validate Data
+  const result = signupSchema.safeParse(rawData)
+  if (!result.success) {
+    return { error: 'Validation failed: ' + result.error.issues.map(i => i.message).join(', ') }
+  }
+
+  const payload = result.data
   const ip = await getClientIp()
-  const limit = await validateRateLimit(`signup_${email}_${ip}`)
+  const limit = await validateRateLimit(`signup_${payload.email}_${ip}`)
   if ('error' in limit) return limit
 
   const supabase = await createClient()
+  const adminClient = createAdminClient()
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email: payload.email,
+    password: payload.password,
     options: {
       data: {
-        full_name: fullName,
-        age_confirmed_at: new Date().toISOString(),
+        full_name: payload.fullName,
       },
       emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback`,
     },
   })
 
-  if (error) {
-    if (error.message.toLowerCase().includes('already')) {
+  if (authError || !authData.user) {
+    if (authError?.message.toLowerCase().includes('already')) {
       return { error: 'Unable to create account. If this email is already registered, please log in.' }
     }
     return { error: 'Unable to create account right now. Please try again.' }
   }
 
+  const userId = authData.user.id
+
+  // Upload file using admin client
+  const fileExt = file.name.split('.').pop()
+  const filePath = `${userId}/credentials.${fileExt}`
+
+  const { error: uploadError } = await adminClient.storage
+    .from('coach-credentials')
+    .upload(filePath, file, { upsert: true })
+
+  if (uploadError) {
+    console.error('Failed to upload credentials:', uploadError)
+    // Continue despite error, we can retry upload later or notify admin
+  }
+
+  // Update profile with all the extra fields using admin client
+  const { error: updateError } = await adminClient
+    .from('profiles')
+    .update({
+      date_of_birth: payload.dateOfBirth,
+      phone_number: payload.phoneNumber,
+      address_line1: payload.addressLine1,
+      city: payload.city,
+      state: payload.state,
+      zip_code: payload.zipCode,
+      referral_source: payload.referralSource || null,
+      coppa_acknowledged: payload.coppaAcknowledged,
+      tos_accepted: payload.tosAccepted,
+      coach_credentials_url: uploadError ? null : filePath,
+      pending_team_data: payload.teamData,
+    })
+    .eq('id', userId)
+
+  if (updateError) {
+    console.error('Failed to update profile data:', updateError)
+  }
+
+  // Notify admins
+  await sendCredentialUploadAlert(userId, payload.fullName, payload.email)
+
   redirect('/verify-email')
 }
+
+import { loginSchema, type LoginInput } from '@/lib/schemas/auth'
 
 export async function signIn(data: LoginInput) {
   const result = loginSchema.safeParse(data)
@@ -72,79 +151,3 @@ export async function signOut() {
   await supabase.auth.signOut()
   redirect('/login')
 }
-
-export async function uploadCredentials(formData: FormData) {
-  const file = formData.get('file') as File
-  if (!file) {
-    return { error: 'No file provided' }
-  }
-
-  const MAX_SIZE = 5 * 1024 * 1024 // 5MB
-  if (file.size > MAX_SIZE) {
-    return { error: 'File too large. Maximum size is 5MB.' }
-  }
-
-  const allowedMimes = ['application/pdf', 'image/jpeg', 'image/png']
-  if (!allowedMimes.includes(file.type)) {
-    return { error: 'Invalid file type. Only PDF, JPG, and PNG are allowed.' }
-  }
-
-  // Server-side magic bytes validation
-  const buffer = await file.arrayBuffer()
-  const bytes = new Uint8Array(buffer).subarray(0, 4)
-  const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
-  
-  let isValid = false
-  if (file.type === 'application/pdf' && hex.startsWith('25504446')) isValid = true
-  if (file.type === 'image/jpeg' && hex.startsWith('ffd8ff')) isValid = true
-  if (file.type === 'image/png' && hex === '89504e47') isValid = true
-  
-  if (!isValid) {
-    return { error: 'Invalid file format.' }
-  }
-
-  let user, supabase
-  try {
-    const auth = await requireAuth()
-    user = auth.user
-    supabase = auth.supabase
-  } catch {
-    return { error: 'Not authenticated' }
-  }
-
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`upload_creds_${user.id}_${ip}`)
-  if ('error' in limit) return limit
-
-  const fileExt = file.name.split('.').pop()
-  const filePath = `${user.id}/credentials.${fileExt}`
-
-  const { error: uploadError } = await supabase.storage
-    .from('coach-credentials')
-    .upload(filePath, file, {
-      upsert: true,
-    })
-
-  if (uploadError) {
-    return { error: uploadError.message }
-  }
-
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update({ coach_credentials_url: filePath })
-    .eq('id', user.id)
-
-  if (updateError) {
-    return { error: updateError.message }
-  }
-
-  // Notify admins. Fire-and-forget; failures are logged inside notify and must not
-  // block the redirect. Note: redirect() throws, so this MUST run before it.
-  const { data: profile } = await supabase.from('profiles').select('full_name, email').eq('id', user.id).single()
-  if (profile) {
-    await sendCredentialUploadAlert(user.id, profile.full_name, profile.email)
-  }
-
-  redirect('/awaiting-verification')
-}
-

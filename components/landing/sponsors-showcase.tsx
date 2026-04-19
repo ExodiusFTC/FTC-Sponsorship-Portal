@@ -1,147 +1,126 @@
 'use client'
 
 import { FadeUp } from '@/components/motion/fade-up'
+import { ReactNode } from 'react'
 
-const LOGO_CARDS = [
-  'stripe',
-  'OpenAI',
-  'Linear',
-  'DATADOG',
-  'NVIDIA',
-  'Figma',
-  'ramp',
-  'Adobe',
+interface SponsorLogo {
+  name: string
+  icon?: ReactNode
+  color?: string
+  website?: string
+}
+
+const SPONSORS_ROW_1: SponsorLogo[] = [
+  { name: 'stripe', color: '#635bff', website: 'https://stripe.com' },
+  { name: 'OpenAI', icon: <span className="text-2xl">🌀</span>, website: 'https://openai.com' },
+  { name: 'Linear', icon: <span className="w-7 h-7 rounded-full border-[2.5px] border-current flex items-center justify-center"><span className="w-full h-0.5 bg-current transform rotate-45"></span></span>, website: 'https://linear.app' },
+  { name: 'Apple', icon: <span className="text-3xl"></span>, website: 'https://apple.com' },
+  { name: 'Google', icon: <span className="font-bold text-3xl"><span className="text-[#4285F4]">G</span><span className="text-[#EA4335]">o</span><span className="text-[#FBBC05]">o</span><span className="text-[#4285F4]">g</span><span className="text-[#34A853]">l</span><span className="text-[#EA4335]">e</span></span>, website: 'https://google.com' },
+  { name: 'SpaceX', icon: <span className="text-2xl">🚀</span>, website: 'https://spacex.com' },
+  { name: 'NVIDIA', color: '#76b900', icon: <span className="w-6 h-6 bg-current rounded-sm rotate-45"></span>, website: 'https://nvidia.com' },
+  { name: 'Vercel', icon: <span className="text-3xl">▲</span>, website: 'https://vercel.com' },
 ]
+
+const SPONSORS_ROW_2: SponsorLogo[] = [
+  { name: 'Microsoft', icon: <div className="grid grid-cols-2 gap-0.5 w-6 h-6"><div className="bg-[#f25022] w-full h-full"></div><div className="bg-[#7fba00] w-full h-full"></div><div className="bg-[#00a4ef] w-full h-full"></div><div className="bg-[#ffb900] w-full h-full"></div></div>, website: 'https://microsoft.com' },
+  { name: 'Meta', icon: <span className="text-3xl font-bold text-[#0668E1]">∞</span>, website: 'https://meta.com' },
+  { name: 'Amazon', icon: <span className="text-2xl font-bold">amazon<span className="text-[#ff9900]">.</span></span>, website: 'https://amazon.com' },
+  { name: 'Tesla', icon: <span className="text-2xl font-black text-[#E31937]">T</span>, website: 'https://tesla.com' },
+  { name: 'Netflix', icon: <span className="text-3xl font-black text-[#E50914]">N</span>, website: 'https://netflix.com' },
+  { name: 'Discord', icon: <span className="text-3xl">🎮</span>, website: 'https://discord.com' },
+  { name: 'Slack', icon: <span className="text-2xl">#️⃣</span>, website: 'https://slack.com' },
+  { name: 'Supabase', icon: <span className="text-3xl text-[#3ecf8e]">⚡</span>, website: 'https://supabase.com' },
+]
+
+const SPONSORS_ROW_3: SponsorLogo[] = [
+  { name: 'Adobe', color: '#ff0000', icon: <span className="w-7 h-7 bg-[#ff0000] flex items-center justify-center text-[14px] text-white rounded-sm font-bold">A</span>, website: 'https://adobe.com' },
+  { name: 'Figma', icon: <div className="flex flex-col gap-0.5"><div className="flex gap-0.5"><div className="w-3 h-3 rounded-l-full bg-[#F24E1E]"></div><div className="w-3 h-3 rounded-full bg-[#FF7262]"></div></div><div className="flex gap-0.5"><div className="w-3 h-3 rounded-l-full bg-[#A259FF]"></div><div className="w-3 h-3 rounded-full bg-[#1ABCFE]"></div></div><div className="w-3 h-3 rounded-bl-full bg-[#0ACF83]"></div></div>, website: 'https://figma.com' },
+  { name: 'DATADOG', icon: <span className="text-2xl">🐕</span>, website: 'https://datadoghq.com' },
+  { name: 'ramp', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="rotate-45"><path d="M5 12h14M12 5l7 7-7 7" /></svg>, website: 'https://ramp.com' },
+  { name: 'Docker', icon: <span className="text-3xl">🐋</span>, website: 'https://docker.com' },
+  { name: 'Github', icon: <span className="text-3xl">🐱</span>, website: 'https://github.com' },
+  { name: 'Notion', icon: <span className="text-3xl">📝</span>, website: 'https://notion.so' },
+  { name: 'Spotify', icon: <span className="text-3xl text-[#1DB954]">🎧</span>, website: 'https://spotify.com' },
+]
+
+function SponsorCard({ sponsor }: { sponsor: SponsorLogo }) {
+  return (
+    <a
+      href={sponsor.website}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex-none flex h-[110px] w-[220px] items-center justify-center rounded-2xl bg-card border border-primary/20 transition-all duration-300 hover:bg-accent/50 hover:border-primary/50 hover:shadow-[0_0_40px_-5px_rgba(var(--primary),0.4)] shadow-[0_0_15px_-5px_rgba(var(--primary),0.1)] text-foreground cursor-pointer mx-4"
+    >
+      <div className="opacity-100 flex items-center justify-center select-none transition-all group-hover:brightness-150 group-hover:contrast-125">
+        <div className="flex items-center gap-3">
+          {sponsor.icon && <span style={{ color: sponsor.color }}>{sponsor.icon}</span>}
+          <span
+            className="font-bold text-[24px] tracking-tight"
+            style={{ color: sponsor.color }}
+          >
+            {sponsor.name === 'stripe' ? <span className="text-4xl lowercase">{sponsor.name}</span> : sponsor.name}
+          </span>
+        </div>
+      </div>
+    </a>
+  )
+}
 
 export function SponsorsShowcase() {
   return (
-    <section id="sponsors" className="mx-auto max-w-5xl px-6 pb-24 pt-6">
+    <section id="sponsors" className="mx-auto w-full px-6 pb-24 pt-6 overflow-hidden">
       <FadeUp>
-        <div className="text-center text-[13px] font-medium tracking-wide text-muted-foreground mb-8">
-
+        <div className="text-center text-[13px] font-medium tracking-widest uppercase text-primary/60 mb-16">
+          The Partners Powering Your Season
         </div>
       </FadeUp>
 
-      <FadeUp delay={0.1} className="w-full">
-        {/*
-          Seamless infinite marquee scroll.
-          Mask gradient applies a fade out at the edges.
-        */}
-        <div
-          className="relative w-full overflow-hidden"
-          style={{
-            maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
-          }}
-        >
-          <div
-            className="flex w-max"
-            style={{ animation: 'sponsors-marquee 35s linear infinite' }}
-          >
-            {/* First sequence */}
-            <div className="flex gap-4 pr-4">
-              {LOGO_CARDS.map((name, i) => (
-                <div
-                  key={`a-${i}`}
-                  className="group flex-none flex h-[72px] w-[150px] items-center justify-center rounded-xl bg-card border border-border transition-colors hover:bg-accent hover:border-border hover:text-foreground text-muted-foreground shadow-sm cursor-default"
-                >
-                  <div className="opacity-90 flex items-center justify-center select-none transition-opacity group-hover:opacity-100">
-                    {name === 'stripe' ? (
-                      <span className="font-bold tracking-tighter text-2xl lowercase">{name}</span>
-                    ) : name === 'Linear' ? (
-                      <span className="flex items-center gap-2.5 font-medium text-[20px] leading-none">
-                        <span className="w-5 h-5 rounded-full overflow-hidden border-[1.5px] border-current opacity-80 flex items-center justify-center">
-                          <span className="w-full h-0.5 bg-current transform rotate-45"></span>
-                        </span>
-                        {name}
-                      </span>
-                    ) : name === 'DATADOG' ? (
-                      <span className="font-bold tracking-normal text-[15px] flex items-center gap-2">
-                        <span className="text-xl">🐕</span>{name}
-                      </span>
-                    ) : name === 'ramp' ? (
-                      <span className="font-medium text-[22px] leading-none flex items-center gap-1.5 lowercase">
-                        {name}
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-80 rotate-45">
-                          <path d="M5 12h14M12 5l7 7-7 7" />
-                        </svg>
-                      </span>
-                    ) : name === 'OpenAI' ? (
-                      <span className="font-semibold text-[20px]">{name}</span>
-                    ) : name === 'NVIDIA' ? (
-                      <span className="font-bold text-[18px] tracking-widest flex items-center gap-1.5">
-                        <span className="w-5 h-5 bg-current rounded-sm rotate-45 opacity-80"></span>
-                        {name}
-                      </span>
-                    ) : name === 'Adobe' ? (
-                      <span className="font-black text-[22px] tracking-tight flex items-center gap-1.5">
-                        <span className="w-5 h-5 bg-[#ff0000] flex items-center justify-center text-[10px] text-white">A</span>
-                        {name}
-                      </span>
-                    ) : (
-                      <span className="font-medium text-[20px]">{name}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Seamless ghost wrapper */}
-            <div className="flex gap-4 pr-4" aria-hidden>
-              {LOGO_CARDS.map((name, i) => (
-                <div
-                  key={`b-${i}`}
-                  className="group flex-none flex h-[72px] w-[150px] items-center justify-center rounded-xl bg-card border border-border transition-colors hover:bg-accent hover:border-border hover:text-foreground text-muted-foreground shadow-sm cursor-default"
-                >
-                  <div className="opacity-90 flex items-center justify-center select-none transition-opacity group-hover:opacity-100">
-                    {name === 'stripe' ? (
-                      <span className="font-bold tracking-tighter text-2xl lowercase">{name}</span>
-                    ) : name === 'Linear' ? (
-                      <span className="flex items-center gap-2.5 font-medium text-[20px] leading-none">
-                        <span className="w-5 h-5 rounded-full overflow-hidden border-[1.5px] border-current opacity-80 flex items-center justify-center">
-                          <span className="w-full h-0.5 bg-current transform rotate-45"></span>
-                        </span>
-                        {name}
-                      </span>
-                    ) : name === 'DATADOG' ? (
-                      <span className="font-bold tracking-normal text-[15px] flex items-center gap-2">
-                        <span className="text-xl">🐕</span>{name}
-                      </span>
-                    ) : name === 'ramp' ? (
-                      <span className="font-medium text-[22px] leading-none flex items-center gap-1.5 lowercase">
-                        {name}
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-80 rotate-45">
-                          <path d="M5 12h14M12 5l7 7-7 7" />
-                        </svg>
-                      </span>
-                    ) : name === 'OpenAI' ? (
-                      <span className="font-semibold text-[20px]">{name}</span>
-                    ) : name === 'NVIDIA' ? (
-                      <span className="font-bold text-[18px] tracking-widest flex items-center gap-1.5">
-                        <span className="w-5 h-5 bg-current rounded-sm rotate-45 opacity-80"></span>
-                        {name}
-                      </span>
-                    ) : name === 'Adobe' ? (
-                      <span className="font-black text-[22px] tracking-tight flex items-center gap-1.5">
-                        <span className="w-5 h-5 bg-[#ff0000] flex items-center justify-center text-[10px] text-white">A</span>
-                        {name}
-                      </span>
-                    ) : (
-                      <span className="font-medium text-[20px]">{name}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+      <div className="flex flex-col gap-8">
+        {/* Row 1: Rotating Left */}
+        <div className="relative flex overflow-hidden" style={{ maskImage: 'linear-gradient(to right, transparent, black 15%, black 85%, transparent)' }}>
+          <div className="flex animate-marquee-left whitespace-nowrap">
+            {[...SPONSORS_ROW_1, ...SPONSORS_ROW_1, ...SPONSORS_ROW_1].map((s, i) => (
+              <SponsorCard key={`r1-${i}`} sponsor={s} />
+            ))}
           </div>
         </div>
-      </FadeUp>
+
+        {/* Row 2: Rotating Right */}
+        <div className="relative flex overflow-hidden" style={{ maskImage: 'linear-gradient(to right, transparent, black 15%, black 85%, transparent)' }}>
+          <div className="flex animate-marquee-right whitespace-nowrap">
+            {[...SPONSORS_ROW_2, ...SPONSORS_ROW_2, ...SPONSORS_ROW_2].map((s, i) => (
+              <SponsorCard key={`r2-${i}`} sponsor={s} />
+            ))}
+          </div>
+        </div>
+
+        {/* Row 3: Rotating Left */}
+        <div className="relative flex overflow-hidden" style={{ maskImage: 'linear-gradient(to right, transparent, black 15%, black 85%, transparent)' }}>
+          <div className="flex animate-marquee-left whitespace-nowrap">
+            {[...SPONSORS_ROW_3, ...SPONSORS_ROW_3, ...SPONSORS_ROW_3].map((s, i) => (
+              <SponsorCard key={`r3-${i}`} sponsor={s} />
+            ))}
+          </div>
+        </div>
+      </div>
 
       <style>{`
-        @keyframes sponsors-marquee {
+        @keyframes marquee-left {
           0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+          100% { transform: translateX(-33.33%); }
+        }
+        @keyframes marquee-right {
+          0% { transform: translateX(-33.33%); }
+          100% { transform: translateX(0); }
+        }
+        .animate-marquee-left {
+          animation: marquee-left 40s linear infinite;
+        }
+        .animate-marquee-right {
+          animation: marquee-right 40s linear infinite;
         }
       `}</style>
     </section>
   )
 }
+

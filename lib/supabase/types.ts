@@ -32,6 +32,16 @@ export type Profile = {
   email: string
   coach_verified: boolean
   coach_credentials_url: string | null
+  date_of_birth: string | null
+  phone_number: string | null
+  address_line1: string | null
+  city: string | null
+  state: string | null
+  zip_code: string | null
+  referral_source: string | null
+  coppa_acknowledged: boolean
+  tos_accepted: boolean
+  pending_team_data: any | null
   sponsor_id: string | null
   created_at: string
   updated_at: string
@@ -312,6 +322,16 @@ export type ProfileUpdate = {
   email?: string
   coach_verified?: boolean
   coach_credentials_url?: string | null
+  date_of_birth?: string | null
+  phone_number?: string | null
+  address_line1?: string | null
+  city?: string | null
+  state?: string | null
+  zip_code?: string | null
+  referral_source?: string | null
+  coppa_acknowledged?: boolean
+  tos_accepted?: boolean
+  pending_team_data?: any | null
   updated_at?: string
 }
 

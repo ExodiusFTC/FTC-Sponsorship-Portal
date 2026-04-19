@@ -20,7 +20,7 @@ export default async function NewSubmissionPage({ searchParams }: { searchParams
     .maybeSingle()
 
   if (!team) {
-    redirect('/onboarding')
+    redirect('/awaiting-verification')
   }
 
   const { data: allSponsors } = await supabase

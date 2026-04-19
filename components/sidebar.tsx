@@ -107,7 +107,8 @@ function NavItem({ item, isActive, badge }: { item: NavDef; isActive: boolean; b
 
   const className = cn(
     'group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors text-left',
-    isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+    isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
+    `tour-${item.label.toLowerCase().replace(/\\s+/g, '-')}`
   )
 
   // Use button for instant dashboard tab switching to avoid Next.js router overhead

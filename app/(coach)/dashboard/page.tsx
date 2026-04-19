@@ -33,8 +33,15 @@ export default async function DashboardPage({
     redirect('/sponsor/dashboard')
   }
 
+  if (profile?.role === 'coach' && !profile.coach_verified) {
+    redirect('/awaiting-verification')
+  }
+
   if (!team) {
-    redirect('/onboarding')
+    // If verified but no team, we need to show the onboarding or an error.
+    // For now, redirect to awaiting-verification but with a flag or handled state.
+    // Actually, let's just render a "Team Setup" state here if we want to be safe.
+    redirect('/awaiting-verification')
   }
 
   const { data: achievements } = await supabase
