@@ -137,6 +137,7 @@ export type SubmissionSummary = {
   id: string
   team_name: string
   owner_id: string
+  sponsor_id: string
   company_name: string
   status: SubmissionStatus
   admin_feedback: string | null

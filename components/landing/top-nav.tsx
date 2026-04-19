@@ -4,42 +4,20 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Sun, Moon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTheme } from 'next-themes'
 
 export function TopNav() {
   const [scrolled, setScrolled] = useState(false)
-  const [theme, setTheme] = useState('dark')
+  const { setTheme, resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
 
+  // Avoid hydration mismatch
   useEffect(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('theme') : null
-    if (saved === 'light') {
-      document.documentElement.setAttribute('data-theme', 'light')
-      setTheme('light')
-    }
-    
-    // Listen for storage changes in case another tab/component changes it
-    const handleStorage = () => {
-      const current = document.documentElement.getAttribute('data-theme') ?? 'dark'
-      setTheme(current)
-    }
-    
-    window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
+    setMounted(true)
   }, [])
 
   const toggleTheme = () => {
-    const next = theme === 'light' ? 'dark' : 'light'
-    if (next === 'dark') {
-      document.documentElement.removeAttribute('data-theme')
-      document.documentElement.classList.add('dark')
-      document.documentElement.style.colorScheme = 'dark'
-    } else {
-      document.documentElement.setAttribute('data-theme', 'light')
-      document.documentElement.classList.remove('dark')
-      document.documentElement.style.colorScheme = 'light'
-    }
-    localStorage.setItem('theme', next)
-    setTheme(next)
-    window.dispatchEvent(new Event('storage'))
+    setTheme(resolvedTheme === 'light' ? 'dark' : 'light')
   }
 
   useEffect(() => {
@@ -48,6 +26,10 @@ export function TopNav() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  if (!mounted) return null
+
+  const isLight = resolvedTheme === 'light'
 
   return (
     <header
@@ -84,7 +66,7 @@ export function TopNav() {
             className="rounded-full p-1.5 text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
             aria-label="Toggle theme"
           >
-            {theme === 'light' ? <Moon className="w-4 h-4" strokeWidth={2} /> : <Sun className="w-4 h-4" strokeWidth={2} />}
+            {isLight ? <Moon className="w-4 h-4" strokeWidth={2} /> : <Sun className="w-4 h-4" strokeWidth={2} />}
           </button>
         </nav>
 

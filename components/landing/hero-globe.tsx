@@ -503,22 +503,41 @@ function GlobeScene() {
 
 // ─── Exported component ─────────────────────────────────────────────────────
 export function HeroGlobe({ className }: { className?: string }) {
+  const [isReady, setIsReady] = useState(false)
+
+  useEffect(() => {
+    // Start initializing the globe AFTER the loader is completely gone (3s + fade out)
+    const timer = setTimeout(() => {
+      setIsReady(true)
+    }, 4000)
+    return () => clearTimeout(timer)
+  }, [])
+
   return (
-    <div className={className} style={{ width: '100%', height: '100%' }}>
-      <Canvas
-        camera={{ position: [0, 0, 5.2], fov: 45 }}
-        dpr={[1, 2]}
-        gl={{
-          antialias: true,
-          alpha: true,
-          powerPreference: 'high-performance',
-        }}
-        style={{ background: 'transparent' }}
-      >
-        <ambientLight intensity={0.3} />
-        <GlobeScene />
-        <Atmosphere />
-      </Canvas>
+    <div 
+      className={cn(
+        className, 
+        "transition-opacity duration-1000",
+        isReady ? "opacity-100" : "opacity-0"
+      )} 
+      style={{ width: '100%', height: '100%' }}
+    >
+      {isReady && (
+        <Canvas
+          camera={{ position: [0, 0, 5.2], fov: 45 }}
+          dpr={[1, 2]}
+          gl={{
+            antialias: true,
+            alpha: true,
+            powerPreference: 'high-performance',
+          }}
+          style={{ background: 'transparent' }}
+        >
+          <ambientLight intensity={0.3} />
+          <GlobeScene />
+          <Atmosphere />
+        </Canvas>
+      )}
     </div>
   )
 }

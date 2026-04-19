@@ -49,9 +49,9 @@ function SponsorCard({ sponsor }: { sponsor: SponsorLogo }) {
       href={sponsor.website}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex-none flex h-[110px] w-[220px] items-center justify-center rounded-2xl bg-card border border-primary/20 transition-all duration-300 hover:bg-accent/50 hover:border-primary/50 hover:shadow-[0_0_40px_-5px_rgba(var(--primary),0.4)] shadow-[0_0_15px_-5px_rgba(var(--primary),0.1)] text-foreground cursor-pointer mx-4"
+      className="group flex-none flex h-[110px] w-[220px] items-center justify-center rounded-2xl bg-card border border-primary/20 transition-all duration-300 hover:border-primary/50 dark:hover:bg-accent/50 hover:bg-zinc-300/60 dark:hover:shadow-[0_0_40px_-5px_rgba(255,255,255,0.1)] shadow-[0_0_15px_-5px_rgba(0,0,0,0.1)] text-foreground cursor-pointer mx-4"
     >
-      <div className="opacity-100 flex items-center justify-center select-none transition-all group-hover:brightness-150 group-hover:contrast-125">
+      <div className="opacity-100 flex items-center justify-center select-none transition-all group-hover:brightness-50 dark:group-hover:brightness-125 group-hover:contrast-100 dark:group-hover:contrast-125">
         <div className="flex items-center gap-3">
           {sponsor.icon && <span style={{ color: sponsor.color }}>{sponsor.icon}</span>}
           <span

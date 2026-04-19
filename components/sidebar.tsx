@@ -245,43 +245,6 @@ export function Sidebar() {
   }, [])
 
   // Global keyboard shortcuts
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement).tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return
-      if (!e.shiftKey) return
-
-      const code = e.code
-      const routes: Record<string, string> = {
-        'KeyO': '/dashboard',
-        'KeyP': '/dashboard?tab=portfolio',
-        'KeyS': '/dashboard?tab=find-sponsors',
-        'KeyH': '/dashboard?tab=submissions',
-        'KeyN': '/dashboard?tab=inbox',
-        'KeyI': '/dashboard?tab=insights',
-        'KeyL': '/dashboard?tab=ledger',
-        'Comma': role === 'admin' ? '/settings' : '/dashboard?tab=settings',
-      }
-
-      if (routes[code]) {
-        e.preventDefault()
-        const targetUrl = routes[code]
-        
-        // Fast path for dashboard tabs
-        if (pathname === '/dashboard' && targetUrl.startsWith('/dashboard')) {
-          const url = new URL(targetUrl, window.location.origin)
-          const tab = url.searchParams.get('tab') || 'overview'
-          window.history.replaceState({ ...window.history.state, as: targetUrl, url: targetUrl }, '', targetUrl)
-          window.dispatchEvent(new CustomEvent('dashboard-tab-change', { detail: { tab } }))
-        } else {
-          router.push(targetUrl)
-        }
-      }
-    }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [router, role, pathname, localActiveTab])
-
   const { data: queueData } = useSWR<{ count: number }>(
     role === 'admin' ? '/api/admin/queue/count' : null,
     (url: string) => fetch(url).then((r) => r.json()),

@@ -128,7 +128,7 @@ export function DashboardShell({
             />
           )}
           {tab === 'portfolio' && <PortfolioTab team={team} achievements={achievements} />}
-          {tab === 'find-sponsors' && <FindSponsorsTab sponsors={sponsors} />}
+          {tab === 'find-sponsors' && <FindSponsorsTab sponsors={sponsors} submissions={submissions} />}
           {tab === 'submissions' && <SubmissionsTab submissions={submissions} />}
           {tab === 'inbox' && <InboxTab notifications={notifications} switchTab={setTab} />}
           {tab === 'insights' && <InsightsTab submissions={submissions} sponsors={sponsors} team={team} />}
@@ -300,7 +300,7 @@ function SponsorInitials({ name, logoUrl }: { name: string; logoUrl?: string | n
   )
 }
 
-function FindSponsorsTab({ sponsors }: { sponsors: Sponsor[] }) {
+function FindSponsorsTab({ sponsors, submissions }: { sponsors: Sponsor[], submissions: SubmissionSummary[] }) {
   const [query, setQuery] = useState('')
   const [industry, setIndustry] = useState('all')
   const [fundingRange, setFundingRange] = useState(0) // index into FUNDING_RANGES
@@ -383,6 +383,13 @@ function FindSponsorsTab({ sponsors }: { sponsors: Sponsor[] }) {
             {results.map(s => {
               const remaining = s.funding_cap_cents - s.funding_used_cents
               const pct = s.funding_cap_cents > 0 ? Math.round((s.funding_used_cents / s.funding_cap_cents) * 100) : 0
+              
+              // Check if there is an active submission (non-terminal)
+              const activeSub = submissions.find(sub => 
+                sub.sponsor_id === s.id && 
+                !['declined', 'expired', 'bounced'].includes(sub.status)
+              )
+
               return (
                 <motion.div
                   key={s.id}
@@ -437,17 +444,29 @@ function FindSponsorsTab({ sponsors }: { sponsors: Sponsor[] }) {
                     ) : (
                       <div />
                     )}
-                    <Link
-                      href={`/submissions/new?sponsor=${s.id}`}
-                      className={cn(
-                        'flex items-center justify-center gap-1.5 py-3 text-xs font-semibold transition-colors',
-                        s.website
-                          ? 'text-zinc-100 hover:bg-zinc-900/60'
-                          : 'col-span-2 text-zinc-100 hover:bg-zinc-900/60',
-                      )}
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Pitch this sponsor
-                    </Link>
+                    {activeSub ? (
+                      <Link
+                        href={`/submissions/${activeSub.id}/edit`}
+                        className={cn(
+                          'flex items-center justify-center gap-1.5 py-3 text-xs font-semibold transition-colors bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20',
+                          !s.website && 'col-span-2',
+                        )}
+                      >
+                        View active pitch
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/submissions/new?sponsor=${s.id}`}
+                        className={cn(
+                          'flex items-center justify-center gap-1.5 py-3 text-xs font-semibold transition-colors',
+                          s.website
+                            ? 'text-zinc-100 hover:bg-zinc-900/60'
+                            : 'col-span-2 text-zinc-100 hover:bg-zinc-900/60',
+                        )}
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Pitch this sponsor
+                      </Link>
+                    )}
                   </div>
                 </motion.div>
               )

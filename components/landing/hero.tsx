@@ -23,11 +23,11 @@ export function Hero() {
   const show = { opacity: 1, y: 0 }
 
   useEffect(() => {
-    // Wait for 1s before starting to load the globe chunk.
-    // This avoids the initial hydration and first-word jolt.
+    // Start loading the globe chunk very early (100ms).
+    // This allows it to spread its processing work across the full 3s initial loader period.
     const timer = setTimeout(() => {
       setShouldShowGlobe(true)
-    }, 1000)
+    }, 100)
     return () => clearTimeout(timer)
   }, [])
 

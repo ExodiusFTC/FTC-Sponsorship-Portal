@@ -240,45 +240,41 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
       const scaleFactor = currentScale / radius
 
       const ACCENT_COLOR = themeColorsRef.current.accent
-      const gradient = ctx.createRadialGradient(
-        dimensions.current.width / 2, dimensions.current.height / 2, currentScale * 0.8,
-        dimensions.current.width / 2, dimensions.current.height / 2, currentScale * 1.2
-      );
-      gradient.addColorStop(0, hexToRgba(ACCENT_COLOR, 0.0));
-      gradient.addColorStop(0.8, hexToRgba(ACCENT_COLOR, 0.12));
-      gradient.addColorStop(1, hexToRgba(ACCENT_COLOR, 0.0));
-
-      ctx.beginPath()
-      ctx.arc(dimensions.current.width / 2, dimensions.current.height / 2, currentScale * 1.2, 0, 2 * Math.PI)
-      ctx.fillStyle = gradient
-      ctx.fill()
 
       if (landFeaturesRef.current) {
-        const graticule = d3.geoGraticule()
+        // 1. Graticule
         ctx.beginPath()
-        path(graticule())
+        path(d3.geoGraticule()())
+        ctx.strokeStyle = hexToRgba(ACCENT_COLOR, 0.1)
+        ctx.lineWidth = 0.5 * scaleFactor
+        ctx.stroke()
+
+        // 2. Land Outline
+        ctx.beginPath()
+        landFeaturesRef.current.features.forEach((feature: any) => { path(feature) })
         ctx.strokeStyle = hexToRgba(ACCENT_COLOR, 0.15)
         ctx.lineWidth = 1 * scaleFactor
         ctx.stroke()
 
+        // 3. Dots - BATCHED for performance
+        ctx.fillStyle = hexToRgba(ACCENT_COLOR, 0.35)
         ctx.beginPath()
-        landFeaturesRef.current.features.forEach((feature: any) => { path(feature) })
-        ctx.strokeStyle = hexToRgba(ACCENT_COLOR, 0.25)
-        ctx.lineWidth = 1 * scaleFactor
-        ctx.stroke()
-
-        ctx.fillStyle = hexToRgba(ACCENT_COLOR, 0.4)
-        allDotsRef.current.forEach((dot) => {
+        const dotSize = 1.0 * scaleFactor
+        const dots = allDotsRef.current
+        for (let i = 0; i < dots.length; i++) {
+          const dot = dots[i]
           const p = proj([dot.lng, dot.lat])
           if (p && p[0] >= 0 && p[0] <= dimensions.current.width && p[1] >= 0 && p[1] <= dimensions.current.height) {
-            ctx.beginPath()
-            ctx.arc(p[0], p[1], 1.0 * scaleFactor, 0, 2 * Math.PI)
-            ctx.fill()
+            // Using rect is much faster than arc for thousands of points
+            ctx.moveTo(p[0], p[1])
+            ctx.rect(p[0] - dotSize / 2, p[1] - dotSize / 2, dotSize, dotSize)
           }
-        })
+        }
+        ctx.fill()
 
+        // 4. Connection Lines
         ctx.strokeStyle = ACCENT_COLOR
-        ctx.lineWidth = 1.5 * scaleFactor
+        ctx.lineWidth = 1.2 * scaleFactor
         connectionsRef.current.forEach((conn) => {
           ctx.beginPath()
           path({ type: 'LineString', coordinates: conn })
@@ -288,21 +284,18 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
         })
         ctx.setLineDash([])
 
-        path.pointRadius(3.5 * scaleFactor)
+        // 5. Hubs
+        path.pointRadius(3 * scaleFactor)
         ctx.fillStyle = ACCENT_COLOR
-        HUB_LOCATIONS.forEach((hub) => {
-          ctx.beginPath()
-          path({ type: 'Point', coordinates: hub })
-          ctx.fill()
-        })
+        ctx.beginPath()
+        HUB_LOCATIONS.forEach((hub) => { path({ type: 'Point', coordinates: hub }) })
+        ctx.fill()
 
-        path.pointRadius(7 * scaleFactor)
-        ctx.fillStyle = hexToRgba(ACCENT_COLOR, 0.25)
-        HUB_LOCATIONS.forEach((hub) => {
-          ctx.beginPath()
-          path({ type: 'Point', coordinates: hub })
-          ctx.fill()
-        })
+        path.pointRadius(6 * scaleFactor)
+        ctx.fillStyle = hexToRgba(ACCENT_COLOR, 0.2)
+        ctx.beginPath()
+        HUB_LOCATIONS.forEach((hub) => { path({ type: 'Point', coordinates: hub }) })
+        ctx.fill()
       }
     }
 

@@ -103,16 +103,18 @@ export async function saveSubmission(
 
     if (error) return { error: error.message }
   } else {
-    // Check if one already exists for this team/sponsor combo
+    // Check if an active submission already exists for this team/sponsor combo in the current season
     const { data: existingTarget } = await supabase
       .from('submissions')
-      .select('id')
+      .select('id, status')
       .eq('team_id', teamId)
       .eq('sponsor_id', data.sponsorId)
-      .single()
+      .eq('season', season)
+      .not('status', 'in', '("declined","expired","bounced")')
+      .maybeSingle()
 
     if (existingTarget) {
-      return { error: 'A submission for this sponsor already exists.' }
+      return { error: 'An active submission for this sponsor already exists in the current season.' }
     }
 
     const { error } = await supabase
@@ -185,12 +187,18 @@ export async function autoSaveSubmissionDraft(
   // Attempt to update by team_id and sponsor_id if no ID is passed, to avoid duplicates
   const { data: existingTarget } = await supabase
     .from('submissions')
-    .select('id')
+    .select('id, status')
     .eq('team_id', teamId)
     .eq('sponsor_id', data.sponsorId)
-    .single()
+    .eq('season', getCurrentSeasonLabel())
+    .not('status', 'in', '("declined","expired","bounced")')
+    .maybeSingle()
 
   if (existingTarget) {
+    // If it's not a draft, we shouldn't overwrite it with auto-save
+    if (!EDITABLE_SUBMISSION_STATUSES.includes(existingTarget.status as any)) {
+      return { error: 'An active submission for this sponsor is already in progress and locked.' }
+    }
     const { error } = await supabase.from('submissions').update(payload).eq('id', existingTarget.id)
     if (error) return { error: error.message }
     return { id: existingTarget.id }

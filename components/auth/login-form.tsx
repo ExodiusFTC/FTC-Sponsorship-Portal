@@ -51,6 +51,7 @@ export function LoginForm() {
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const isDark = !document.documentElement.hasAttribute('data-theme') || document.documentElement.getAttribute('data-theme') === 'dark';
       ps.forEach((p) => {
         p.y -= p.v;
         if (p.y < 0) {
@@ -59,7 +60,7 @@ export function LoginForm() {
           p.v = Math.random() * 0.25 + 0.05;
           p.o = Math.random() * 0.35 + 0.15;
         }
-        ctx.fillStyle = `rgba(250,250,250,${p.o})`;
+        ctx.fillStyle = isDark ? `rgba(250,250,250,${p.o})` : `rgba(0,0,0,${p.o * 0.5})`;
         ctx.fillRect(p.x, p.y, 0.7, 2.2);
       });
       raf = requestAnimationFrame(draw);
@@ -104,10 +105,10 @@ export function LoginForm() {
   }
 
   return (
-    <section className="fixed inset-0 bg-zinc-950 text-zinc-50 overflow-y-auto">
+    <section className="fixed inset-0 bg-background text-foreground overflow-y-auto">
       <style dangerouslySetInnerHTML={{ __html: `
         .accent-lines{position:absolute;inset:0;pointer-events:none;opacity:.7}
-        .hline,.vline{position:absolute;background:#27272a;will-change:transform,opacity}
+        .hline,.vline{position:absolute;background:var(--border);will-change:transform,opacity}
         .hline{left:0;right:0;height:1px;transform:scaleX(0);transform-origin:50% 50%;animation:drawX .8s cubic-bezier(.22,.61,.36,1) forwards}
         .vline{top:0;bottom:0;width:1px;transform:scaleY(0);transform-origin:50% 0%;animation:drawY .9s cubic-bezier(.22,.61,.36,1) forwards}
         .hline:nth-child(1){top:18%;animation-delay:.12s}
@@ -132,9 +133,6 @@ export function LoginForm() {
         }
       ` }} />
 
-      {/* Subtle vignette */}
-      <div className="fixed inset-0 pointer-events-none [background:radial-gradient(80%_60%_at_50%_30%,rgba(255,255,255,0.06),transparent_60%)]" />
-
       {/* Animated accent lines */}
       <div className="accent-lines fixed inset-0">
         <div className="hline" />
@@ -148,18 +146,18 @@ export function LoginForm() {
       {/* Particles */}
       <canvas
         ref={canvasRef}
-        className="fixed inset-0 w-full h-full opacity-50 mix-blend-screen pointer-events-none"
+        className="fixed inset-0 w-full h-full pointer-events-none dark:opacity-50 opacity-40 mix-blend-multiply dark:mix-blend-screen"
       />
 
       {/* Header */}
-      <header className="fixed left-0 right-0 top-0 flex items-center justify-between px-6 py-4 border-b border-zinc-800/80 z-20 bg-zinc-950/50 backdrop-blur">
-        <Link href="/" className="text-xs tracking-[0.14em] uppercase text-zinc-400 hover:text-zinc-100 transition-colors">
+      <header className="fixed left-0 right-0 top-0 flex items-center justify-between px-6 py-4 border-b border-border/80 z-20 bg-background/50 backdrop-blur">
+        <Link href="/" className="text-xs tracking-[0.14em] uppercase text-muted-foreground hover:text-foreground transition-colors">
           MATCHMAKER
         </Link>
         <Link href="/signup">
           <Button
             variant="outline"
-            className="h-9 rounded-lg border-zinc-800 bg-zinc-900 text-zinc-50 hover:bg-zinc-900/80"
+            className="h-9 rounded-lg border-border bg-card text-foreground hover:bg-accent"
           >
             <span className="mr-2">Sign Up</span>
             <ChevronRight className="h-4 w-4" />
@@ -169,10 +167,10 @@ export function LoginForm() {
 
       {/* Centered Login Card */}
       <div className="min-h-screen w-full grid place-items-center px-4 py-24 relative z-10">
-        <Card className="card-animate w-full max-w-md border-zinc-800 bg-zinc-900/70 backdrop-blur supports-[backdrop-filter]:bg-zinc-900/60 shadow-2xl">
-          <CardHeader className="border-b border-zinc-800/50 pb-6 text-center">
-            <CardTitle className="text-2xl text-zinc-50 font-semibold tracking-tight">Log In</CardTitle>
-            <CardDescription className="text-zinc-400 mt-2">
+        <Card className="card-animate w-full max-w-md border-border bg-card/70 backdrop-blur shadow-2xl">
+          <CardHeader className="border-b border-border/50 pb-6 text-center">
+            <CardTitle className="text-2xl text-foreground font-semibold tracking-tight">Log In</CardTitle>
+            <CardDescription className="text-muted-foreground mt-2">
               Welcome back. Access your sponsorship portal.
             </CardDescription>
           </CardHeader>
@@ -181,7 +179,7 @@ export function LoginForm() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {error && (
-                  <Alert variant="destructive" className="bg-red-950/50 border-red-900 text-red-200">
+                  <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive">
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
@@ -194,10 +192,10 @@ export function LoginForm() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-zinc-300">Email Address</FormLabel>
+                      <FormLabel className="text-foreground/80">Email Address</FormLabel>
                       <FormControl>
                         <Input 
-                          className="bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 h-11" 
+                          className="bg-background border-border text-foreground placeholder:text-muted-foreground h-11" 
                           placeholder="coach@example.com" 
                           {...field} 
                         />
@@ -213,10 +211,10 @@ export function LoginForm() {
                   render={({ field }) => (
                     <FormItem>
                       <div className="flex items-center justify-between">
-                        <FormLabel className="text-zinc-300">Password</FormLabel>
+                        <FormLabel className="text-foreground/80">Password</FormLabel>
                         <Link 
                           href="/forgot-password" 
-                          className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                         >
                           Forgot password?
                         </Link>
@@ -224,7 +222,7 @@ export function LoginForm() {
                       <FormControl>
                         <Input 
                           type="password" 
-                          className="bg-zinc-950 border-zinc-800 text-zinc-50 h-11" 
+                          className="bg-background border-border text-foreground h-11" 
                           {...field} 
                         />
                       </FormControl>
@@ -235,7 +233,7 @@ export function LoginForm() {
 
                 <Button 
                   type="submit" 
-                  className="w-full h-11 bg-zinc-50 text-zinc-900 hover:bg-zinc-200 font-semibold text-base transition-all duration-200" 
+                  className="w-full h-11 bg-primary text-primary-foreground hover:opacity-90 font-semibold text-base transition-all duration-200" 
                   disabled={isPending}
                 >
                   {isPending ? 'Authenticating...' : 'Log In'}
@@ -244,10 +242,10 @@ export function LoginForm() {
             </Form>
           </CardContent>
           
-          <CardFooter className="border-t border-zinc-800/50 flex justify-center py-6 bg-zinc-950/30">
-            <p className="text-sm text-zinc-400">
+          <CardFooter className="border-t border-border/50 flex justify-center py-6 bg-accent/10">
+            <p className="text-sm text-muted-foreground">
               Don&apos;t have an account?{' '}
-              <Link href="/signup" className="text-zinc-200 hover:underline font-medium">
+              <Link href="/signup" className="text-foreground hover:underline font-medium">
                 Create one
               </Link>
             </p>

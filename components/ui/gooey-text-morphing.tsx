@@ -9,6 +9,7 @@ interface GooeyTextProps {
   cooldownTime?: number;
   className?: string;
   textClassName?: string;
+  loop?: boolean;
 }
 
 export function GooeyText({
@@ -16,7 +17,8 @@ export function GooeyText({
   morphTime = 1,
   cooldownTime = 0.25,
   className,
-  textClassName
+  textClassName,
+  loop = true
 }: GooeyTextProps) {
   const text1Ref = React.useRef<HTMLSpanElement>(null);
   const text2Ref = React.useRef<HTMLSpanElement>(null);
@@ -27,61 +29,38 @@ export function GooeyText({
     let morph = 0;
     let cooldown = cooldownTime;
     let rafId: number;
+    let isStopped = false;
 
-    // Initialize: show the first word in text2 immediately
+    // Initialize text contents
     if (text1Ref.current && text2Ref.current) {
-      text2Ref.current.textContent = texts[0];
       text1Ref.current.textContent = texts[texts.length - 1];
-      text2Ref.current.style.opacity = "100%";
-      text1Ref.current.style.opacity = "0%";
+      text2Ref.current.textContent = texts[0];
     }
 
-    const lastStyles = {
-      t1Blur: -1, t1Opacity: -1,
-      t2Blur: -1, t2Opacity: -1
-    };
-
     const setMorph = (fraction: number) => {
-      if (text1Ref.current && text2Ref.current) {
-        const t2Blur = Math.min(8 / fraction - 8, 100);
-        const t2Opacity = Math.pow(fraction, 0.4) * 100;
-        
-        const invFraction = 1 - fraction;
-        const t1Blur = Math.min(8 / invFraction - 8, 100);
-        const t1Opacity = Math.pow(invFraction, 0.4) * 100;
+      if (!text1Ref.current || !text2Ref.current) return;
+      
+      const t2Blur = Math.min(8 / fraction - 8, 100);
+      const t2Opacity = Math.pow(fraction, 0.4) * 100;
+      
+      const invFraction = 1 - fraction;
+      const t1Blur = Math.min(8 / invFraction - 8, 100);
+      const t1Opacity = Math.pow(invFraction, 0.4) * 100;
 
-        if (t2Blur !== lastStyles.t2Blur) {
-          text2Ref.current.style.filter = `blur(${t2Blur.toFixed(2)}px)`;
-          lastStyles.t2Blur = t2Blur;
-        }
-        if (t2Opacity !== lastStyles.t2Opacity) {
-          text2Ref.current.style.opacity = `${t2Opacity.toFixed(1)}%`;
-          lastStyles.t2Opacity = t2Opacity;
-        }
-        if (t1Blur !== lastStyles.t1Blur) {
-          text1Ref.current.style.filter = `blur(${t1Blur.toFixed(2)}px)`;
-          lastStyles.t1Blur = t1Blur;
-        }
-        if (t1Opacity !== lastStyles.t1Opacity) {
-          text1Ref.current.style.opacity = `${t1Opacity.toFixed(1)}%`;
-          lastStyles.t1Opacity = t1Opacity;
-        }
-      }
+      text2Ref.current.style.filter = `blur(${t2Blur.toFixed(2)}px)`;
+      text2Ref.current.style.opacity = `${t2Opacity.toFixed(1)}%`;
+
+      text1Ref.current.style.filter = `blur(${t1Blur.toFixed(2)}px)`;
+      text1Ref.current.style.opacity = `${t1Opacity.toFixed(1)}%`;
     };
 
     const doCooldown = () => {
       morph = 0;
       if (text1Ref.current && text2Ref.current) {
-        if (lastStyles.t1Opacity !== 0) {
-          text1Ref.current.style.filter = "";
-          text1Ref.current.style.opacity = "0%";
-          lastStyles.t1Opacity = 0;
-        }
-        if (lastStyles.t2Opacity !== 100) {
-          text2Ref.current.style.filter = "";
-          text2Ref.current.style.opacity = "100%";
-          lastStyles.t2Opacity = 100;
-        }
+        text1Ref.current.style.filter = "";
+        text1Ref.current.style.opacity = "0%";
+        text2Ref.current.style.filter = "";
+        text2Ref.current.style.opacity = "100%";
       }
     };
 
@@ -99,7 +78,9 @@ export function GooeyText({
     };
 
     function animate(now: number) {
+      if (isStopped) return;
       rafId = requestAnimationFrame(animate);
+      
       const dt = (now - time) / 1000;
       time = now;
 
@@ -108,6 +89,13 @@ export function GooeyText({
 
       if (cooldown <= 0) {
         if (wasInCooldown) {
+          // Check if we should stop at the last word
+          if (!loop && textIndex === texts.length - 2) {
+            isStopped = true;
+            doCooldown();
+            return;
+          }
+          
           textIndex = (textIndex + 1) % texts.length;
           if (text1Ref.current && text2Ref.current) {
             text1Ref.current.textContent = texts[textIndex % texts.length];
@@ -123,9 +111,10 @@ export function GooeyText({
     rafId = requestAnimationFrame(animate);
 
     return () => {
+      isStopped = true;
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [texts, morphTime, cooldownTime]);
+  }, [texts, morphTime, cooldownTime, loop]);
 
   return (
     <div className={cn("relative", className)}>
@@ -145,22 +134,24 @@ export function GooeyText({
       </svg>
 
       <div
-        className="flex items-center justify-center"
+        className="flex items-center justify-center select-none pointer-events-none"
         style={{ filter: "url(#threshold)", willChange: "filter" }}
       >
         <span
           ref={text1Ref}
+          style={{ opacity: '0%', willChange: 'filter, opacity' }}
           className={cn(
-            "absolute inline-block select-none text-center text-6xl md:text-[60pt]",
-            "text-foreground",
+            "absolute inline-block text-center text-6xl md:text-[60pt] font-bold",
+            "text-white dark:text-zinc-50",
             textClassName
           )}
         />
         <span
           ref={text2Ref}
+          style={{ opacity: '100%', willChange: 'filter, opacity' }}
           className={cn(
-            "absolute inline-block select-none text-center text-6xl md:text-[60pt]",
-            "text-foreground",
+            "absolute inline-block text-center text-6xl md:text-[60pt] font-bold",
+            "text-white dark:text-zinc-50",
             textClassName
           )}
         />

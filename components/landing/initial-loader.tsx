@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { GooeyText } from '@/components/ui/gooey-text-morphing'
 
 export function InitialLoader() {
   const [isLoading, setIsLoading] = useState(true)
+  const loaderTexts = useMemo(() => ["FTC", "Sponsorships", "Simplified"], [])
 
   useEffect(() => {
-    // Exactly 3 seconds total (1s per word: FTC, Sponsorships, Simplified)
+    // Exactly 3 seconds total as requested
     const timer = setTimeout(() => {
       setIsLoading(false)
     }, 3000)
@@ -23,14 +24,16 @@ export function InitialLoader() {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.6, ease: "easeInOut" }}
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-zinc-950"
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background pointer-events-none"
+          style={{ willChange: "opacity" }}
         >
-          <GooeyText
-            texts={["FTC", "Sponsorships", "Simplified"]}
-            morphTime={1}
+          <GooeyText 
+            texts={loaderTexts}
+            morphTime={0.6}
             cooldownTime={0.4}
+            loop={false}
             className="w-full"
-            textClassName="text-zinc-50 font-bold tracking-tighter"
+            textClassName="text-foreground font-bold tracking-tighter"
           />
         </motion.div>
       )}
