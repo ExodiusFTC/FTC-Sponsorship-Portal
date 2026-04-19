@@ -23,19 +23,16 @@ export async function approveSubmission(submissionId: string) {
 
   const supabase = createAdminClient()
 
-  // Atomic RPC: locks sponsor row, debits budget, writes ledger + audit_log, mints access token.
-  // Cast via unknown because the generated types don't include the new RPC yet.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rpcResult, error: rpcError } = await (supabase as unknown as any)
-    .rpc('approve_submission_atomic', {
-      p_submission_id: submissionId,
-      p_admin_id: user.id,
-      p_amount_cents: 0,
-    })
+  // Atomic RPC: locks sponsor row, debits budget, writes ledger + audit_log, minits access token.
+  const { data: rpcResult, error: rpcError } = await supabase.rpc('approve_submission_atomic', {
+    p_submission_id: submissionId,
+    p_admin_id: user.id,
+    p_amount_cents: 0,
+  })
 
   if (rpcError) return { error: rpcError.message }
 
-  const result = (rpcResult as unknown) as { ok: boolean; error?: string; token?: string; amount_cents?: number }
+  const result = rpcResult as { ok: boolean; error?: string; token?: string; amount_cents?: number }
   if (!result.ok) {
     const messages: Record<string, string> = {
       submission_not_found: 'Submission not found.',
@@ -52,7 +49,7 @@ export async function approveSubmission(submissionId: string) {
   await supabase.from('submissions').update({ 
     expires_at: expiresAt,
     sent_at: now
-  } as never).eq('id', submissionId)
+  }).eq('id', submissionId)
 
   // Notify coach + dispatch to sponsor with their access token
   await Promise.all([
@@ -95,6 +92,16 @@ export async function declineSubmission(submissionId: string, feedback: string) 
   if (profile?.role !== 'admin') return { error: 'Forbidden' }
 
   const supabase = createAdminClient()
+
+  const { data: subCheck } = await supabase
+    .from('submissions')
+    .select('status')
+    .eq('id', submissionId)
+    .single()
+
+  if (!subCheck || subCheck.status !== 'pending') {
+    return { error: 'Submission is not pending review' }
+  }
 
   const { error } = await supabase
     .from('submissions')
@@ -154,6 +161,16 @@ export async function requestEdit(submissionId: string, feedback: string) {
   if (profile?.role !== 'admin') return { error: 'Forbidden' }
 
   const supabase = createAdminClient()
+
+  const { data: subCheck } = await supabase
+    .from('submissions')
+    .select('status')
+    .eq('id', submissionId)
+    .single()
+
+  if (!subCheck || subCheck.status !== 'pending') {
+    return { error: 'Submission is not pending review' }
+  }
 
   const { error } = await supabase
     .from('submissions')

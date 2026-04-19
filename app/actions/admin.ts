@@ -73,7 +73,7 @@ export async function approveSponsorApplication(applicationId: string) {
 
   const { data: app, error: fetchError } = await adminClient
     .from('sponsor_applications')
-    .select('*')
+    .select('company_name, contact_name, contact_email, proposed_cap_cents, message')
     .eq('id', applicationId)
     .single()
 
@@ -82,7 +82,7 @@ export async function approveSponsorApplication(applicationId: string) {
   // Create the sponsor record
   const { error: insertError } = await adminClient.from('sponsors').insert({
     company_name: app.company_name,
-    contact_name: app.company_name,
+    contact_name: app.contact_name,
     contact_email: app.contact_email,
     funding_cap_cents: app.proposed_cap_cents ?? 0,
     status: 'active',

@@ -87,7 +87,7 @@ test.describe('Golden Path — Coach Flow', () => {
     await signIn(page, COACH_EMAIL, COACH_PASSWORD)
     await page.waitForURL(/\/dashboard/)
 
-    await page.goto('/pitches/new')
+    await page.goto('/submissions/new')
     await expect(page.getByText(/create pitch/i)).toBeVisible()
 
     await page.getByLabel(/pitch title/i).fill('2025 Championship Fund')

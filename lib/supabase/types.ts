@@ -116,6 +116,7 @@ export type Submission = {
   reviewed_at: string | null
   submitted_at: string | null
   sent_at: string | null
+  expires_at: string | null
   season: string | null
   created_at: string
   updated_at: string
@@ -166,6 +167,26 @@ export type Notification = {
   body: string | null
   submission_id: string | null
   read_at: string | null
+  created_at: string
+}
+
+export type SubmissionAccessToken = {
+  id: string
+  submission_id: string
+  token_hash: string
+  expires_at: string
+  used_at: string | null
+  created_at: string
+}
+
+export type TransactionLedger = {
+  id: string
+  sponsor_id: string
+  team_id: string
+  submission_id: string | null
+  amount_cents: number
+  decision_type: 'full' | 'partial' | 'decline'
+  actor_type: 'sponsor' | 'admin' | 'system'
   created_at: string
 }
 
@@ -255,6 +276,7 @@ export type SubmissionInsert = {
   reviewed_at?: string | null
   submitted_at?: string | null
   sent_at?: string | null
+  expires_at?: string | null
   season?: string | null
 }
 
@@ -362,6 +384,7 @@ export type SubmissionUpdate = {
   reviewed_at?: string | null
   submitted_at?: string | null
   sent_at?: string | null
+  expires_at?: string | null
   season?: string | null
   updated_at?: string
 }
@@ -454,10 +477,26 @@ export type Database = {
         Update: Partial<Omit<Notification, 'id' | 'created_at'>>
         Relationships: []
       }
+      submission_access_tokens: {
+        Row: SubmissionAccessToken
+        Insert: Omit<SubmissionAccessToken, 'id' | 'created_at'>
+        Update: Partial<Omit<SubmissionAccessToken, 'id' | 'created_at'>>
+        Relationships: []
+      }
+      transactions_ledger: {
+        Row: TransactionLedger
+        Insert: Omit<TransactionLedger, 'id' | 'created_at'>
+        Update: Partial<Omit<TransactionLedger, 'id' | 'created_at'>>
+        Relationships: []
+      }
     }
     Views: {
       v_sponsor_capacity: {
         Row: SponsorCapacityView
+        Relationships: []
+      }
+      v_submission_summary: {
+        Row: SubmissionSummary
         Relationships: []
       }
     }
@@ -469,6 +508,22 @@ export type Database = {
       is_coach_verified: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      approve_submission_atomic: {
+        Args: {
+          p_submission_id: string
+          p_admin_id: string
+          p_amount_cents: number
+        }
+        Returns: Json
+      }
+      record_sponsor_decision_atomic: {
+        Args: {
+          p_token_hash: string
+          p_decision: string
+          p_partial_amount_cents: number
+        }
+        Returns: Json
       }
     }
     Enums: {

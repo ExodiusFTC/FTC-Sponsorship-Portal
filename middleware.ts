@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 import { globalLimiter } from '@/lib/rate-limit'
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Apply Global Rate Limiting
   if (globalLimiter) {
     const ip = request.headers.get('x-forwarded-for') ?? '127.0.0.1'

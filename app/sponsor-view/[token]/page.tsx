@@ -147,7 +147,7 @@ export default async function SponsorViewPage({ params }: Props) {
               <p className="text-foreground leading-relaxed">{String(team.outreach_summary)}</p>
             </div>
           )}
-          {team.youtube_url && (
+          {team.youtube_url && String(team.youtube_url).startsWith('https://') && (
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Video</p>
               <a href={String(team.youtube_url)} target="_blank" rel="noreferrer" className="text-primary underline text-sm">
