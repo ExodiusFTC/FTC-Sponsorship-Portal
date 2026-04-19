@@ -134,7 +134,7 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
   useEffect(() => {
     const loadWorldData = async () => {
       try {
-        // Initial fetch - data is loaded incrementally below
+        // Data is processed incrementally below to avoid blocking the main thread
         const response = await fetch(
           "https://raw.githubusercontent.com/martynafford/natural-earth-geojson/refs/heads/master/110m/physical/ne_110m_land.json",
         )
@@ -143,7 +143,7 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
         landFeaturesRef.current = data
 
         const dots: { lng: number; lat: number; visible: boolean }[] = []
-        
+
         // Processing features incrementally to avoid blocking the main thread
         const processFeatures = (index: number) => {
           if (index >= data.features.length) {
