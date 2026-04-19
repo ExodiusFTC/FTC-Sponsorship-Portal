@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 }
 
 import { ThemeProvider } from "@/components/theme-provider"
+import { GlobalShortcuts } from "@/components/global-shortcuts"
 
 export default function RootLayout({
   children,
@@ -39,12 +40,13 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider
-          attribute="class"
+          attribute="data-theme"
           defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >
           {children}
+          <GlobalShortcuts />
           <Toaster richColors position="top-right" />
         </ThemeProvider>
       </body>

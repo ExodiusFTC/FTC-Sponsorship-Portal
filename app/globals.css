@@ -67,7 +67,10 @@
   --color-accent-globe: var(--accent-globe);
 }
 
-:root {
+/* ── Default (Dark) Theme ─────────────────────────────────────────────────── */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
   /* shadcn tokens - dark */
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
@@ -101,6 +104,7 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
   /* Design system tokens - dark theme */
   --bg-app: #000000;
   --bg-surface: #09090B;
@@ -122,9 +126,13 @@
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "Courier New", monospace;
   --destructive-foreground: oklch(1 0 0);
+
+  /* Accent overrides - dark */
+  --accent-text: var(--accent-text-dark);
+  --accent-globe: var(--accent-globe-dark);
 }
 
-/* ── Light mode overrides ─────────────────────────────────────────────────── */
+/* ── Light Mode Overrides ─────────────────────────────────────────────────── */
 [data-theme="light"] {
   color-scheme: light;
 
@@ -176,39 +184,62 @@
   --badge-warning-text: #854D0E;
   --badge-rejected-bg: #FEE2E2;
   --badge-rejected-text: #991B1B;
+
+  /* Force hardcoded dark classes to respond to light mode */
+  & .bg-zinc-950,
+  & .bg-zinc-950\/95,
+  & .bg-zinc-950\/90,
+  & .bg-zinc-950\/80,
+  & .bg-zinc-950\/70,
+  & .bg-zinc-950\/60,
+  & .bg-zinc-950\/50,
+  & .bg-zinc-950\/40 { background-color: #FFFFFF !important; }
+
+  & .bg-zinc-900,
+  & .bg-zinc-900\/95,
+  & .bg-zinc-900\/90,
+  & .bg-zinc-900\/80,
+  & .bg-zinc-900\/70,
+  & .bg-zinc-900\/60,
+  & .bg-zinc-900\/50,
+  & .bg-zinc-900\/40,
+  & .bg-zinc-900\/30,
+  & .bg-zinc-900\/25,
+  & .bg-zinc-900\/20,
+  & .bg-zinc-900\/15,
+  & .bg-zinc-900\/10 { background-color: #F4F4F6 !important; }
+
+  & .border-zinc-800,
+  & .border-zinc-800\/90,
+  & .border-zinc-800\/80,
+  & .border-zinc-800\/50,
+  & .border-zinc-800\/40,
+  & .border-zinc-700,
+  & .border-zinc-700\/50,
+  & .border-zinc-900 { border-color: #E4E4E7 !important; }
+
+  & .divide-zinc-900 > * + *,
+  & .divide-zinc-800 > * + * { border-color: #E4E4E7 !important; }
+
+  & .text-zinc-50,
+  & .text-zinc-100 { color: #0B0B0C !important; }
+  & .text-zinc-200 { color: #18181B !important; }
+  & .text-zinc-300 { color: #27272A !important; }
+  & .text-zinc-400 { color: #52525B !important; }
+  & .text-zinc-500 { color: #71717A !important; }
+  & .text-zinc-600 { color: #888888 !important; }
+  & .text-zinc-700 { color: #AAAAAA !important; }
+
+  & .bg-zinc-100 { background-color: #0B0B0C !important; }
+  & .text-zinc-900 { color: #FFFFFF !important; }
+  & .hover\:bg-white:hover { background-color: #1F1F23 !important; }
+  & .hover\:bg-zinc-900\/60:hover { background-color: #EFEFEF !important; }
+  & .hover\:bg-zinc-900\/50:hover { background-color: #EFEFEF !important; }
+  & .hover\:bg-zinc-900\/40:hover { background-color: #EFEFEF !important; }
+  & .hover\:bg-zinc-900\/20:hover { background-color: #EFEFEF !important; }
+
+  & .rounded-xl.border { box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
 }
-
-/* Tailwind zinc overrides so hardcoded zinc-* classes respond to light mode */
-[data-theme="light"] .bg-zinc-950\/60,
-[data-theme="light"] .bg-zinc-950\/80,
-[data-theme="light"] .bg-zinc-950 { background-color: rgba(255,255,255,0.95) !important; }
-
-[data-theme="light"] .bg-zinc-900\/60,
-[data-theme="light"] .bg-zinc-900\/50,
-[data-theme="light"] .bg-zinc-900\/40,
-[data-theme="light"] .bg-zinc-900\/30,
-[data-theme="light"] .bg-zinc-900 { background-color: #F4F4F6 !important; }
-
-[data-theme="light"] .border-zinc-800\/80,
-[data-theme="light"] .border-zinc-800,
-[data-theme="light"] .border-zinc-900 { border-color: #E4E4E7 !important; }
-
-[data-theme="light"] .divide-zinc-900 > * + * { border-color: #E4E4E7 !important; }
-[data-theme="light"] .divide-zinc-800 > * + * { border-color: #E4E4E7 !important; }
-
-[data-theme="light"] .text-zinc-50,
-[data-theme="light"] .text-zinc-100 { color: #0B0B0C !important; }
-[data-theme="light"] .text-zinc-200 { color: #27272A !important; }
-[data-theme="light"] .text-zinc-300 { color: #3F3F46 !important; }
-[data-theme="light"] .text-zinc-400 { color: #52525B !important; }
-[data-theme="light"] .text-zinc-500 { color: #71717A !important; }
-[data-theme="light"] .text-zinc-600 { color: #A1A1AA !important; }
-
-[data-theme="light"] .bg-zinc-100 { background-color: #0B0B0C !important; }
-[data-theme="light"] .text-zinc-900 { color: #FFFFFF !important; }
-[data-theme="light"] .hover\:bg-white:hover { background-color: #1F1F23 !important; }
-
-[data-theme="light"] .rounded-xl.border { box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
 
 @keyframes navPop {
   0% { transform: scale(1); }
@@ -248,44 +279,4 @@
   html {
     font-family: var(--font-sans);
   }
-}
-
-.dark {
-  --background: oklch(0 0 0);
-  --foreground: oklch(1 0 0);
-
-  /* Accent overrides - dark */
-  --accent-text: var(--accent-text-dark);
-  --accent-globe: var(--accent-globe-dark);
-
-  --card: oklch(0.1 0 0);
-  --card-foreground: oklch(1 0 0);
-  --popover: oklch(0 0 0);
-  --popover-foreground: oklch(1 0 0);
-  --primary: oklch(1 0 0);
-  --primary-foreground: oklch(0 0 0);
-  --secondary: oklch(0.3 0 0);
-  --secondary-foreground: oklch(1 0 0);
-  --muted: oklch(0.3 0 0);
-  --muted-foreground: oklch(0.7 0 0);
-  --accent: oklch(0.3 0 0);
-  --accent-foreground: oklch(1 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.3 0 0);
-  --input: oklch(0.3 0 0);
-  --ring: oklch(1 0 0 / 0.2);
-  --chart-1: oklch(1 0 0);
-  --chart-2: oklch(0.7 0 0);
-  --chart-3: oklch(0.5 0 0);
-  --chart-4: oklch(0.3 0 0);
-  --chart-5: oklch(1 0 0);
-  --sidebar: oklch(0.1 0 0);
-  --sidebar-foreground: oklch(1 0 0);
-  --sidebar-primary: oklch(1 0 0);
-  --sidebar-primary-foreground: oklch(0 0 0);
-  --sidebar-accent: oklch(0.3 0 0);
-  --sidebar-accent-foreground: oklch(1 0 0);
-  --sidebar-border: oklch(0.3 0 0);
-  --sidebar-ring: oklch(1 0 0 / 0.2);
 }
