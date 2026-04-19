@@ -98,7 +98,7 @@ const generateDotsInPolygon = (feature: any, dotSpacing = 16) => {
 export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isDataLoaded, setIsDataLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const dimensions = useRef({ width: 800, height: 800 })
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
@@ -134,7 +134,7 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
   useEffect(() => {
     const loadWorldData = async () => {
       try {
-        setIsLoading(true)
+        // Initial fetch - data is loaded incrementally below
         const response = await fetch(
           "https://raw.githubusercontent.com/martynafford/natural-earth-geojson/refs/heads/master/110m/physical/ne_110m_land.json",
         )
@@ -148,7 +148,7 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
         const processFeatures = (index: number) => {
           if (index >= data.features.length) {
             allDotsRef.current = dots
-            setIsLoading(false)
+            setIsDataLoaded(true)
             return
           }
 
@@ -180,7 +180,6 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
 
       } catch (err) {
         setError("Failed to load land map data")
-        setIsLoading(false)
       }
     }
     loadWorldData()
@@ -382,7 +381,7 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
   }
 
   return (
-    <div ref={containerRef} className={`relative overflow-hidden flex items-center justify-center ${className}`}>
+    <div ref={containerRef} className={`relative overflow-hidden flex items-center justify-center transition-opacity duration-1000 ${isDataLoaded ? 'opacity-100' : 'opacity-0'} ${className}`}>
       <canvas
         ref={canvasRef}
         className="w-full h-full bg-transparent cursor-grab active:cursor-grabbing"

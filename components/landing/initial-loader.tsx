@@ -12,6 +12,8 @@ export function InitialLoader() {
     // Exactly 3 seconds total as requested
     const timer = setTimeout(() => {
       setIsLoading(false)
+      // Signal to other components (like the Hero Globe) that they can now begin heavy rendering
+      window.dispatchEvent(new CustomEvent('initial-loader-complete'))
     }, 3000)
     return () => clearTimeout(timer)
   }, [])

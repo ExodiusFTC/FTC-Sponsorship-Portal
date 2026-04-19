@@ -23,12 +23,26 @@ export function Hero() {
   const show = { opacity: 1, y: 0 }
 
   useEffect(() => {
-    // Start loading the globe chunk very early (100ms).
-    // This allows it to spread its processing work across the full 3s initial loader period.
-    const timer = setTimeout(() => {
+    const handleComplete = () => {
+      // Small additional delay to allow the loader's exit animation (0.6s) to be smooth
+      // before hitting the main thread with heavy D3 processing
+      setTimeout(() => {
+        setShouldShowGlobe(true)
+      }, 500)
+    }
+
+    window.addEventListener('initial-loader-complete', handleComplete)
+    
+    // Fallback: If for some reason the loader is already gone or didn't mount
+    // (e.g. direct navigation to a sub-route and back), we don't want to hide the globe forever.
+    const fallback = setTimeout(() => {
       setShouldShowGlobe(true)
-    }, 100)
-    return () => clearTimeout(timer)
+    }, 5000)
+
+    return () => {
+      window.removeEventListener('initial-loader-complete', handleComplete)
+      clearTimeout(fallback)
+    }
   }, [])
 
   return (
