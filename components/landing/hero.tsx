@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic'
 import {
   DISPATCH_SEASON_LABEL,
   HERO_DESCRIPTION,
+  ACCENT_BASE
 } from '@/lib/site-config'
 
 // Lazy-load the heavy canvas globe — no SSR
