@@ -16,22 +16,53 @@ export const PLATFORM_STATS = [
 export const CURRENT_SEASON = '2026'
 export const DISPATCH_SEASON_LABEL = `Season ${CURRENT_SEASON} dispatch window open`
 
-// ─── Sponsors marquee ────────────────────────────────────────────────────────
-// Add real sponsor names here as the platform grows.
-export const MARQUEE_SPONSORS = [
-  'Gringotts Bank',
-  'Ollivanders Wands',
-  'Weasleys Wizard Wheezes',
-  'Honeydukes',
-  'Quality Quidditch Supplies',
-  'The Daily Prophet',
-  'Flourish and Blotts',
-  'Madam Malkins',
-  'The Leaky Cauldron',
-  'Borgin and Burkes',
-  'Slug and Jiggers',
-  'The Quibbler',
-]
+// ─── Sponsors showcase ───────────────────────────────────────────────────────
+// Cards displayed in the #sponsors section. Add real sponsors here as the
+// platform grows; keep descriptions concise (≤ 2 sentences).
+export const SPONSORS_SHOWCASE = [
+  {
+    name: 'Gringotts Capital',
+    industry: 'Financial Services',
+    tier: 'Platinum',
+    description: 'Empowering the next generation of STEM innovators through targeted FIRST Robotics investments.',
+    href: '#',
+  },
+  {
+    name: 'Ollivanders Precision',
+    industry: 'Advanced Manufacturing',
+    tier: 'Gold',
+    description: 'Crafting the tools that build tomorrow — proud partner of competitive robotics programs nationwide.',
+    href: '#',
+  },
+  {
+    name: 'Weasley Tech Co.',
+    industry: 'Consumer Electronics',
+    tier: 'Gold',
+    description: 'We believe tinkering changes the world. That\'s why we sponsor teams that build, break, and build again.',
+    href: '#',
+  },
+  {
+    name: 'Honeydukes Labs',
+    industry: 'Biotechnology',
+    tier: 'Silver',
+    description: 'Investing in scientific curiosity and hands-on STEM education at the grassroots level.',
+    href: '#',
+  },
+  {
+    name: 'QQ Supplies Co.',
+    industry: 'Engineering & Supply',
+    tier: 'Silver',
+    description: 'Providing premium components and materials to FTC teams competing at the highest levels.',
+    href: '#',
+  },
+  {
+    name: 'The Daily Dispatch',
+    industry: 'Media & Communications',
+    tier: 'Bronze',
+    description: 'Amplifying STEM stories and spotlighting team achievements across our regional readership.',
+    href: '#',
+  },
+] as const
 
 // ─── Portfolio mock (product showcase) ───────────────────────────────────────
 export const PORTFOLIO_MOCK = {
@@ -87,7 +118,5 @@ export const FOOTER_COLUMNS = [
 ] as const
 
 // ─── Hero copy ───────────────────────────────────────────────────────────────
-export const HERO_TITLE_TOP = 'One'
-export const HERO_TITLE_BOTTOM = 'away from fueling your FTC journey.'
-export const HERO_MORPHING_WORDS = ['sponsorship', 'partnership', 'opportunity', 'connection', 'endorsement', 'breakthrough', 'investment', 'contribution'] as const;
+export const HERO_MORPHING_WORDS = ['sponsorship', 'partnership', 'opportunity', 'investment', 'connection', 'breakthrough', 'endorsement', 'contribution'] as const
 export const HERO_DESCRIPTION = 'The professional sponsorship pipeline for FIRST Tech Challenge coaches. Build a verified portfolio, send moderated pitches, and connect with the industry leaders powering the next generation.'

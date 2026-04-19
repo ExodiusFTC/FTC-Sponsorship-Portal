@@ -38,11 +38,11 @@ export function TopNav() {
           <span className="text-sm font-semibold tracking-tight text-zinc-100">Matchmaker</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-400">
-          <a href="#product" className="hover:text-zinc-100 transition-colors">Product</a>
-          <a href="#how" className="hover:text-zinc-100 transition-colors">How it works</a>
-          <a href="#faq" className="hover:text-zinc-100 transition-colors">FAQ</a>
-          <Link href="/sponsors/apply" className="hover:text-zinc-100 transition-colors">Sponsors</Link>
+        <nav className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-1.5 rounded-full border border-zinc-800/80 bg-zinc-950/40 p-1.5 backdrop-blur-md shadow-sm">
+          <a href="#sponsors" className="rounded-full px-3 py-1.5 text-[13px] font-medium text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100 transition-colors">Sponsors</a>
+          <a href="#product" className="rounded-full px-3 py-1.5 text-[13px] font-medium text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100 transition-colors">Product</a>
+          <a href="#how" className="rounded-full px-3 py-1.5 text-[13px] font-medium text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100 transition-colors">How it works</a>
+          <a href="#faq" className="rounded-full px-3 py-1.5 text-[13px] font-medium text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100 transition-colors">FAQ</a>
         </nav>
 
         <div className="flex items-center gap-2">

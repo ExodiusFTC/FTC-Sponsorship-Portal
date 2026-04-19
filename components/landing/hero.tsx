@@ -8,10 +8,7 @@ import {
   DISPATCH_SEASON_LABEL,
   HERO_DESCRIPTION,
   HERO_MORPHING_WORDS,
-  HERO_TITLE_BOTTOM,
-  HERO_TITLE_TOP,
 } from '@/lib/site-config'
-import { LogosRail } from './logos-rail'
 
 export function Hero() {
   const reduce = useReducedMotion()
@@ -19,7 +16,7 @@ export function Hero() {
   const show = { opacity: 1, y: 0 }
 
   return (
-    <section className="relative pt-32 pb-0 overflow-hidden">
+    <section className="relative pt-32 pb-24 overflow-hidden">
       {/* dot-grid backdrop */}
       <div
         aria-hidden
@@ -49,16 +46,22 @@ export function Hero() {
           {DISPATCH_SEASON_LABEL}
         </motion.div>
 
+        {/*
+          Headline: the morphing word is embedded inline so the sentence flows
+          naturally at any viewport width — no forced "One X" prefix, no <br />.
+        */}
         <motion.h1
           initial={init}
           animate={show}
           transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-8 text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-zinc-50 leading-[1.1]"
+          className="mt-8 text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-zinc-50 leading-[1.15]"
         >
-          {HERO_TITLE_TOP} {' '}
+          Land your next{' '}
           <GooeyText texts={HERO_MORPHING_WORDS} className="text-indigo-400" />
           <br />
-          <span className="text-zinc-400 font-medium">{HERO_TITLE_BOTTOM}</span>
+          <span className="text-zinc-400 font-medium">
+            and fuel your FTC journey.
+          </span>
         </motion.h1>
 
         <motion.p
@@ -70,7 +73,7 @@ export function Hero() {
           {HERO_DESCRIPTION}
         </motion.p>
 
-        {/* CTAs — equal visual weight: both solid, light vs. dark fill */}
+        {/* CTAs */}
         <motion.div
           initial={init}
           animate={show}
@@ -84,10 +87,6 @@ export function Hero() {
             Get started
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={1.8} />
           </Link>
-          {/*
-            Sponsor button: solid bg-zinc-800 matches the filled weight of the
-            primary button without competing for top-priority attention.
-          */}
           <Link
             href="/sponsors/apply"
             className="inline-flex items-center gap-2 rounded-md bg-zinc-800 border border-zinc-700 px-5 py-2.5 text-sm font-medium text-zinc-100 hover:bg-zinc-700 hover:border-zinc-600 transition-colors active:scale-[0.98]"
@@ -96,8 +95,6 @@ export function Hero() {
           </Link>
         </motion.div>
       </div>
-
-      <LogosRail />
     </section>
   )
 }

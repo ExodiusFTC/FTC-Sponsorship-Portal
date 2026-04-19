@@ -4,17 +4,16 @@ import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * Crisp word-morphing component.
+ * Smooth blur-morph word cycler.
  *
- * Blur fix: the original stacked two blur sources — a feGaussianBlur SVG filter
- * on the container AND Tailwind's blur-sm on each word — producing compound
- * blurriness that the feColorMatrix couldn't fully recover. Solution: drop the
- * SVG gooey filter entirely and drive the transition with opacity + translateY
- * only, which gives a clean "slot-machine" morph with zero blur artefacts.
+ * Each word transitions with combined opacity + vertical slide + CSS blur,
+ * giving a crisp "gooey" morph without any SVG filter complexity.
+ * The invisible ghost of the longest word reserves width so the surrounding
+ * text never reflows.
  */
 export function GooeyText({
   texts,
-  interval = 2400,
+  interval = 2600,
   className,
 }: {
   texts: readonly string[]
@@ -31,27 +30,33 @@ export function GooeyText({
   const longest = [...texts].sort((a, b) => b.length - a.length)[0]
 
   return (
-    <span className={cn('relative inline-block align-baseline', className)}>
-      {/* width reserved by the longest word so the line never shifts */}
-      <span className="invisible whitespace-nowrap" aria-hidden>{longest}</span>
+    <span className={cn('relative inline-block', className)}>
+      {/* ghost span reserves the max width — always invisible */}
+      <span className="invisible whitespace-nowrap select-none" aria-hidden>
+        {longest}
+      </span>
 
       {texts.map((t, i) => (
         <span
           key={t}
           aria-hidden={i !== index}
-          className={cn(
-            'absolute inset-0 whitespace-nowrap transition-all duration-500',
-            'ease-[cubic-bezier(0.22,1,0.36,1)]',
-            i === index
-              ? 'opacity-100 translate-y-0'
-              : 'opacity-0 translate-y-3'
-          )}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'inline-block',
+            whiteSpace: 'nowrap',
+            transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1), filter 0.55s cubic-bezier(0.22,1,0.36,1)',
+            opacity: i === index ? 1 : 0,
+            transform: i === index ? 'translateY(0)' : 'translateY(8px)',
+            filter: i === index ? 'blur(0px)' : 'blur(6px)',
+            pointerEvents: i === index ? 'auto' : 'none',
+          }}
         >
           {t}
         </span>
       ))}
 
-      {/* accessible live region announces word changes to screen readers */}
+      {/* accessible live region */}
       <span className="sr-only" aria-live="polite" aria-atomic="true">
         {texts[index]}
       </span>

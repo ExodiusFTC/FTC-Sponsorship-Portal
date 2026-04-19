@@ -2,12 +2,12 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { TopNav } from '@/components/landing/top-nav'
 import { Hero } from '@/components/landing/hero'
-import { StatsStrip } from '@/components/landing/stats-strip'
 import { FeatureGrid } from '@/components/landing/feature-grid'
 import { ProductShowcase, PortfolioMock, ModerationMock } from '@/components/landing/product-showcase'
 import { HowItWorks } from '@/components/landing/how-it-works'
 import { FAQ } from '@/components/landing/faq'
 import { LandingFooter } from '@/components/landing/footer'
+import { SponsorsShowcase } from '@/components/landing/sponsors-showcase'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -30,8 +30,10 @@ export default async function HomePage() {
       <TopNav />
       <main>
         <Hero />
-        <StatsStrip />
-        <FeatureGrid />
+        <SponsorsShowcase />
+        <div id="product">
+          <FeatureGrid />
+        </div>
         <ProductShowcase
           title="Build your team story once. Fork it a hundred times."
           body="Your Portfolio is the canonical source — story, budget bands, achievements, links. Every submission forks from it, keeping the asks custom without rewriting the fundamentals."
