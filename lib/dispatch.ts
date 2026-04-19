@@ -59,6 +59,9 @@ export async function dispatchApprovedSubmission(submissionId: string, accessTok
         heroImageUrl: ((team.media_urls as string[]) ?? [])[0] ?? null,
         viewerUrl,
       }),
+      headers: {
+        'Idempotency-Key': (await import('crypto')).createHash('sha256').update(submissionId + 'sponsor').digest('hex')
+      },
       tags: [
         { name: 'submission_id', value: submission.id },
         { name: 'sponsor_id', value: sponsor.id as string },

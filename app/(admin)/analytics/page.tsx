@@ -1,5 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/page-header'
+import dynamic from 'next/dynamic'
+
+const AnalyticsCharts = dynamic(() => import('@/components/admin/analytics-charts'), { ssr: false })
 
 const STATUS_LABELS: Record<string, { label: string; bg: string; text: string }> = {
   draft:             { label: 'Draft',           bg: 'var(--badge-pending-bg)',  text: 'var(--badge-pending-text)' },
@@ -58,7 +61,7 @@ export default async function AnalyticsPage() {
 
       {/* ── Section 1: Marketing KPIs ── */}
       <section>
-        <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-600 mb-4">
+        <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground mb-4">
           Platform KPIs
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -82,7 +85,7 @@ export default async function AnalyticsPage() {
 
       {/* ── Section 2: Platform Health ── */}
       <section>
-        <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-600 mb-4">
+        <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground mb-4">
           Platform Health
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -101,12 +104,15 @@ export default async function AnalyticsPage() {
         </div>
       </section>
 
+      {/* ── Enhanced Charts Section ── */}
+      <AnalyticsCharts />
+
       {/* ── Section 3: Submission Pipeline ── */}
       <section>
-        <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-600 mb-4">
+        <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground mb-4">
           Submission Pipeline
         </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-6">
+        <div className="rounded-xl border border-border bg-card p-6">
           {totalSubmissions > 0 ? (
             <div className="flex flex-col gap-4">
               {Object.entries(STATUS_LABELS).map(([key, { label, bg, text }]) => {
@@ -114,14 +120,14 @@ export default async function AnalyticsPage() {
                 const pct = totalSubmissions > 0 ? Math.round((count / totalSubmissions) * 100) : 0
                 return (
                   <div key={key} className="flex items-center gap-4">
-                    <span className="w-36 flex-shrink-0 text-right text-[11px] text-zinc-500">{label}</span>
-                    <div className="flex-1 h-2 rounded-full bg-zinc-900 overflow-hidden">
+                    <span className="w-36 flex-shrink-0 text-right text-[11px] text-muted-foreground">{label}</span>
+                    <div className="flex-1 h-2 rounded-full bg-elevated overflow-hidden">
                       <div
                         className="h-2 rounded-full transition-all"
                         style={{ width: `${pct}%`, background: pct > 0 ? 'var(--text-primary)' : 'transparent', opacity: 0.75 }}
                       />
                     </div>
-                    <span className="w-20 text-right text-[11px] font-mono text-zinc-400">
+                    <span className="w-20 text-right text-[11px] font-mono text-secondary">
                       {count} ({pct}%)
                     </span>
                   </div>
@@ -129,29 +135,29 @@ export default async function AnalyticsPage() {
               })}
             </div>
           ) : (
-            <p className="text-sm text-zinc-500 text-center py-8">No submissions yet.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">No submissions yet.</p>
           )}
         </div>
       </section>
 
       {/* ── Recent Activity Table ── */}
       <section>
-        <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-600 mb-4">
+        <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground mb-4">
           Recent Activity
         </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 overflow-hidden">
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-zinc-900/50 border-b border-zinc-800">
+              <thead className="bg-elevated/50 border-b border-border">
                 <tr>
                   {['Team', 'Sponsor', 'Ask', 'Status'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+                    <th key={h} className="px-4 py-3 text-left text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-900">
+              <tbody className="divide-y divide-border">
                 {totalSubmissions > 0 ? (
                   (submissionSummary as any[])!
                     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
@@ -159,10 +165,10 @@ export default async function AnalyticsPage() {
                     .map(sub => {
                       const meta = STATUS_LABELS[sub.status] ?? { label: sub.status, bg: 'var(--bg-elevated)', text: 'var(--text-muted)' }
                       return (
-                        <tr key={sub.id} className="hover:bg-zinc-900/30 transition-colors">
-                          <td className="px-4 py-3 font-medium text-zinc-100">{sub.team_name}</td>
-                          <td className="px-4 py-3 text-zinc-400 max-w-[180px] truncate">{sub.company_name}</td>
-                          <td className="px-4 py-3 text-zinc-400 font-mono text-xs" suppressHydrationWarning>
+                        <tr key={sub.id} className="hover:bg-hover transition-colors">
+                          <td className="px-4 py-3 font-medium text-foreground">{sub.team_name}</td>
+                          <td className="px-4 py-3 text-secondary max-w-[180px] truncate">{sub.company_name}</td>
+                          <td className="px-4 py-3 text-secondary font-mono text-xs" suppressHydrationWarning>
                             ${(sub.financial_ask_cents / 100).toLocaleString('en-US')}
                           </td>
                           <td className="px-4 py-3">
@@ -176,7 +182,7 @@ export default async function AnalyticsPage() {
                     })
                 ) : (
                   <tr>
-                    <td colSpan={4} className="px-4 py-10 text-center text-zinc-500 text-sm">
+                    <td colSpan={4} className="px-4 py-10 text-center text-muted-foreground text-sm">
                       No activity yet.
                     </td>
                   </tr>
@@ -192,12 +198,12 @@ export default async function AnalyticsPage() {
 
 function KpiCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/60 p-5 transition-colors hover:border-zinc-700">
-      <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-500">{label}</div>
-      <div className="mt-2 text-3xl font-semibold tracking-tight text-zinc-50 tabular-nums" suppressHydrationWarning>
+    <div className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-border-hover">
+      <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
+      <div className="mt-2 text-3xl font-semibold tracking-tight text-foreground tabular-nums" suppressHydrationWarning>
         {value}
       </div>
-      {hint && <div className="mt-1 text-xs text-zinc-600">{hint}</div>}
+      {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
     </div>
   )
 }
@@ -208,8 +214,8 @@ function HealthCard({
   label: string; value: string; hint: string; accent: 'emerald' | 'indigo'
 }) {
   const accentClass = accent === 'emerald'
-    ? 'text-emerald-400 bg-emerald-500/5 border-emerald-900/40'
-    : 'text-indigo-400 bg-indigo-500/5 border-indigo-900/40'
+    ? 'text-[var(--badge-success-text)] bg-[var(--badge-success-bg)]/20 border-[var(--badge-success-text)]/40'
+    : 'text-[var(--text-primary)] bg-[var(--bg-elevated)] border-[var(--border-default)]'
 
   return (
     <div className={`rounded-xl border p-6 flex flex-col gap-2 ${accentClass}`}>

@@ -15,7 +15,7 @@ const buttonVariants = cva(
         secondary:
           "border border-[var(--border-color)] bg-transparent text-[var(--text-primary)] px-[14px] py-[7px] hover:bg-[var(--bg-elevated)] transition-[background] duration-100 ease-in-out",
         destructive:
-          "border border-[var(--accent-error)] bg-transparent text-[var(--accent-error)] px-[14px] py-[7px]",
+          "border-0 bg-[var(--accent-error)] text-white px-[14px] py-[7px] hover:opacity-90 transition-opacity duration-150 ease-in-out",
         outline:
           "border border-[var(--border-color)] bg-transparent text-[var(--text-primary)] px-[14px] py-[7px] hover:bg-[var(--bg-elevated)] transition-[background] duration-100 ease-in-out",
         ghost:
@@ -50,10 +50,16 @@ function Button({
 }: ButtonPrimitive.Props &
   VariantProps<typeof buttonVariants> & { style?: React.CSSProperties }) {
   const isPrimary = variant === "default" || variant === "primary"
+  const isDestructive = variant === "destructive"
   const baseStyle: React.CSSProperties = isPrimary
     ? {
         background: "var(--text-primary)",
         color: "var(--bg-app)",
+        ...style,
+      }
+    : isDestructive
+    ? {
+        color: "#ffffff",
         ...style,
       }
     : style ?? {}

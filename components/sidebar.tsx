@@ -32,23 +32,23 @@ type Role = 'coach' | 'admin' | null
 type NavDef = { icon: LucideIcon; label: string; href: string; kbd?: string; showBadge?: boolean }
 
 const coachNavItems: NavDef[] = [
-  { icon: LayoutDashboard, label: 'Overview',      href: '/dashboard',                    kbd: 'G D' },
-  { icon: BookOpen,        label: 'Portfolio',     href: '/dashboard?tab=portfolio',      kbd: 'G P' },
-  { icon: Target,          label: 'Find Sponsors', href: '/dashboard?tab=find-sponsors',  kbd: 'G S' },
-  { icon: FileText,        label: 'Submissions',   href: '/dashboard?tab=submissions',    kbd: 'G H' },
-  { icon: Inbox,           label: 'Inbox',         href: '/dashboard?tab=inbox',          kbd: 'G N', showBadge: true },
-  { icon: BarChart2,       label: 'Insights',      href: '/dashboard?tab=insights',       kbd: 'G I' },
-  { icon: Wallet,          label: 'Ledger',        href: '/dashboard?tab=ledger',         kbd: 'G L' },
-  { icon: Settings,        label: 'Settings',      href: '/dashboard?tab=settings',       kbd: 'G ,' },
+  { icon: LayoutDashboard, label: 'Overview',      href: '/dashboard',                    kbd: 'Shift+D' },
+  { icon: BookOpen,        label: 'Portfolio',     href: '/dashboard?tab=portfolio',      kbd: 'Shift+P' },
+  { icon: Target,          label: 'Find Sponsors', href: '/dashboard?tab=find-sponsors',  kbd: 'Shift+S' },
+  { icon: FileText,        label: 'Submissions',   href: '/dashboard?tab=submissions',    kbd: 'Shift+H' },
+  { icon: Inbox,           label: 'Inbox',         href: '/dashboard?tab=inbox',          kbd: 'Shift+N', showBadge: true },
+  { icon: BarChart2,       label: 'Insights',      href: '/dashboard?tab=insights',       kbd: 'Shift+I' },
+  { icon: Wallet,          label: 'Ledger',        href: '/dashboard?tab=ledger',         kbd: 'Shift+L' },
+  { icon: Settings,        label: 'Settings',      href: '/dashboard?tab=settings',       kbd: 'Shift+,' },
 ]
 
 const adminNavItems: NavDef[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/admin', kbd: 'G D' },
-  { icon: Inbox, label: 'Inbox', href: '/moderation', showBadge: true, kbd: 'G M' },
-  { icon: Building2, label: 'Sponsors', href: '/sponsors', kbd: 'G S' },
-  { icon: Users, label: 'Teams', href: '/coaches', kbd: 'G T' },
-  { icon: BarChart2, label: 'Analytics', href: '/analytics', kbd: 'G A' },
-  { icon: Settings, label: 'Settings', href: '/settings', kbd: 'G ,' },
+  { icon: LayoutDashboard, label: 'Dashboard', href: '/admin', kbd: 'Shift+D' },
+  { icon: Inbox, label: 'Inbox', href: '/moderation', showBadge: true, kbd: 'Shift+M' },
+  { icon: Building2, label: 'Sponsors', href: '/sponsors', kbd: 'Shift+S' },
+  { icon: Users, label: 'Teams', href: '/coaches', kbd: 'Shift+T' },
+  { icon: BarChart2, label: 'Analytics', href: '/analytics', kbd: 'Shift+A' },
+  { icon: Settings, label: 'Settings', href: '/settings', kbd: 'Shift+,' },
 ]
 
 function NavItem({ item, isActive, badge }: { item: NavDef; isActive: boolean; badge?: number }) {
@@ -78,12 +78,10 @@ function NavItem({ item, isActive, badge }: { item: NavDef; isActive: boolean; b
       <span className="relative flex-1 truncate">{item.label}</span>
       {typeof badge === 'number' && badge > 0 && <Badge count={badge} />}
       {item.kbd && typeof badge !== 'number' && (
-        <kbd className="relative hidden font-mono text-[10px] text-muted-foreground group-hover:inline-flex items-center gap-0.5">
+        <kbd className="relative font-mono text-[10px] text-muted-foreground/60 group-hover:text-muted-foreground inline-flex items-center gap-0.5 transition-colors">
           {item.kbd}
         </kbd>
       )}
-      {/* Global shortcut hint — shown on hover alongside kbd */}
-      {!item.kbd && typeof badge !== 'number' && null}
     </Link>
   )
 }

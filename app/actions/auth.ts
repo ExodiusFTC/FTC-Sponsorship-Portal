@@ -78,6 +78,25 @@ export async function uploadCredentials(formData: FormData) {
     return { error: 'File too large. Maximum size is 5MB.' }
   }
 
+  const allowedMimes = ['application/pdf', 'image/jpeg', 'image/png']
+  if (!allowedMimes.includes(file.type)) {
+    return { error: 'Invalid file type. Only PDF, JPG, and PNG are allowed.' }
+  }
+
+  // Server-side magic bytes validation
+  const buffer = await file.arrayBuffer()
+  const bytes = new Uint8Array(buffer).subarray(0, 4)
+  const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
+  
+  let isValid = false
+  if (file.type === 'application/pdf' && hex.startsWith('25504446')) isValid = true
+  if (file.type === 'image/jpeg' && hex.startsWith('ffd8ff')) isValid = true
+  if (file.type === 'image/png' && hex === '89504e47') isValid = true
+  
+  if (!isValid) {
+    return { error: 'Invalid file format.' }
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 

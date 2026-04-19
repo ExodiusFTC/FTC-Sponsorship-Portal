@@ -427,8 +427,7 @@ function GlobeScene() {
     isDragging.current = true
     lastMouse.current = { x: e.clientX, y: e.clientY }
     velocity.current = { x: 0, y: 0 }
-    gl.domElement.style.cursor = 'grabbing'
-  }, [gl])
+  }, [])
 
   const onPointerMove = useCallback((e: PointerEvent) => {
     if (!isDragging.current) return
@@ -441,18 +440,17 @@ function GlobeScene() {
 
   const onPointerUp = useCallback(() => {
     isDragging.current = false
-    gl.domElement.style.cursor = 'grab'
     lastInteraction.current = performance.now() / 1000
-  }, [gl])
+  }, [])
 
   useEffect(() => {
     const el = gl.domElement
-    el.style.cursor = 'grab'
-    el.addEventListener('pointerdown', onPointerDown)
+    const canvasEl = el as HTMLCanvasElement
+    canvasEl.addEventListener('pointerdown', onPointerDown)
     window.addEventListener('pointermove', onPointerMove)
     window.addEventListener('pointerup', onPointerUp)
     return () => {
-      el.removeEventListener('pointerdown', onPointerDown)
+      canvasEl.removeEventListener('pointerdown', onPointerDown)
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerup', onPointerUp)
     }
@@ -506,6 +504,7 @@ export function HeroGlobe({ className }: { className?: string }) {
   return (
     <div className={className} style={{ width: '100%', height: '100%' }}>
       <Canvas
+        className="cursor-grab active:cursor-grabbing"
         camera={{ position: [0, 0, 5.2], fov: 45 }}
         dpr={[1, 2]}
         gl={{

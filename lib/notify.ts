@@ -113,6 +113,9 @@ export async function sendHandshakeEmail(submissionId: string, amountCents: numb
         replyTo: sponsor.contact_email as string,
         subject: `Match Made! ${sponsor.company_name} will sponsor your team for $${(amountCents / 100).toFixed(2)}`,
         react: HandshakeEmail({ ...shared, recipientName: coachProfile.full_name ?? 'Coach', isSponsor: false }),
+        headers: {
+          'Idempotency-Key': (await import('crypto')).createHash('sha256').update(submissionId + 'handshake-coach').digest('hex')
+        }
       }),
       // To sponsor
       resend.emails.send({
@@ -121,6 +124,9 @@ export async function sendHandshakeEmail(submissionId: string, amountCents: numb
         replyTo: coachProfile.email,
         subject: `Match Made! You're sponsoring ${team.team_name} for $${(amountCents / 100).toFixed(2)}`,
         react: HandshakeEmail({ ...shared, recipientName: sponsor.contact_name as string ?? 'Sponsor', isSponsor: true }),
+        headers: {
+          'Idempotency-Key': (await import('crypto')).createHash('sha256').update(submissionId + 'handshake-sponsor').digest('hex')
+        }
       }),
     ])
   } catch (err) {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Webhook } from 'svix'
 import { env } from '@/lib/env'
+import * as Sentry from '@sentry/nextjs'
 
 export async function POST(req: Request) {
   try {
@@ -13,8 +14,10 @@ export async function POST(req: Request) {
     }
 
     if (!env.RESEND_WEBHOOK_SECRET) {
-      if (process.env.NODE_ENV === 'production') {
-        console.error('RESEND_WEBHOOK_SECRET is not configured; rejecting webhook')
+      if (process.env.NODE_ENV !== 'development') {
+        const err = new Error('RESEND_WEBHOOK_SECRET is not configured')
+        console.error(err.message)
+        Sentry.captureException(err)
         return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 })
       }
       console.warn('[resend-webhook] RESEND_WEBHOOK_SECRET unset — skipping signature check (dev only)')
@@ -24,6 +27,7 @@ export async function POST(req: Request) {
         webhook.verify(payload, headers)
       } catch (err) {
         console.error('Webhook signature verification failed', err)
+        Sentry.captureException(err)
         return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
       }
     }

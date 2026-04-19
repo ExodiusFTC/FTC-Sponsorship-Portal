@@ -6,6 +6,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   // Supabase (server-only)
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  SUPABASE_POOLER_URL: z.string().url().optional(),
   // Resend
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.string().email(),
@@ -20,6 +21,8 @@ const envSchema = z.object({
   ADMIN_NOTIFICATION_EMAILS: z.string().optional(),
   // Sentry (optional — only required in production)
   SENTRY_DSN: z.string().url().optional(),
+  // Cron
+  CRON_SECRET: z.string().min(1),
 })
 
 // In development, missing vars warn instead of crashing.

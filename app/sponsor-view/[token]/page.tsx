@@ -24,15 +24,28 @@ interface AccessTokenRow {
 }
 
 function taxBadge(status: string): { label: string; className: string } | null {
-  if (status === '501c3') return { label: '✓ IRS 501(c)(3) Tax-Exempt', className: 'bg-green-100 text-green-800 border-green-200' }
-  if (status === 'School') return { label: '✓ Public School Program', className: 'bg-blue-100 text-blue-800 border-blue-200' }
+  if (status === '501c3') return { label: '✓ IRS 501(c)(3) Tax-Exempt', className: 'bg-[var(--badge-success-bg)] text-[var(--badge-success-text)] border-[var(--badge-success-text)]/20' }
+  if (status === 'School') return { label: '✓ Public School Program', className: 'bg-[var(--bg-elevated)] text-[var(--text-primary)] border-[var(--border-default)]' }
   return null
 }
 
 export default async function SponsorViewPage({ params }: Props) {
   const { token } = await params
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminClient() as unknown as any
+
+  const ip = (await import('next/headers')).headers().then(h => h.get('x-forwarded-for') ?? 'anonymous')
+  const { checkActionLimit } = await import('@/lib/rate-limit')
+  const limit = await checkActionLimit(`sponsor_view_${await ip}`)
+  if (!limit.ok) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="bg-card p-8 rounded-xl border text-center space-y-2">
+          <h1 className="text-xl font-bold text-foreground">Too many requests</h1>
+          <p className="text-muted-foreground">Please try again in a few minutes.</p>
+        </div>
+      </div>
+    )
+  }
 
   const tokenHash = createHash('sha256').update(token).digest('hex')
 
@@ -44,7 +57,10 @@ export default async function SponsorViewPage({ params }: Props) {
 
   if (!accessToken) return notFound()
 
-  const row = accessToken as AccessTokenRow
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const row = accessToken as any
+  if (row.revoked_at) return notFound()
+
   const expired = new Date(row.expires_at) < new Date()
   const decided = !!row.used_at
 
@@ -59,11 +75,11 @@ export default async function SponsorViewPage({ params }: Props) {
   const tax = taxBadge(team.tax_status as string)
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto py-12 px-4 space-y-8">
 
         {/* Header */}
-        <div className="bg-white rounded-xl border p-8 shadow-sm space-y-3">
+        <div className="bg-card rounded-xl border p-8 shadow-sm space-y-3">
           {mediaUrls.length > 0 && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -74,8 +90,8 @@ export default async function SponsorViewPage({ params }: Props) {
           )}
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">{String(team.team_name ?? '')}</h1>
-              <p className="text-slate-500 mt-1">
+              <h1 className="text-3xl font-bold text-foreground">{String(team.team_name ?? '')}</h1>
+              <p className="text-muted-foreground mt-1">
                 {team.ftc_team_number ? `FTC Team #${team.ftc_team_number}` : 'Incubator Team'} · {String(team.state ?? '')}
               </p>
             </div>
@@ -85,56 +101,56 @@ export default async function SponsorViewPage({ params }: Props) {
                   {tax.label}
                 </span>
               )}
-              <span className="text-2xl font-bold text-slate-900">
+              <span className="text-2xl font-bold text-foreground">
                 ${(totalAsk / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </span>
-              <span className="text-xs text-slate-400">Total Request</span>
+              <span className="text-xs text-muted-foreground">Total Request</span>
             </div>
           </div>
 
           {(expired || decided) && (
-            <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium">
+            <div className="mt-4 p-3 rounded-lg bg-[var(--badge-warning-bg)] border border-[var(--badge-warning-text)]/20 text-[var(--badge-warning-text)] text-sm font-medium">
               {decided ? 'A decision has already been recorded for this proposal.' : 'This proposal link has expired.'}
             </div>
           )}
         </div>
 
         {/* Custom Pitch */}
-        <div className="bg-white rounded-xl border p-8 shadow-sm space-y-4">
-          <h2 className="text-lg font-semibold text-slate-800">Why We Align With You</h2>
-          <p className="text-slate-700 leading-relaxed">{String(submission.custom_pitch_alignment ?? '')}</p>
-          <h2 className="text-lg font-semibold text-slate-800 pt-2">Our Specific Needs</h2>
-          <p className="text-slate-700 leading-relaxed">{String(submission.specific_needs_statement ?? '')}</p>
+        <div className="bg-card rounded-xl border p-8 shadow-sm space-y-4">
+          <h2 className="text-lg font-semibold text-foreground">Why We Align With You</h2>
+          <p className="text-muted-foreground leading-relaxed">{String(submission.custom_pitch_alignment ?? '')}</p>
+          <h2 className="text-lg font-semibold text-foreground pt-2">Our Specific Needs</h2>
+          <p className="text-muted-foreground leading-relaxed">{String(submission.specific_needs_statement ?? '')}</p>
         </div>
 
         {/* Portfolio */}
-        <div className="bg-white rounded-xl border p-8 shadow-sm space-y-5">
-          <h2 className="text-xl font-bold text-slate-900">Team Portfolio</h2>
+        <div className="bg-card rounded-xl border p-8 shadow-sm space-y-5">
+          <h2 className="text-xl font-bold text-foreground">Team Portfolio</h2>
           {team.tagline && (
-            <p className="text-slate-500 italic">&ldquo;{String(team.tagline)}&rdquo;</p>
+            <p className="text-muted-foreground italic">&ldquo;{String(team.tagline)}&rdquo;</p>
           )}
           {team.mission_statement && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Mission</p>
-              <p className="text-slate-700 leading-relaxed">{String(team.mission_statement)}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Mission</p>
+              <p className="text-foreground leading-relaxed">{String(team.mission_statement)}</p>
             </div>
           )}
           {team.technical_summary && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Technical</p>
-              <p className="text-slate-700 leading-relaxed">{String(team.technical_summary)}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Technical</p>
+              <p className="text-foreground leading-relaxed">{String(team.technical_summary)}</p>
             </div>
           )}
           {team.outreach_summary && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Outreach</p>
-              <p className="text-slate-700 leading-relaxed">{String(team.outreach_summary)}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Outreach</p>
+              <p className="text-foreground leading-relaxed">{String(team.outreach_summary)}</p>
             </div>
           )}
           {team.youtube_url && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Video</p>
-              <a href={String(team.youtube_url)} target="_blank" rel="noreferrer" className="text-blue-600 underline text-sm">
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Video</p>
+              <a href={String(team.youtube_url)} target="_blank" rel="noreferrer" className="text-primary underline text-sm">
                 Watch on YouTube →
               </a>
             </div>
@@ -149,16 +165,16 @@ export default async function SponsorViewPage({ params }: Props) {
         </div>
 
         {/* Budget */}
-        <div className="bg-white rounded-xl border p-8 shadow-sm space-y-4">
-          <h2 className="text-xl font-bold text-slate-900">Budget Breakdown</h2>
-          <div className="divide-y">
+        <div className="bg-card rounded-xl border p-8 shadow-sm space-y-4">
+          <h2 className="text-xl font-bold text-foreground">Budget Breakdown</h2>
+          <div className="divide-y divide-border">
             {budgetItems.map((item, i) => (
               <div key={i} className="flex justify-between py-2 text-sm">
-                <span className="text-slate-700">{item.qty}× {item.label}</span>
-                <span className="font-medium text-slate-900">${(item.total_cents / 100).toFixed(2)}</span>
+                <span className="text-muted-foreground">{item.qty}× {item.label}</span>
+                <span className="font-medium text-foreground">${(item.total_cents / 100).toFixed(2)}</span>
               </div>
             ))}
-            <div className="flex justify-between py-3 font-bold text-base">
+            <div className="flex justify-between py-3 font-bold text-base text-foreground">
               <span>Total Request</span>
               <span>${(totalAsk / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
             </div>
@@ -175,7 +191,7 @@ export default async function SponsorViewPage({ params }: Props) {
           />
         )}
 
-        <p className="text-center text-xs text-slate-400 pb-8">
+        <p className="text-center text-xs text-muted-foreground pb-8">
           Verified by Matchmaker · FTC Sponsorship Portal
         </p>
       </div>

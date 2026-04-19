@@ -11,8 +11,8 @@ import {
 } from '@/lib/site-config'
 
 // Lazy-load the heavy canvas globe — no SSR
-const RotatingEarth = dynamic(
-  () => import('@/components/ui/wireframe-dotted-globe'),
+const HeroGlobe = dynamic(
+  () => import('@/components/landing/hero-globe').then(mod => mod.HeroGlobe),
   { ssr: false }
 )
 
@@ -108,7 +108,7 @@ export function Hero() {
             transition={{ duration: 1.2, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="relative h-[400px] sm:h-[480px] lg:h-[560px] xl:h-[620px] w-full"
           >
-            <RotatingEarth className="w-full h-full" />
+            <HeroGlobe className="w-full h-full" />
           </motion.div>
         </div>
       </div>

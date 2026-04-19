@@ -10,6 +10,7 @@ import {
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { CopyInput } from '@/components/ui/copy-input'
 import { FadeUp } from '@/components/motion/fade-up'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { PortfolioTab } from './portfolio-tab'
 import { InboxTab } from './inbox-tab'
@@ -152,16 +153,23 @@ function KpiCard({ label, value, hint }: { label: string; value: string | number
 }
 
 function StatusChip({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    approved:          'border-emerald-900/60 bg-emerald-500/5 text-emerald-300',
-    pending:           'border-amber-900/60   bg-amber-500/5   text-amber-300',
-    changes_requested: 'border-rose-900/60    bg-rose-500/5    text-rose-300',
-    declined:          'border-zinc-800       bg-zinc-900      text-zinc-400',
-    draft:             'border-zinc-800       bg-zinc-950      text-zinc-500',
+  const statusConfig: Record<string, { bg: string; text: string; border: string }> = {
+    approved:          { bg: 'var(--badge-success-bg)',        text: 'var(--badge-success-text)',        border: 'var(--badge-success-text)' },
+    pending:           { bg: 'var(--badge-warning-bg)',        text: 'var(--badge-warning-text)',        border: 'var(--badge-warning-text)' },
+    changes_requested: { bg: 'var(--badge-warning-bg)',        text: 'var(--badge-warning-text)',        border: 'var(--badge-warning-text)' },
+    declined:          { bg: 'var(--badge-rejected-bg)',       text: 'var(--badge-rejected-text)',       border: 'var(--badge-rejected-text)' },
+    draft:             { bg: 'var(--badge-pending-bg)',        text: 'var(--badge-pending-text)',        border: 'var(--badge-pending-text)' },
   }
-  const cls = map[status] ?? 'border-zinc-800 bg-zinc-900 text-zinc-400'
+  const config = statusConfig[status] ?? statusConfig.draft
   return (
-    <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium', cls)}>
+    <span
+      className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium"
+      style={{
+        backgroundColor: config.bg,
+        color: config.text,
+        borderColor: config.border,
+      }}
+    >
       {status.replace(/_/g, ' ')}
     </span>
   )
@@ -184,12 +192,12 @@ function OverviewTab({
   return (
     <div className="space-y-8">
       <div className="flex justify-end gap-2">
-        <button
+        <Button
+          variant="secondary"
           onClick={() => switchTab('portfolio')}
-          className="inline-flex items-center gap-2 rounded-md border border-zinc-800 bg-zinc-950/60 px-3.5 py-1.5 text-sm text-zinc-200 hover:bg-zinc-900 transition-colors"
         >
           Edit Portfolio
-        </button>
+        </Button>
       </div>
 
       {needsAttention.length > 0 && (
