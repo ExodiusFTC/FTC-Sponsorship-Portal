@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import * as d3 from "d3"
+import { THEME_ACCENT_BASE, THEME_ACCENT_DARK, THEME_ACCENT_LIGHT } from "@/lib/site-config"
 
 interface RotatingEarthProps {
   width?: number
@@ -36,8 +37,9 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
 
     let { width: containerWidth, height: containerHeight } = dimensions.current
 
-    // We want the globe to be as big as possible within the container
-    const radius = Math.min(containerWidth, containerHeight) / 2.1
+    // Make the globe slightly smaller (radius divisor from 2.1 -> 2.5) 
+    // to give it padding and prevent the atmosphere/dots from being cut off.
+    const radius = Math.min(containerWidth, containerHeight) / 2.5
 
     const dpr = window.devicePixelRatio || 1
     canvas.width = containerWidth * dpr
@@ -146,9 +148,17 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
     let landFeatures: any
 
     // ─── Accent Colors & Data ────────────────────────────────────────────────
-    const INDIGO_400 = "#818cf8"
-    const INDIGO_500 = "#6366f1"
-    const INDIGO_300 = "#a5b4fc"
+    const INDIGO_400 = THEME_ACCENT_BASE
+    const INDIGO_500 = THEME_ACCENT_DARK
+    const INDIGO_300 = THEME_ACCENT_LIGHT
+    
+    // Helper to apply opacity to hex colors
+    const hexToRgba = (hex: string, alpha: number) => {
+      const r = parseInt(hex.slice(1, 3), 16)
+      const g = parseInt(hex.slice(3, 5), 16)
+      const b = parseInt(hex.slice(5, 7), 16)
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`
+    }
 
     // [lng, lat] format
     const HUB_LOCATIONS: [number, number][] = [
@@ -193,9 +203,9 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
         containerWidth / 2, containerHeight / 2, currentScale * 0.8,
         containerWidth / 2, containerHeight / 2, currentScale * 1.2
       );
-      gradient.addColorStop(0, "rgba(99, 102, 241, 0.0)");
-      gradient.addColorStop(0.8, "rgba(99, 102, 241, 0.12)");
-      gradient.addColorStop(1, "rgba(99, 102, 241, 0.0)");
+      gradient.addColorStop(0, hexToRgba(INDIGO_500, 0.0));
+      gradient.addColorStop(0.8, hexToRgba(INDIGO_500, 0.12));
+      gradient.addColorStop(1, hexToRgba(INDIGO_500, 0.0));
 
       context.beginPath()
       context.arc(containerWidth / 2, containerHeight / 2, currentScale * 1.2, 0, 2 * Math.PI)
@@ -207,7 +217,7 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
         const graticule = d3.geoGraticule()
         context.beginPath()
         path(graticule())
-        context.strokeStyle = "rgba(129, 140, 248, 0.15)"
+        context.strokeStyle = hexToRgba(INDIGO_400, 0.15)
         context.lineWidth = 1 * scaleFactor
         context.stroke()
 
@@ -216,12 +226,12 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
         landFeatures.features.forEach((feature: any) => {
           path(feature)
         })
-        context.strokeStyle = "rgba(129, 140, 248, 0.25)"
+        context.strokeStyle = hexToRgba(INDIGO_400, 0.25)
         context.lineWidth = 1 * scaleFactor
         context.stroke()
 
         // Draw halftone dots
-        context.fillStyle = "rgba(129, 140, 248, 0.4)"
+        context.fillStyle = hexToRgba(INDIGO_400, 0.4)
         allDots.forEach((dot) => {
           const projected = projection([dot.lng, dot.lat])
           if (
@@ -261,7 +271,7 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
 
         // Add a glow to the hubs
         path.pointRadius(7 * scaleFactor)
-        context.fillStyle = "rgba(165, 180, 252, 0.25)"
+        context.fillStyle = hexToRgba(INDIGO_300, 0.25)
         HUB_LOCATIONS.forEach((hub) => {
           context.beginPath()
           path({ type: 'Point', coordinates: hub })
@@ -370,7 +380,7 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
 
       containerWidth = newWidth
       containerHeight = newHeight
-      const newRadius = Math.min(containerWidth, containerHeight) / 2.1
+      const newRadius = Math.min(containerWidth, containerHeight) / 2.5
 
       canvas.width = containerWidth * dpr
       canvas.height = containerHeight * dpr
