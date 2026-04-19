@@ -11,32 +11,51 @@ interface RotatingEarthProps {
 
 // [lng, lat] format
 const HUB_LOCATIONS: [number, number][] = [
-  [-122.4194, 37.7749], // SF
-  [-74.0060, 40.7128],  // NY
-  [-0.1278, 51.5074],   // London
-  [139.6503, 35.6762],  // Tokyo
-  [151.2093, -33.8688], // Sydney
-  [-46.6333, -23.5505], // Sao Paulo
-  [34.7818, 32.0853],   // Tel Aviv
-  [103.8198, 1.3521],   // Singapore
-  [77.2090, 28.6139],   // New Delhi
-  [2.3522, 48.8566],    // Paris
-  [37.6173, 55.7558],   // Moscow
-  [-118.2437, 34.0522], // LA
-  [-87.6298, 41.8781],  // Chicago
-  [116.4074, 39.9042],  // Beijing
-  [-95.3698, 29.7604],  // Houston
-  [-80.1918, 25.7617],  // Miami
-  [3.3792, 6.5244],     // Lagos, Nigeria
-  [36.8219, -1.2921],   // Nairobi, Kenya
-  [28.0473, -26.2041],  // Johannesburg, SA
-  [-58.3816, -34.6037], // Buenos Aires, Argentina
-  [-77.0428, -12.0464], // Lima, Peru
-  [-70.6483, -33.4489], // Santiago, Chile
-  [-43.1729, -22.9068], // Rio de Janeiro, Brazil
-  [18.4241, -33.9249],  // Cape Town, SA
-  [31.2357, 30.0444],   // Cairo, Egypt
-  [-99.1332, 19.4326],  // Mexico City
+  [-122.3748, 37.6189],   // SFO (San Francisco)
+  [-73.7781, 40.6413],   // JFK (New York)
+  [-0.4543, 51.4700],    // LHR (London)
+  [139.7798, 35.5494],   // HND (Tokyo)
+  [151.1772, -33.9399],  // SYD (Sydney)
+  [144.8433, -37.6690],  // MEL (Melbourne)
+  [103.9915, 1.3644],    // SIN (Singapore)
+  [2.5479, 49.0097],     // CDG (Paris)
+  [113.9261, 22.3089],   // HKG (Hong Kong)
+  [30.1444, 31.2357],    // CAI (Cairo)
+  [-58.5350, -34.8222],  // EZE (Buenos Aires)
+  [-118.4085, 33.9416],  // LAX (Los Angeles)
+  [55.3644, 25.2532],    // DXB (Dubai)
+  [37.4119, 55.9726],    // SVO (Moscow)
+  [116.5847, 40.0799],   // PEK (Beijing)
+  [-99.0721, 19.4361],   // MEX (Mexico City)
+  [28.2460, -26.1367],   // JNB (Johannesburg)
+  [-46.4731, -23.4356],  // GRU (Sao Paulo)
+  [126.4407, 37.4602],   // ICN (Seoul)
+  [12.4828, 41.8919],    // FCO (Rome)
+  [-123.1848, 49.1967],  // YVR (Vancouver)
+  [15.2847, -4.2634],    // BZV (Brazzaville)
+  [100.7501, 13.6895],   // BKK (Bangkok)
+  [72.8656, 19.0887],    // BOM (Mumbai)
+  [121.2330, 25.0797],   // TPE (Taipei)
+  [-77.0369, 38.9072],   // IAD (DC)
+  [-43.2494, -22.8132],  // GIG (Rio)
+  [18.6021, -33.9715],   // CPT (Cape Town)
+  [34.8854, 32.0055],    // TLV (Tel Aviv)
+  [24.9458, 60.1733],    // HEL (Helsinki)
+]
+
+const REALISTIC_ROUTES: [number, number][][] = [
+  [[-122.3748, 37.6189], [144.8433, -37.6690]], // SFO -> MEL
+  [[-73.7781, 40.6413], [-0.4543, 51.4700]],   // JFK -> LHR
+  [[-122.3748, 37.6189], [139.7798, 35.5494]], // SFO -> HND
+  [[-0.4543, 51.4700], [103.9915, 1.3644]],    // LHR -> SIN
+  [[151.1772, -33.9399], [144.8433, -37.6690]],// SYD -> MEL
+  [[2.5479, 49.0097], [55.3644, 25.2532]],     // CDG -> DXB
+  [[-118.4085, 33.9416], [151.1772, -33.9399]],// LAX -> SYD
+  [[-73.7781, 40.6413], [2.5479, 49.0097]],    // JFK -> CDG
+  [[116.5847, 40.0799], [139.7798, 35.5494]],  // PEK -> HND
+  [[55.3644, 25.2532], [72.8656, 19.0887]],    // DXB -> BOM
+  [[-46.4731, -23.4356], [-58.5350, -34.8222]],// GRU -> EZE
+  [[-123.1848, 49.1967], [139.7798, 35.5494]], // YVR -> HND
 ]
 
 const pointInPolygon = (point: [number, number], polygon: number[][]): boolean => {
@@ -134,7 +153,6 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
   useEffect(() => {
     const loadWorldData = async () => {
       try {
-        // Data is processed incrementally below to avoid blocking the main thread
         const response = await fetch(
           "https://raw.githubusercontent.com/martynafford/natural-earth-geojson/refs/heads/master/110m/physical/ne_110m_land.json",
         )
@@ -142,39 +160,161 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
         const data = await response.json()
         landFeaturesRef.current = data
 
-        const dots: { lng: number; lat: number; visible: boolean }[] = []
+        // WORKER IMPLEMENTATION
+        const workerCode = `
+          const pointInPolygon = (point, polygon) => {
+            const [x, y] = point;
+            let inside = false;
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+              const [xi, yi] = polygon[i];
+              const [xj, yj] = polygon[j];
+              if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
+                inside = !inside;
+              }
+            }
+            return inside;
+          };
 
-        // Processing features incrementally to avoid blocking the main thread
-        const processFeatures = (index: number) => {
-          if (index >= data.features.length) {
-            allDotsRef.current = dots
-            setIsDataLoaded(true)
-            return
+          const pointInFeature = (point, feature) => {
+            const geometry = feature.geometry;
+            if (geometry.type === "Polygon") {
+              const coordinates = geometry.coordinates;
+              if (!pointInPolygon(point, coordinates[0])) return false;
+              for (let i = 1; i < coordinates.length; i++) {
+                if (pointInPolygon(point, coordinates[i])) return false;
+              }
+              return true;
+            } else if (geometry.type === "MultiPolygon") {
+              for (const polygon of geometry.coordinates) {
+                if (pointInPolygon(point, polygon[0])) {
+                  let inHole = false;
+                  for (let i = 1; i < polygon.length; i++) {
+                    if (pointInPolygon(point, polygon[i])) {
+                      inHole = true;
+                      break;
+                    }
+                  }
+                  if (!inHole) return true;
+                }
+              }
+              return false;
+            }
+            return false;
+          };
+
+          const getBounds = (feature) => {
+            let minLng = 180, minLat = 90, maxLng = -180, maxLat = -90;
+            const loop = (coords) => {
+              if (typeof coords[0] === 'number') {
+                const [lng, lat] = coords;
+                if (lng < minLng) minLng = lng;
+                if (lng > maxLng) maxLng = lng;
+                if (lat < minLat) minLat = lat;
+                if (lat > maxLat) maxLat = lat;
+              } else {
+                coords.forEach(loop);
+              }
+            };
+            loop(feature.geometry.coordinates);
+            return [[minLng, minLat], [maxLng, maxLat]];
+          };
+
+          const generateDotsInPolygon = (feature, dotSpacing = 20) => {
+            const dots = [];
+            const [[minLng, minLat], [maxLng, maxLat]] = getBounds(feature);
+            const stepSize = dotSpacing * 0.08;
+            for (let lng = minLng; lng <= maxLng; lng += stepSize) {
+              for (let lat = minLat; lat <= maxLat; lat += stepSize) {
+                if (pointInFeature([lng, lat], feature)) {
+                  dots.push({ lng, lat, visible: true });
+                }
+              }
+            }
+            return dots;
+          };
+
+          self.onmessage = (e) => {
+            const data = e.data;
+            const dots = [];
+            const features = data.features;
+            
+            for (let i = 0; i < features.length; i++) {
+              const generated = generateDotsInPolygon(features[i], 20);
+              dots.push(...generated);
+              self.postMessage({ type: 'progress', progress: Math.round(((i + 1) / features.length) * 100) });
+            }
+            
+            self.postMessage({ type: 'result', dots });
+          };
+        `;
+
+        const blob = new Blob([workerCode], { type: 'application/javascript' });
+        const worker = new Worker(URL.createObjectURL(blob));
+
+        worker.onmessage = (e) => {
+          if (e.data.type === 'progress') {
+            window.dispatchEvent(new CustomEvent('globe-progress', { detail: e.data.progress }));
+          } else if (e.data.type === 'result') {
+            allDotsRef.current = e.data.dots;
+            setIsDataLoaded(true);
+            window.dispatchEvent(new CustomEvent('globe-progress', { detail: 100 }));
+            window.dispatchEvent(new CustomEvent('globe-ready'));
+            worker.terminate();
           }
+        };
 
-          const feature = data.features[index]
-          const generated = generateDotsInPolygon(feature, 20)
-          generated.forEach(([lng, lat]) => {
-            dots.push({ lng, lat, visible: true })
-          })
-
-          // Yield more aggressively to ensure smooth gooey animation
-          // Every 2 features we give a full breath to the main thread
-          if (index % 2 === 0) {
-            setTimeout(() => processFeatures(index + 1), 0)
-          } else {
-            processFeatures(index + 1)
-          }
-        }
-
-        processFeatures(0)
+        worker.postMessage(data);
 
         const conns: [number, number][][] = []
-        for (let i = 0; i < 28; i++) {
+        
+        // 1. Add explicitly realistic routes first
+        REALISTIC_ROUTES.forEach(([from, to]) => {
+          const interpolator = d3.geoInterpolate(from, to)
+          const segments: [number, number][] = []
+          const numSegments = 15
+          for (let s = 0; s <= numSegments; s++) {
+            segments.push(interpolator(s / numSegments))
+          }
+          conns.push(segments)
+        })
+
+        // 2. GUARANTEE COVERAGE: Ensure every hub has at least one connection
+        const connectedHubs = new Set<string>()
+        REALISTIC_ROUTES.forEach(([from, to]) => {
+          connectedHubs.add(JSON.stringify(from))
+          connectedHubs.add(JSON.stringify(to))
+        })
+
+        HUB_LOCATIONS.forEach((hub) => {
+          if (!connectedHubs.has(JSON.stringify(hub))) {
+            // Connect this isolated hub to a random other hub
+            let to = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
+            while (JSON.stringify(to) === JSON.stringify(hub)) to = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
+            
+            const interpolator = d3.geoInterpolate(hub, to)
+            const segments: [number, number][] = []
+            const numSegments = 15
+            for (let s = 0; s <= numSegments; s++) {
+              segments.push(interpolator(s / numSegments))
+            }
+            conns.push(segments)
+            connectedHubs.add(JSON.stringify(hub))
+          }
+        })
+
+        // 3. Add some additional random international routes for density
+        for (let i = 0; i < 10; i++) {
           const from = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
           let to = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
           while (to === from) to = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
-          conns.push([from, to])
+          
+          const interpolator = d3.geoInterpolate(from, to)
+          const segments: [number, number][] = []
+          const numSegments = 15
+          for (let s = 0; s <= numSegments; s++) {
+            segments.push(interpolator(s / numSegments))
+          }
+          conns.push(segments)
         }
         connectionsRef.current = conns
 
@@ -271,14 +411,14 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
         }
         ctx.fill()
 
-        // 4. Connection Lines
+        // 4. Connection Lines (Dashed Great Circles)
         ctx.strokeStyle = ACCENT_COLOR
-        ctx.lineWidth = 1.2 * scaleFactor
-        connectionsRef.current.forEach((conn) => {
+        ctx.lineWidth = 1.0 * scaleFactor
+        connectionsRef.current.forEach((sepments) => {
           ctx.beginPath()
-          path({ type: 'LineString', coordinates: conn })
-          ctx.setLineDash([8 * scaleFactor, 12 * scaleFactor])
-          ctx.lineDashOffset = -timeRef.current * 0.5
+          path({ type: 'LineString', coordinates: sepments })
+          ctx.setLineDash([4 * scaleFactor, 6 * scaleFactor])
+          ctx.lineDashOffset = -timeRef.current * 0.4
           ctx.stroke()
         })
         ctx.setLineDash([])

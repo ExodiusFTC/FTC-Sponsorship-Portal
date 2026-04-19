@@ -24,11 +24,7 @@ export function Hero() {
 
   useEffect(() => {
     const handleComplete = () => {
-      // Small additional delay to allow the loader's exit animation (0.6s) to be smooth
-      // before hitting the main thread with heavy D3 processing
-      setTimeout(() => {
-        setShouldShowGlobe(true)
-      }, 500)
+      setShouldShowGlobe(true)
     }
 
     window.addEventListener('initial-loader-complete', handleComplete)
@@ -128,15 +124,11 @@ export function Hero() {
           {/* ── Right: 3D Globe ─────────────────────────────────────────── */}
           <motion.div
             initial={reduce ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1.2, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            animate={shouldShowGlobe ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
+            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
             className="relative h-[400px] sm:h-[480px] lg:h-[560px] xl:h-[620px] w-full"
           >
-            {shouldShowGlobe ? (
-              <RotatingEarth className="w-full h-full" />
-            ) : (
-              <div className="w-full h-full" />
-            )}
+            <RotatingEarth className="w-full h-full" />
           </motion.div>
         </div>
       </div>

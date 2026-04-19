@@ -7,14 +7,13 @@ import { GooeyText } from '@/components/ui/gooey-text-morphing'
 export function InitialLoader() {
   const [isLoading, setIsLoading] = useState(true)
   const loaderTexts = useMemo(() => ["FTC", "Sponsorships", "Simplified"], [])
-
   useEffect(() => {
-    // Exactly 3 seconds total as requested
+    // 3.5 seconds total duration for a snappier feel
     const timer = setTimeout(() => {
       setIsLoading(false)
-      // Signal to other components (like the Hero Globe) that they can now begin heavy rendering
       window.dispatchEvent(new CustomEvent('initial-loader-complete'))
-    }, 3000)
+    }, 3500)
+
     return () => clearTimeout(timer)
   }, [])
 
@@ -29,14 +28,16 @@ export function InitialLoader() {
           className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background pointer-events-none"
           style={{ willChange: "opacity" }}
         >
-          <GooeyText 
-            texts={loaderTexts}
-            morphTime={0.6}
-            cooldownTime={0.4}
-            loop={false}
-            className="w-full"
-            textClassName="text-foreground font-bold tracking-tighter"
-          />
+          <div className="flex flex-col items-center justify-center w-full max-w-sm h-full">
+            <GooeyText 
+              texts={loaderTexts}
+              morphTime={0.8}
+              cooldownTime={0.7}
+              loop={false}
+              className="w-full"
+              textClassName="text-white dark:text-white font-bold tracking-tighter"
+            />
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
