@@ -80,10 +80,8 @@ export function CoachVerificationCard({ coach }: { coach: CoachData }) {
         {/* View Credentials */}
         {coach.signedUrl && (
           <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <ExternalLink className="h-3.5 w-3.5" /> Credentials
-              </Button>
+            <DialogTrigger render={<Button variant="outline" size="sm" className="gap-1.5" />}>
+              <ExternalLink className="h-3.5 w-3.5" /> Credentials
             </DialogTrigger>
             <DialogContent className="max-w-3xl h-[80vh] flex flex-col">
               <DialogHeader>
