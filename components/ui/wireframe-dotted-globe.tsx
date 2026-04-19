@@ -188,7 +188,7 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
     }
     updateDimensions()
 
-    let { width, height } = dimensions.current
+    const { width, height } = dimensions.current
     const radius = Math.min(width, height) / 2.5
     const dpr = window.devicePixelRatio || 1
 

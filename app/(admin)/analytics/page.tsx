@@ -12,6 +12,7 @@ const STATUS_LABELS: Record<string, { label: string; bg: string; text: string }>
 
 export default async function AnalyticsPage() {
   const supabase = await createClient()
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
   // ── Queries ─────────────────────────────────────────────────────────────────
   const [
@@ -19,26 +20,26 @@ export default async function AnalyticsPage() {
     { count: activeSponsors },
     { count: activeTeams },
     { count: verifiedThisMonth },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     { data: submissionSummary },
     { data: statusRows },
   ] = await Promise.all([
-    (supabase as any).from('transactions_ledger').select('amount_cents'),
+    supabase.from('transactions_ledger').select('amount_cents'),
     supabase.from('sponsors').select('*', { count: 'exact', head: true }).eq('status', 'active'),
     supabase.from('teams').select('*', { count: 'exact', head: true }),
     supabase.from('profiles')
       .select('*', { count: 'exact', head: true })
       .eq('coach_verified', true)
-      .gte('updated_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
-    (supabase as any).from('v_submission_summary').select('*'),
+      .gte('updated_at', thirtyDaysAgo),
+    supabase.from('v_submission_summary').select('*'),
     supabase.from('submissions').select('status').in('status', ['approved', 'declined']),
   ])
 
   const totalFundsDistributedCents: number =
-    (ledger ?? []).reduce((s: number, r: any) => s + (r.amount_cents ?? 0), 0)
+    (ledger ?? []).reduce((s: number, r) => s + (r.amount_cents ?? 0), 0)
 
-  const approvedCount = statusRows?.filter((s: any) => s.status === 'approved').length ?? 0
-  const declinedCount = statusRows?.filter((s: any) => s.status === 'declined').length ?? 0
+  const approvedCount = statusRows?.filter((s) => s.status === 'approved').length ?? 0
+  const declinedCount = statusRows?.filter((s) => s.status === 'declined').length ?? 0
   const conversionRate =
     approvedCount + declinedCount > 0
       ? Math.round((approvedCount / (approvedCount + declinedCount)) * 100)

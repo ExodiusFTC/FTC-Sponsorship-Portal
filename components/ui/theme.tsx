@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useSyncExternalStore, useState } from "react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AnimatePresence, motion } from "framer-motion"
 import {
@@ -51,6 +51,10 @@ interface ThemeToggleProps {
   className?: string
 }
 
+function subscribe() {
+  return () => {}
+}
+
 export function Theme({
   variant = "button",
   size = "md",
@@ -60,11 +64,7 @@ export function Theme({
 }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme()
   const [isOpen, setIsOpen] = useState(false)
-  const [isMounted, setIsMounted] = useState(false)
-
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
+  const isMounted = useSyncExternalStore(subscribe, () => true, () => false)
 
   const sizeClasses = {
     sm: "h-8 px-2 text-xs",
