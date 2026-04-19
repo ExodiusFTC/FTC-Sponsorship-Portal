@@ -208,14 +208,18 @@ export async function updateTeam(id: string, data: Partial<TeamOnboardingInput>)
     financial_ask_cents: data.financialAskCents,
     cad_software: data.cadSoftware,
     control_system: data.controlSystem,
-    sensors: data.sensors,
+    sensors: typeof data.sensors === 'string'
+      ? data.sensors.split(',').map(s => s.trim()).filter(Boolean)
+      : (data.sensors ?? []),
     github_link: data.githubLink,
     autonomous_description: data.autonomousDescription,
     proudest_mechanism_name: data.proudestMechanismName,
     proudest_mechanism_problem: data.proudestMechanismProblem,
     proudest_mechanism_solution: data.proudestMechanismSolution,
     subteam_breakdown: data.subteamBreakdown,
-    manufacturing_capabilities: data.manufacturingCapabilities,
+    manufacturing_capabilities: typeof data.manufacturingCapabilities === 'string'
+      ? data.manufacturingCapabilities.split(',').map(s => s.trim()).filter(Boolean)
+      : (data.manufacturingCapabilities ?? []),
     visual_pitch_items: data.visualPitchItems,
   }
 

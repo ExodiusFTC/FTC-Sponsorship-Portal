@@ -88,6 +88,6 @@ export const FOOTER_COLUMNS = [
 
 // ─── Hero copy ───────────────────────────────────────────────────────────────
 export const HERO_TITLE_TOP = 'One'
-export const HERO_TITLE_BOTTOM = 'away from fueling your mission.'
+export const HERO_TITLE_BOTTOM = 'away from fueling your FTC journey.'
 export const HERO_MORPHING_WORDS = ['sponsorship', 'partnership', 'opportunity', 'connection', 'endorsement', 'breakthrough', 'investment', 'contribution'] as const;
 export const HERO_DESCRIPTION = 'The professional sponsorship pipeline for FIRST Tech Challenge coaches. Build a verified portfolio, send moderated pitches, and connect with the industry leaders powering the next generation.'

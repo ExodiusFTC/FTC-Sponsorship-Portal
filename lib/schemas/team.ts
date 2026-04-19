@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+// Legacy exports kept for any import sites; values no longer enforce DB enums
 export const DRIVETRAIN_OPTIONS = ['mecanum', 'swerve', 'tank', 'other'] as const
 export const BUILD_SYSTEM_OPTIONS = ['gobilda', 'rev', 'custom', 'other'] as const
 export const PROGRAMMING_OPTIONS = ['java', 'blocks', 'other'] as const
@@ -25,9 +26,10 @@ export const teamOnboardingSchema = z.object({
 
   technicalSummary: z.string().max(2000, 'Must be 2000 characters or fewer').optional(),
   outreachSummary: z.string().max(2000, 'Must be 2000 characters or fewer').optional(),
-  drivetrain: z.enum(DRIVETRAIN_OPTIONS).optional(),
-  buildSystem: z.enum(BUILD_SYSTEM_OPTIONS).optional(),
-  programming: z.enum(PROGRAMMING_OPTIONS).optional(),
+  // Free-form text fields — DB columns changed to plain TEXT in migration 0024
+  drivetrain: z.string().optional(),
+  buildSystem: z.string().optional(),
+  programming: z.string().optional(),
   mediaUrls: z.array(z.string()).default([]),
   youtubeUrl: z.string().optional().nullable(),
   budgetItems: z.array(
@@ -40,15 +42,17 @@ export const teamOnboardingSchema = z.object({
   ).default([]),
   financialAskCents: z.number().int().nonnegative().default(0),
   cadSoftware: z.string().max(200).optional(),
-  controlSystem: z.enum(['rev_control_hub', 'android_phone', 'other']).optional().or(z.literal('')),
-  sensors: z.array(z.enum(['odometry','pid','computer_vision','custom_algorithms'])).default([]),
+  controlSystem: z.string().optional(),
+  // Comma-separated free-form text; converted to text[] by the action
+  sensors: z.string().optional(),
   githubLink: z.string().url().optional().or(z.literal('')),
   autonomousDescription: z.string().max(750).optional(),
   proudestMechanismName: z.string().max(200).optional(),
   proudestMechanismProblem: z.string().max(500).optional(),
   proudestMechanismSolution: z.string().max(1000).optional(),
   subteamBreakdown: z.string().max(1000).optional(),
-  manufacturingCapabilities: z.array(z.enum(['3d_printing','cnc','lathe','laser_cutter'])).default([]),
+  // Comma-separated free-form text; converted to text[] by the action
+  manufacturingCapabilities: z.string().optional(),
   visualPitchItems: z.array(z.object({ url: z.string(), caption: z.string().max(100) })).default([]),
 }).superRefine((data, ctx) => {
   if (data.status === 'existing' && !data.ftcTeamNumber) {

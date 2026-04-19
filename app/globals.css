@@ -113,6 +113,78 @@
   --font-mono: "JetBrains Mono", "Courier New", monospace;
 }
 
+/* ── Light mode overrides ─────────────────────────────────────────────────── */
+[data-theme="light"] {
+  color-scheme: light;
+  --background: #FFFFFF;
+  --foreground: #0B0B0C;
+  --card: #F9F9FB;
+  --card-foreground: #0B0B0C;
+  --popover: #FFFFFF;
+  --popover-foreground: #0B0B0C;
+  --primary: #0B0B0C;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F4F4F6;
+  --secondary-foreground: #0B0B0C;
+  --muted: #F4F4F6;
+  --muted-foreground: #71717A;
+  --accent: #F4F4F6;
+  --accent-foreground: #0B0B0C;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: #E4E4E7;
+  --input: #E4E4E7;
+  --ring: #A1A1AA;
+  /* Design system tokens */
+  --bg-app: #FFFFFF;
+  --bg-surface: #F9F9FB;
+  --bg-elevated: #F4F4F6;
+  --bg-hover: #EFEFEF;
+  --border-color: #E4E4E7;
+  --text-primary: #0B0B0C;
+  --text-secondary: #52525B;
+  --text-muted: #71717A;
+  --badge-success-bg: #DCFCE7;
+  --badge-success-text: #166534;
+  --badge-pending-bg: #F5F5F4;
+  --badge-pending-text: #57534E;
+  --badge-warning-bg: #FEF9C3;
+  --badge-warning-text: #854D0E;
+  --badge-rejected-bg: #FEE2E2;
+  --badge-rejected-text: #991B1B;
+}
+
+/* Tailwind zinc overrides so hardcoded zinc-* classes respond to light mode */
+[data-theme="light"] .bg-zinc-950\/60,
+[data-theme="light"] .bg-zinc-950\/80,
+[data-theme="light"] .bg-zinc-950 { background-color: rgba(255,255,255,0.95) !important; }
+
+[data-theme="light"] .bg-zinc-900\/60,
+[data-theme="light"] .bg-zinc-900\/50,
+[data-theme="light"] .bg-zinc-900\/40,
+[data-theme="light"] .bg-zinc-900\/30,
+[data-theme="light"] .bg-zinc-900 { background-color: #F4F4F6 !important; }
+
+[data-theme="light"] .border-zinc-800\/80,
+[data-theme="light"] .border-zinc-800,
+[data-theme="light"] .border-zinc-900 { border-color: #E4E4E7 !important; }
+
+[data-theme="light"] .divide-zinc-900 > * + * { border-color: #E4E4E7 !important; }
+[data-theme="light"] .divide-zinc-800 > * + * { border-color: #E4E4E7 !important; }
+
+[data-theme="light"] .text-zinc-50,
+[data-theme="light"] .text-zinc-100 { color: #0B0B0C !important; }
+[data-theme="light"] .text-zinc-200 { color: #27272A !important; }
+[data-theme="light"] .text-zinc-300 { color: #3F3F46 !important; }
+[data-theme="light"] .text-zinc-400 { color: #52525B !important; }
+[data-theme="light"] .text-zinc-500 { color: #71717A !important; }
+[data-theme="light"] .text-zinc-600 { color: #A1A1AA !important; }
+
+[data-theme="light"] .bg-zinc-100 { background-color: #0B0B0C !important; }
+[data-theme="light"] .text-zinc-900 { color: #FFFFFF !important; }
+[data-theme="light"] .hover\:bg-white:hover { background-color: #1F1F23 !important; }
+
+[data-theme="light"] .rounded-xl.border { box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
 @keyframes navPop {
   0% { transform: scale(1); }
   50% { transform: scale(1.2); }

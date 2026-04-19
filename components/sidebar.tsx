@@ -76,10 +76,12 @@ function NavItem({ item, isActive, badge }: { item: NavDef; isActive: boolean; b
       <span className="relative flex-1 truncate">{item.label}</span>
       {typeof badge === 'number' && badge > 0 && <Badge count={badge} />}
       {item.kbd && typeof badge !== 'number' && (
-        <kbd className="relative hidden font-mono text-[10px] text-zinc-600 group-hover:inline-flex">
+        <kbd className="relative hidden font-mono text-[10px] text-zinc-600 group-hover:inline-flex items-center gap-0.5">
           {item.kbd}
         </kbd>
       )}
+      {/* Global shortcut hint — shown on hover alongside kbd */}
+      {!item.kbd && typeof badge !== 'number' && null}
     </Link>
   )
 }
@@ -206,6 +208,38 @@ export function Sidebar() {
   const [userName, setUserName] = useState('User')
   const [userEmail, setUserEmail] = useState('')
 
+  // Load persisted theme on mount
+  useEffect(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('theme') : null
+    if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light')
+  }, [])
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return
+      if (!e.shiftKey) return
+      if (e.key === 'O') {
+        e.preventDefault()
+        router.push('/dashboard')
+      }
+      if (e.key === 'M') {
+        e.preventDefault()
+        const current = document.documentElement.getAttribute('data-theme') ?? 'dark'
+        const next = current === 'light' ? 'dark' : 'light'
+        if (next === 'dark') {
+          document.documentElement.removeAttribute('data-theme')
+        } else {
+          document.documentElement.setAttribute('data-theme', 'light')
+        }
+        localStorage.setItem('theme', next)
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [router])
+
   const { data: queueData } = useSWR<{ count: number }>(
     role === 'admin' ? '/api/admin/queue/count' : null,
     (url: string) => fetch(url).then((r) => r.json()),
@@ -288,7 +322,12 @@ export function Sidebar() {
         </div>
       </div>
 
-      <div className="border-t border-zinc-900 pt-2">
+      <div className="border-t border-zinc-900 pt-2 space-y-1">
+        {/* Global shortcut hints */}
+        <div className="flex items-center justify-between px-2.5 py-1">
+          <span className="text-[10px] text-zinc-600">Shift+O overview</span>
+          <span className="text-[10px] text-zinc-600">Shift+M theme</span>
+        </div>
         <UserRow name={userName} email={userEmail} role={role} onSignOut={handleSignOut} />
       </div>
     </aside>
