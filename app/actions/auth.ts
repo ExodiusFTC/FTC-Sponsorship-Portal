@@ -4,14 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { signupSchema, loginSchema, type SignupInput, type LoginInput } from '@/lib/schemas/auth'
 import { redirect } from 'next/navigation'
 import { env } from '@/lib/env'
-import { checkActionLimit } from '@/lib/rate-limit'
 import { sendCredentialUploadAlert } from '@/lib/notify'
-import { headers } from 'next/headers'
-
-async function getClientIp() {
-  const h = await headers()
-  return h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-}
+import { getClientIp, validateRateLimit, requireAuth } from '@/lib/actions-utils'
 
 export async function signUp(data: SignupInput) {
   const result = signupSchema.safeParse(data)
@@ -20,10 +14,9 @@ export async function signUp(data: SignupInput) {
   }
 
   const { fullName, email, password } = result.data
-  const limit = await checkActionLimit(`signup_${email}_${await getClientIp()}`)
-  if (!limit.ok) {
-    return { error: 'rate_limited', retryAfterSeconds: limit.retryAfterSeconds, limit: limit.limit }
-  }
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`signup_${email}_${ip}`)
+  if ('error' in limit) return limit
 
   const supabase = await createClient()
 
@@ -56,10 +49,9 @@ export async function signIn(data: LoginInput) {
   }
 
   const { email, password } = result.data
-  const limit = await checkActionLimit(`signin_${email}_${await getClientIp()}`)
-  if (!limit.ok) {
-    return { error: 'rate_limited', retryAfterSeconds: limit.retryAfterSeconds, limit: limit.limit }
-  }
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`signin_${email}_${ip}`)
+  if ('error' in limit) return limit
 
   const supabase = await createClient()
 
@@ -111,12 +103,18 @@ export async function uploadCredentials(formData: FormData) {
     return { error: 'Invalid file format.' }
   }
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
+  let user, supabase
+  try {
+    const auth = await requireAuth()
+    user = auth.user
+    supabase = auth.supabase
+  } catch {
     return { error: 'Not authenticated' }
   }
+
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`upload_creds_${user.id}_${ip}`)
+  if ('error' in limit) return limit
 
   const fileExt = file.name.split('.').pop()
   const filePath = `${user.id}/credentials.${fileExt}`
@@ -149,3 +147,4 @@ export async function uploadCredentials(formData: FormData) {
 
   redirect('/awaiting-verification')
 }
+

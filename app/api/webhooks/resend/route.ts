@@ -2,9 +2,27 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Webhook } from 'svix'
 import { env } from '@/lib/env'
+import { globalLimiter } from '@/lib/rate-limit'
 import * as Sentry from '@sentry/nextjs'
+import { z } from 'zod'
+
+const resendWebhookSchema = z.object({
+  type: z.string(),
+  data: z.object({
+    email_id: z.string(),
+  }),
+})
 
 export async function POST(req: Request) {
+  // Rate limiting
+  if (globalLimiter) {
+    const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1'
+    const { success } = await globalLimiter.limit(`webhook_resend_${ip}`)
+    if (!success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+  }
+
   try {
     const payload = await req.text()
     const headers = {
@@ -32,15 +50,15 @@ export async function POST(req: Request) {
       }
     }
 
-    const body = JSON.parse(payload)
-    const supabase = createAdminClient()
-
-    // Resend webhook format: { type: 'email.opened', data: { email_id: '...' } }
-    const { type, data } = body
-
-    if (!data || !data.email_id) {
-      return NextResponse.json({ error: 'Missing email_id' }, { status: 400 })
+    const json = JSON.parse(payload)
+    const result = resendWebhookSchema.safeParse(json)
+    
+    if (!result.success) {
+      return NextResponse.json({ error: 'Invalid payload format' }, { status: 400 })
     }
+
+    const { type, data } = result.data
+    const supabase = createAdminClient()
 
     const { data: submission } = await supabase
       .from('submissions')
@@ -54,13 +72,14 @@ export async function POST(req: Request) {
         action: `resend_webhook_${type}`,
         entity_type: 'submissions',
         entity_id: submission.id,
-        metadata: { resend_email_id: data.email_id },
+        metadata: { resend_email_id: data.email_id, webhook_type: type },
       })
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Webhook processing error', error)
+    Sentry.captureException(error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

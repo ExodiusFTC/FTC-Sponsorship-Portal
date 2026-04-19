@@ -1,9 +1,9 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { submissionSchema, type SubmissionInput } from '@/lib/schemas/submission'
 import { redirect } from 'next/navigation'
+import { getClientIp, validateRateLimit, requireAuth } from '@/lib/actions-utils'
 
 const EDITABLE_SUBMISSION_STATUSES = ['draft', 'declined', 'changes_requested'] as const
 
@@ -14,9 +14,14 @@ function getCurrentSeasonLabel(now = new Date()) {
 }
 
 async function getCoachTeamId() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Not authenticated' as const }
+  let user, supabase
+  try {
+    const auth = await requireAuth()
+    user = auth.user
+    supabase = auth.supabase
+  } catch {
+    return { error: 'Not authenticated' as const }
+  }
 
   const { data: team } = await supabase
     .from('teams')
@@ -44,6 +49,10 @@ export async function saveSubmission(
   const ctx = await getCoachTeamId()
   if ('error' in ctx) return { error: ctx.error }
   const { supabase, user, teamId } = ctx
+
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`save_sub_${user.id}_${ip}`)
+  if ('error' in limit) return limit
 
   // Spec: max 3 pending submissions per rolling 7-day window
   if (status === 'pending') {
@@ -134,7 +143,11 @@ export async function autoSaveSubmissionDraft(
 ): Promise<{ id?: string; error?: string }> {
   const ctx = await getCoachTeamId()
   if ('error' in ctx) return { error: ctx.error }
-  const { supabase, teamId } = ctx
+  const { supabase, user, teamId } = ctx
+
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`autosave_sub_${user.id}_${ip}`)
+  if ('error' in limit) return limit
 
   if (!data.sponsorId) {
     return { error: 'Sponsor ID is required to autosave' }
@@ -200,7 +213,11 @@ export async function cloneSubmission(
 ): Promise<{ id?: string; error?: string }> {
   const ctx = await getCoachTeamId()
   if ('error' in ctx) return { error: ctx.error }
-  const { supabase, teamId } = ctx
+  const { supabase, user, teamId } = ctx
+
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`clone_sub_${user.id}_${ip}`)
+  if ('error' in limit) return limit
 
   const { data: source } = await supabase
     .from('submissions')
@@ -234,3 +251,4 @@ export async function cloneSubmission(
   if (error) return { error: error.message }
   return { id: inserted.id }
 }
+

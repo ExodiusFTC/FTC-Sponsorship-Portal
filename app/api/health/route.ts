@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { env } from '@/lib/env'
+import { globalLimiter } from '@/lib/rate-limit'
 import crypto from 'crypto'
 
 function isAuthorizedDeepProbe(req: Request) {
@@ -17,6 +18,15 @@ function isAuthorizedDeepProbe(req: Request) {
 }
 
 export async function GET(req: Request) {
+  // Rate limiting
+  if (globalLimiter) {
+    const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1'
+    const { success } = await globalLimiter.limit(`health_${ip}`)
+    if (!success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+  }
+
   const { searchParams } = new URL(req.url)
   const deep = searchParams.get('deep') === 'db'
 

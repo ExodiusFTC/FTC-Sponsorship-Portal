@@ -1,9 +1,9 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
+import { getClientIp, validateRateLimit, requireAuth } from '@/lib/actions-utils'
 
 const updateProfileSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
@@ -29,9 +29,18 @@ export async function updateProfile(data: { fullName: string }) {
     return { error: result.error.issues[0].message }
   }
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Not authenticated' }
+  let user, supabase
+  try {
+    const auth = await requireAuth()
+    user = auth.user
+    supabase = auth.supabase
+  } catch {
+    return { error: 'Not authenticated' }
+  }
+
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`update_profile_${user.id}_${ip}`)
+  if ('error' in limit) return limit
 
   const { error: authError } = await supabase.auth.updateUser({
     data: { full_name: result.data.fullName },
@@ -54,7 +63,19 @@ export async function updatePassword(data: { password: string }) {
     return { error: result.error.issues[0].message }
   }
 
-  const supabase = await createClient()
+  let user, supabase
+  try {
+    const auth = await requireAuth()
+    user = auth.user
+    supabase = auth.supabase
+  } catch {
+    return { error: 'Not authenticated' }
+  }
+
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`update_password_${user.id}_${ip}`)
+  if ('error' in limit) return limit
+
   const { error } = await supabase.auth.updateUser({ password: result.data.password })
   if (error) return { error: error.message }
 
@@ -67,9 +88,18 @@ export async function deleteAccount(data: { confirmEmail: string; currentPasswor
     return { error: parsed.error.issues[0]?.message ?? 'Invalid account deletion request' }
   }
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Not authenticated' }
+  let user, supabase
+  try {
+    const auth = await requireAuth()
+    user = auth.user
+    supabase = auth.supabase
+  } catch {
+    return { error: 'Not authenticated' }
+  }
+
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`delete_account_${user.id}_${ip}`)
+  if ('error' in limit) return limit
 
   const userEmail = (user.email ?? '').toLowerCase()
   if (!userEmail || parsed.data.confirmEmail !== userEmail) {
@@ -96,3 +126,4 @@ export async function deleteAccount(data: { confirmEmail: string; currentPasswor
 
   redirect('/login?deleted=1')
 }
+

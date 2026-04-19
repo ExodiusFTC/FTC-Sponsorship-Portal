@@ -84,10 +84,10 @@ export function TeamEditForm({ team }: { team: Team }) {
     fd.append('file', file)
     const result = await uploadTeamLogo(team.id, fd)
     setLogoUploading(false)
-    if (result.error) {
+    if ('error' in result && result.error) {
       setLogoError(result.error)
-    } else if (result.url) {
-      setLogoUrl(result.url)
+    } else if ('url' in result && result.url) {
+      setLogoUrl(result.url as string)
     }
   }
 

@@ -1,30 +1,35 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { dispatchApprovedSubmission } from '@/lib/dispatch'
 import { sendSubmissionDecisionEmail, createInAppNotification } from '@/lib/notify'
 import { revalidatePath } from 'next/cache'
+import { getClientIp, validateRateLimit, requireAdmin } from '@/lib/actions-utils'
+import { z } from 'zod'
+
+const moderationSchema = z.object({
+  submissionId: z.string().uuid(),
+  feedback: z.string().max(2000).optional(),
+})
 
 export async function approveSubmission(submissionId: string) {
-  const authClient = await createClient()
-  const { data: { user } } = await authClient.auth.getUser()
-  if (!user) return { error: 'Unauthorized' }
+  const parsed = moderationSchema.safeParse({ submissionId })
+  if (!parsed.success) return { error: 'Invalid submission ID' }
 
-  const { data: profile } = await authClient
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') {
-    return { error: 'Forbidden' }
+  let user, adminClient
+  try {
+    const auth = await requireAdmin()
+    user = auth.user
+    adminClient = auth.adminClient
+  } catch (e: any) {
+    return { error: e.message }
   }
 
-  const supabase = createAdminClient()
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`admin_approve_sub_${user.id}_${ip}`)
+  if ('error' in limit) return limit
 
   // Atomic RPC: locks sponsor row, debits budget, writes ledger + audit_log, minits access token.
-  const { data: rpcResult, error: rpcError } = await supabase.rpc('approve_submission_atomic', {
+  const { data: rpcResult, error: rpcError } = await adminClient.rpc('approve_submission_atomic', {
     p_submission_id: submissionId,
     p_admin_id: user.id,
     p_amount_cents: 0,
@@ -46,18 +51,23 @@ export async function approveSubmission(submissionId: string) {
   // Set expires_at so the sponsor has a 14-day response window
   const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
   const now = new Date().toISOString()
-  await supabase.from('submissions').update({ 
+  await adminClient.from('submissions').update({ 
     expires_at: expiresAt,
     sent_at: now
   }).eq('id', submissionId)
 
   // Notify coach + dispatch to sponsor with their access token
-  await Promise.all([
-    sendSubmissionDecisionEmail(submissionId, 'approved'),
-    dispatchApprovedSubmission(submissionId, result.token),
-  ])
+  // Wrap in try-catch to ensure we log failures but don't break the whole action if notification fails
+  try {
+    await Promise.all([
+      sendSubmissionDecisionEmail(submissionId, 'approved'),
+      dispatchApprovedSubmission(submissionId, result.token),
+    ])
+  } catch (e) {
+    console.error('Failed to send notifications/dispatch for approved submission:', e)
+  }
 
-  const { data: sub } = await supabase
+  const { data: sub } = await adminClient
     .from('submissions')
     .select('id, sponsor_id, team_id, teams:team_id(owner_id), sponsors:sponsor_id(company_name)')
     .eq('id', submissionId).single()
@@ -75,7 +85,7 @@ export async function approveSubmission(submissionId: string) {
   }
 
   if (sub?.sponsor_id) {
-    const { data: sponsorProfiles } = await supabase
+    const { data: sponsorProfiles } = await adminClient
       .from('profiles')
       .select('id')
       .eq('role', 'sponsor')
@@ -101,21 +111,23 @@ export async function approveSubmission(submissionId: string) {
 }
 
 export async function declineSubmission(submissionId: string, feedback: string) {
-  const authClient = await createClient()
-  const { data: { user } } = await authClient.auth.getUser()
-  if (!user) return { error: 'Unauthorized' }
+  const parsed = moderationSchema.safeParse({ submissionId, feedback })
+  if (!parsed.success) return { error: 'Invalid data' }
 
-  const { data: profile } = await authClient
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+  let user, adminClient
+  try {
+    const auth = await requireAdmin()
+    user = auth.user
+    adminClient = auth.adminClient
+  } catch (e: any) {
+    return { error: e.message }
+  }
 
-  if (profile?.role !== 'admin') return { error: 'Forbidden' }
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`admin_decline_sub_${user.id}_${ip}`)
+  if ('error' in limit) return limit
 
-  const supabase = createAdminClient()
-
-  const { data: subCheck } = await supabase
+  const { data: subCheck } = await adminClient
     .from('submissions')
     .select('status')
     .eq('id', submissionId)
@@ -125,7 +137,7 @@ export async function declineSubmission(submissionId: string, feedback: string) 
     return { error: 'Submission is not pending review' }
   }
 
-  const { error } = await supabase
+  const { error } = await adminClient
     .from('submissions')
     .update({
       status: 'declined',
@@ -137,7 +149,7 @@ export async function declineSubmission(submissionId: string, feedback: string) 
 
   if (error) return { error: error.message }
 
-  await supabase.from('audit_log').insert({
+  await adminClient.from('audit_log').insert({
     actor_id: user.id,
     action: 'decline_submission',
     entity_type: 'submissions',
@@ -145,9 +157,13 @@ export async function declineSubmission(submissionId: string, feedback: string) 
     metadata: { feedback },
   })
 
-  await sendSubmissionDecisionEmail(submissionId, 'declined', feedback)
+  try {
+    await sendSubmissionDecisionEmail(submissionId, 'declined', feedback)
+  } catch (e) {
+    console.error('Failed to send decline email:', e)
+  }
 
-  const { data: sub } = await supabase
+  const { data: sub } = await adminClient
     .from('submissions')
     .select('team_id, teams:team_id(owner_id), sponsors:sponsor_id(company_name)')
     .eq('id', submissionId).single()
@@ -172,21 +188,23 @@ export async function declineSubmission(submissionId: string, feedback: string) 
 }
 
 export async function requestEdit(submissionId: string, feedback: string) {
-  const authClient = await createClient()
-  const { data: { user } } = await authClient.auth.getUser()
-  if (!user) return { error: 'Unauthorized' }
+  const parsed = moderationSchema.safeParse({ submissionId, feedback })
+  if (!parsed.success) return { error: 'Invalid data' }
 
-  const { data: profile } = await authClient
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+  let user, adminClient
+  try {
+    const auth = await requireAdmin()
+    user = auth.user
+    adminClient = auth.adminClient
+  } catch (e: any) {
+    return { error: e.message }
+  }
 
-  if (profile?.role !== 'admin') return { error: 'Forbidden' }
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`admin_request_edit_${user.id}_${ip}`)
+  if ('error' in limit) return limit
 
-  const supabase = createAdminClient()
-
-  const { data: subCheck } = await supabase
+  const { data: subCheck } = await adminClient
     .from('submissions')
     .select('status')
     .eq('id', submissionId)
@@ -196,7 +214,7 @@ export async function requestEdit(submissionId: string, feedback: string) {
     return { error: 'Submission is not pending review' }
   }
 
-  const { error } = await supabase
+  const { error } = await adminClient
     .from('submissions')
     .update({
       status: 'changes_requested',
@@ -208,7 +226,7 @@ export async function requestEdit(submissionId: string, feedback: string) {
 
   if (error) return { error: error.message }
 
-  await supabase.from('audit_log').insert({
+  await adminClient.from('audit_log').insert({
     actor_id: user.id,
     action: 'request_edit_submission',
     entity_type: 'submissions',
@@ -216,9 +234,13 @@ export async function requestEdit(submissionId: string, feedback: string) {
     metadata: { feedback },
   })
 
-  await sendSubmissionDecisionEmail(submissionId, 'changes_requested', feedback)
+  try {
+    await sendSubmissionDecisionEmail(submissionId, 'changes_requested', feedback)
+  } catch (e) {
+    console.error('Failed to send request-edit email:', e)
+  }
 
-  const { data: sub } = await supabase
+  const { data: sub } = await adminClient
     .from('submissions')
     .select('team_id, teams:team_id(owner_id), sponsors:sponsor_id(company_name)')
     .eq('id', submissionId).single()
@@ -241,3 +263,4 @@ export async function requestEdit(submissionId: string, feedback: string) {
 
   return { success: true }
 }
+

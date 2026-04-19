@@ -72,7 +72,7 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
         status === 'approved' ? Math.round(fundingAmount * 100) : undefined
       )
 
-      if (result.success) {
+      if ('ok' in result && result.ok) {
         toast.success(`Submission ${status} successfully.`)
         router.push('/sponsor/dashboard')
       } else {

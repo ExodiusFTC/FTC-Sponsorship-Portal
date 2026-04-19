@@ -1,29 +1,35 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { createInAppNotification, sendCoachVerificationEmail } from '@/lib/notify'
+import { getClientIp, validateRateLimit, requireAdmin } from '@/lib/actions-utils'
+import { z } from 'zod'
 
-async function requireAdmin() {
-  const authClient = await createClient()
-  const { data: { user } } = await authClient.auth.getUser()
-  if (!user) return { error: 'Unauthorized' as const }
+const verifyCoachSchema = z.object({
+  coachId: z.string().uuid(),
+  verified: z.boolean(),
+})
 
-  const { data: profile } = await authClient
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') return { error: 'Forbidden' as const }
-  return { user, adminClient: createAdminClient() }
-}
+const applicationActionSchema = z.object({
+  applicationId: z.string().uuid(),
+})
 
 export async function verifyCoach(coachId: string, verified: boolean) {
-  const ctx = await requireAdmin()
-  if ('error' in ctx) return { error: ctx.error }
-  const { user, adminClient } = ctx
+  const parsed = verifyCoachSchema.safeParse({ coachId, verified })
+  if (!parsed.success) return { error: 'Invalid data' }
+
+  let user, adminClient
+  try {
+    const auth = await requireAdmin()
+    user = auth.user
+    adminClient = auth.adminClient
+  } catch (e: any) {
+    return { error: e.message }
+  }
+
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`admin_verify_coach_${user.id}_${ip}`)
+  if ('error' in limit) return limit
 
   const { error } = await adminClient
     .from('profiles')
@@ -67,9 +73,21 @@ export async function verifyCoach(coachId: string, verified: boolean) {
 }
 
 export async function approveSponsorApplication(applicationId: string) {
-  const ctx = await requireAdmin()
-  if ('error' in ctx) return { error: ctx.error }
-  const { user, adminClient } = ctx
+  const parsed = applicationActionSchema.safeParse({ applicationId })
+  if (!parsed.success) return { error: 'Invalid application ID' }
+
+  let user, adminClient
+  try {
+    const auth = await requireAdmin()
+    user = auth.user
+    adminClient = auth.adminClient
+  } catch (e: any) {
+    return { error: e.message }
+  }
+
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`admin_approve_app_${user.id}_${ip}`)
+  if ('error' in limit) return limit
 
   const { data: app, error: fetchError } = await adminClient
     .from('sponsor_applications')
@@ -111,9 +129,21 @@ export async function approveSponsorApplication(applicationId: string) {
 }
 
 export async function rejectSponsorApplication(applicationId: string) {
-  const ctx = await requireAdmin()
-  if ('error' in ctx) return { error: ctx.error }
-  const { user, adminClient } = ctx
+  const parsed = applicationActionSchema.safeParse({ applicationId })
+  if (!parsed.success) return { error: 'Invalid application ID' }
+
+  let user, adminClient
+  try {
+    const auth = await requireAdmin()
+    user = auth.user
+    adminClient = auth.adminClient
+  } catch (e: any) {
+    return { error: e.message }
+  }
+
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`admin_reject_app_${user.id}_${ip}`)
+  if ('error' in limit) return limit
 
   const { error } = await adminClient
     .from('sponsor_applications')
@@ -132,3 +162,4 @@ export async function rejectSponsorApplication(applicationId: string) {
   revalidatePath('/applications')
   return { success: true }
 }
+

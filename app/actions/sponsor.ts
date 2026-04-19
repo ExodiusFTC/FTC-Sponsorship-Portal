@@ -1,13 +1,11 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sponsorApplicationSchema, sponsorSchema, type SponsorApplicationInput, type SponsorInput } from '@/lib/schemas/sponsor'
 import { sendSponsorApplicationConfirmation } from '@/lib/notify'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { checkActionLimit } from '@/lib/rate-limit'
-import { headers } from 'next/headers'
+import { getClientIp, validateRateLimit, requireAdmin } from '@/lib/actions-utils'
 
 export async function submitSponsorApplication(data: SponsorApplicationInput) {
   const result = sponsorApplicationSchema.safeParse(data)
@@ -16,12 +14,9 @@ export async function submitSponsorApplication(data: SponsorApplicationInput) {
   }
 
   const { companyName, contactName, contactEmail, proposedCapCents, message } = result.data
-  const h = await headers()
-  const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-  const limit = await checkActionLimit(`sponsor_app_${contactEmail.toLowerCase()}_${ip}`)
-  if (!limit.ok) {
-    return { error: 'rate_limited', retryAfterSeconds: limit.retryAfterSeconds, limit: limit.limit }
-  }
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`sponsor_app_${contactEmail.toLowerCase()}_${ip}`)
+  if ('error' in limit) return limit
 
   // Use admin client since the user may be unauthenticated
   const supabase = createAdminClient()
@@ -40,12 +35,16 @@ export async function submitSponsorApplication(data: SponsorApplicationInput) {
     return { error: error.message }
   }
 
-  await sendSponsorApplicationConfirmation(
-    companyName,
-    contactEmail,
-    contactName ?? 'Sponsor',
-    proposedCapCents
-  )
+  try {
+    await sendSponsorApplicationConfirmation(
+      companyName,
+      contactEmail,
+      contactName ?? 'Sponsor',
+      proposedCapCents
+    )
+  } catch (e) {
+    console.error('Failed to send sponsor application confirmation email:', e)
+  }
 
   return { success: true }
 }
@@ -56,23 +55,20 @@ export async function adminCreateSponsor(data: SponsorInput) {
     return { error: 'Invalid data provided' }
   }
 
-  const supabase = createAdminClient()
-  const authClient = await createClient()
-
-  const { data: { user } } = await authClient.auth.getUser()
-  if (!user) return { error: 'Unauthorized' }
-
-  const { data: profile } = await authClient
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') {
-    return { error: 'Forbidden: Admin access required' }
+  let user, adminClient
+  try {
+    const auth = await requireAdmin()
+    user = auth.user
+    adminClient = auth.adminClient
+  } catch (e: any) {
+    return { error: e.message }
   }
 
-  const { error } = await supabase
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`admin_create_sponsor_${user.id}_${ip}`)
+  if ('error' in limit) return limit
+
+  const { error } = await adminClient
     .from('sponsors')
     .insert({
       company_name: result.data.companyName,
@@ -91,7 +87,7 @@ export async function adminCreateSponsor(data: SponsorInput) {
     return { error: error.message }
   }
 
-  await supabase.from('audit_log').insert({
+  await adminClient.from('audit_log').insert({
     actor_id: user.id,
     action: 'create_sponsor',
     entity_type: 'sponsors',
@@ -108,24 +104,20 @@ export async function adminUpdateSponsor(id: string, data: SponsorInput) {
     return { error: 'Invalid data provided' }
   }
 
-  const supabase = createAdminClient()
-  const authClient = await createClient()
-
-  // Verify the acting user is an admin
-  const { data: { user } } = await authClient.auth.getUser()
-  if (!user) return { error: 'Unauthorized' }
-
-  const { data: profile } = await authClient
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') {
-    return { error: 'Forbidden: Admin access required' }
+  let user, adminClient
+  try {
+    const auth = await requireAdmin()
+    user = auth.user
+    adminClient = auth.adminClient
+  } catch (e: any) {
+    return { error: e.message }
   }
 
-  const { error } = await supabase
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`admin_update_sponsor_${user.id}_${ip}`)
+  if ('error' in limit) return limit
+
+  const { error } = await adminClient
     .from('sponsors')
     .update({
       company_name: result.data.companyName,
@@ -145,7 +137,7 @@ export async function adminUpdateSponsor(id: string, data: SponsorInput) {
   }
 
   // Write to audit log
-  await supabase.from('audit_log').insert({
+  await adminClient.from('audit_log').insert({
     actor_id: user.id,
     action: 'update_sponsor',
     entity_type: 'sponsors',
@@ -163,24 +155,21 @@ export async function deleteSponsor(id: string): Promise<{ success?: true; error
   const parsed = deleteSponsorSchema.safeParse({ id })
   if (!parsed.success) return { error: 'Invalid sponsor id' }
 
-  const authClient = await createClient()
-  const { data: { user } } = await authClient.auth.getUser()
-  if (!user) return { error: 'Unauthorized' }
-
-  const { data: profile } = await authClient
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') {
-    return { error: 'Forbidden: Admin access required' }
+  let user, adminClient
+  try {
+    const auth = await requireAdmin()
+    user = auth.user
+    adminClient = auth.adminClient
+  } catch (e: any) {
+    return { error: e.message }
   }
 
-  const supabase = createAdminClient()
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`admin_delete_sponsor_${user.id}_${ip}`)
+  if ('error' in limit) return limit
 
   // Snapshot for audit metadata before delete.
-  const { data: snapshot } = await supabase
+  const { data: snapshot } = await adminClient
     .from('sponsors')
     .select('*')
     .eq('id', parsed.data.id)
@@ -188,10 +177,10 @@ export async function deleteSponsor(id: string): Promise<{ success?: true; error
 
   if (!snapshot) return { error: 'Sponsor not found' }
 
-  const { error } = await supabase.from('sponsors').delete().eq('id', parsed.data.id)
+  const { error } = await adminClient.from('sponsors').delete().eq('id', parsed.data.id)
   if (error) return { error: error.message }
 
-  await supabase.from('audit_log').insert({
+  await adminClient.from('audit_log').insert({
     actor_id: user.id,
     action: 'delete_sponsor',
     entity_type: 'sponsors',
@@ -206,27 +195,27 @@ export async function deleteSponsor(id: string): Promise<{ success?: true; error
 
 /** Lightweight toggle — only updates status, no full schema validation required. */
 export async function adminToggleSponsorStatus(id: string, newStatus: 'active' | 'inactive') {
-  const authClient = await createClient()
-  const { data: { user } } = await authClient.auth.getUser()
-  if (!user) return { error: 'Unauthorized' }
+  let user, adminClient
+  try {
+    const auth = await requireAdmin()
+    user = auth.user
+    adminClient = auth.adminClient
+  } catch (e: any) {
+    return { error: e.message }
+  }
 
-  const { data: profile } = await authClient
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`admin_toggle_sponsor_${user.id}_${ip}`)
+  if ('error' in limit) return limit
 
-  if (profile?.role !== 'admin') return { error: 'Forbidden' }
-
-  const supabase = createAdminClient()
-  const { error } = await supabase
+  const { error } = await adminClient
     .from('sponsors')
     .update({ status: newStatus })
     .eq('id', id)
 
   if (error) return { error: error.message }
 
-  await supabase.from('audit_log').insert({
+  await adminClient.from('audit_log').insert({
     actor_id: user.id,
     action: 'toggle_sponsor_status',
     entity_type: 'sponsors',
@@ -237,3 +226,4 @@ export async function adminToggleSponsorStatus(id: string, newStatus: 'active' |
   revalidatePath('/sponsors')
   return { success: true }
 }
+

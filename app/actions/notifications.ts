@@ -1,12 +1,17 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { requireAuth } from '@/lib/actions-utils'
 
 export async function markNotificationRead(id: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Unauthorized' }
+  let user, supabase
+  try {
+    const auth = await requireAuth()
+    user = auth.user
+    supabase = auth.supabase
+  } catch {
+    return { error: 'Unauthorized' }
+  }
 
   const { error } = await supabase.from('notifications')
     .update({ read_at: new Date().toISOString() } as never)
@@ -20,3 +25,4 @@ export async function markNotificationRead(id: string) {
   revalidatePath('/sponsor/inbox')
   return { success: true }
 }
+
