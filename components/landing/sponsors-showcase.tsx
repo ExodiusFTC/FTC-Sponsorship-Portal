@@ -75,9 +75,9 @@ export function SponsorsShowcase() {
         </div>
       </FadeUp>
 
-      <div className="mx-auto max-w-7xl px-6 flex flex-col gap-8">
+      <div className="mx-auto max-w-[1600px] px-6 lg:px-12 flex flex-col gap-8">
         {/* Row 1: Rotating Left */}
-        <div className="relative flex overflow-hidden" style={{ maskImage: 'linear-gradient(to right, transparent, black 15%, black 85%, transparent)' }}>
+        <div className="relative flex overflow-hidden" style={{ maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }}>
           <div className="flex animate-marquee-left whitespace-nowrap">
             {[...SPONSORS_ROW_1, ...SPONSORS_ROW_1, ...SPONSORS_ROW_1].map((s, i) => (
               <SponsorCard key={`r1-${i}`} sponsor={s} />
@@ -86,7 +86,7 @@ export function SponsorsShowcase() {
         </div>
 
         {/* Row 2: Rotating Right */}
-        <div className="relative flex overflow-hidden" style={{ maskImage: 'linear-gradient(to right, transparent, black 15%, black 85%, transparent)' }}>
+        <div className="relative flex overflow-hidden" style={{ maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }}>
           <div className="flex animate-marquee-right whitespace-nowrap">
             {[...SPONSORS_ROW_2, ...SPONSORS_ROW_2, ...SPONSORS_ROW_2].map((s, i) => (
               <SponsorCard key={`r2-${i}`} sponsor={s} />
@@ -95,7 +95,7 @@ export function SponsorsShowcase() {
         </div>
 
         {/* Row 3: Rotating Left */}
-        <div className="relative flex overflow-hidden" style={{ maskImage: 'linear-gradient(to right, transparent, black 15%, black 85%, transparent)' }}>
+        <div className="relative flex overflow-hidden" style={{ maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)' }}>
           <div className="flex animate-marquee-left whitespace-nowrap">
             {[...SPONSORS_ROW_3, ...SPONSORS_ROW_3, ...SPONSORS_ROW_3].map((s, i) => (
               <SponsorCard key={`r3-${i}`} sponsor={s} />

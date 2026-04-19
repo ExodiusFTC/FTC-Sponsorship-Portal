@@ -22,7 +22,7 @@ export function ProductShowcase({
   flipped?: boolean
 }) {
   return (
-    <section className="mx-auto max-w-6xl px-6 py-24">
+    <section className="mx-auto max-w-[1440px] px-6 py-24">
       <div className={cn('grid gap-12 lg:grid-cols-2 lg:gap-16 items-center', flipped && 'lg:[&>*:first-child]:order-2')}>
         <FadeUp>
           {eyebrow && <p className="text-xs font-mono uppercase tracking-[0.15em] text-indigo-300/70">{eyebrow}</p>}

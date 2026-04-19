@@ -40,7 +40,7 @@ export function TopNav() {
           : 'bg-transparent border-b border-transparent'
       )}
     >
-      <div className="mx-auto max-w-6xl px-5 h-14 flex items-center justify-between">
+      <div className="mx-auto max-w-[1440px] px-6 lg:px-10 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 group">
           <svg
             width="18"

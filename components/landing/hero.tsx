@@ -42,7 +42,7 @@ export function Hero() {
   }, [])
 
   return (
-    <section className="relative pt-28 pb-20 lg:pt-32 lg:pb-28 overflow-hidden">
+    <section className="relative pt-28 pb-20 lg:pt-32 lg:pb-28 min-h-[min(800px,85vh)] flex items-center overflow-hidden">
       {/* dot-grid backdrop */}
       <div
         aria-hidden
@@ -59,8 +59,8 @@ export function Hero() {
       {/* secondary glow on globe side */}
       <div aria-hidden className="absolute right-0 top-10 -z-10 h-[480px] w-[480px] rounded-full bg-indigo-500/8 blur-3xl" />
 
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-8 lg:gap-12">
+      <div className="mx-auto max-w-[1600px] px-6 lg:px-12 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-12 lg:gap-16 xl:gap-24">
           {/* ── Left: Text content ──────────────────────────────────────── */}
           <div className="text-center lg:text-left">
             {/* season pill */}

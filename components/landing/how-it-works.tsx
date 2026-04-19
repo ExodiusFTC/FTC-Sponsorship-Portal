@@ -15,7 +15,7 @@ const steps = [
 export function HowItWorks() {
   const reduce = useReducedMotion()
   return (
-    <section id="how" className="mx-auto max-w-6xl px-6 py-24">
+    <section id="how" className="mx-auto max-w-[1440px] px-6 py-24">
       <FadeUp className="max-w-2xl">
         <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
           Four steps between your team and a signed check.

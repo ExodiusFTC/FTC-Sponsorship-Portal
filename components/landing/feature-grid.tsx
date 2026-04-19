@@ -39,7 +39,7 @@ const features = [
 
 export function FeatureGrid() {
   return (
-    <section id="product" className="mx-auto max-w-6xl px-6 py-24">
+    <section id="product" className="mx-auto max-w-[1440px] px-6 py-24">
       <FadeUp className="max-w-2xl">
         <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
           Built for coaches who don&apos;t have time to send dozens of cold emails.

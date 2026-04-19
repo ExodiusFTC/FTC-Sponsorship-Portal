@@ -8,7 +8,7 @@ type IconKey = keyof typeof ICON_MAP
 export function LandingFooter() {
   return (
     <footer className="border-t border-border mt-12">
-      <div className="mx-auto max-w-6xl px-6 py-14">
+      <div className="mx-auto max-w-[1440px] px-6 py-14">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
           {/* brand column */}
           <div className="lg:col-span-2">
