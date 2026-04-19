@@ -11,52 +11,109 @@ interface RotatingEarthProps {
 
 // [lng, lat] format
 const HUB_LOCATIONS: [number, number][] = [
-  [-122.3748, 37.6189],   // SFO (San Francisco)
+  // North America
   [-73.7781, 40.6413],   // JFK (New York)
+  [-122.3748, 37.6189],  // SFO (San Francisco)
+  [-99.0721, 19.4361],   // MEX (Mexico City)
+  [-87.9073, 41.9742],   // ORD (Chicago)
+  [-79.6248, 43.6777],   // YYZ (Toronto)
+  [-123.1848, 49.1967],  // YVR (Vancouver)
+  [-104.6737, 39.8561],  // DEN (Denver)
+  [-97.2397, 49.9100],   // YWG (Winnipeg)
+  [-51.6789, 64.1909],   // GOH (Nuuk, Greenland)
+  // South America
+  [-46.4731, -23.4356],  // GRU (Sao Paulo)
+  [-58.5350, -34.8222],  // EZE (Buenos Aires)
+  [-77.1120, -12.0219],  // LIM (Lima)
+  [-74.1447, 4.7016],    // BOG (Bogota)
+  [-70.7944, -33.3930],  // SCL (Santiago)
+  // Europe
   [-0.4543, 51.4700],    // LHR (London)
+  [2.5479, 49.0097],     // CDG (Paris)
+  [13.5033, 52.3667],    // BER (Berlin)
+  [-3.5672, 40.4839],    // MAD (Madrid)
+  [12.2389, 41.8003],    // FCO (Rome)
+  [28.7444, 41.2751],    // IST (Istanbul)
+  // Asia
   [139.7798, 35.5494],   // HND (Tokyo)
+  [103.9915, 1.3644],    // SIN (Singapore)
+  [55.3644, 25.2532],    // DXB (Dubai)
+  [72.8656, 19.0887],    // BOM (Mumbai)
+  [114.1674, 22.3193],   // HKG (Hong Kong)
+  [126.4407, 37.4602],   // ICN (Seoul)
+  [100.7501, 13.6895],   // BKK (Bangkok)
+  [116.5847, 40.0799],   // PEK (Beijing)
+  [77.1025, 28.5562],    // DEL (New Delhi)
+  [132.1480, 43.3990],   // VVO (Vladivostok)
+  [103.9470, 30.5785],   // CTU (Chengdu)
+  // Africa
+  [31.4117, 30.1219],    // CAI (Cairo)
+  [28.2460, -26.1367],   // JNB (Johannesburg)
+  [38.7993, 8.9773],     // ADD (Addis Ababa)
+  [36.9257, -1.3191],    // NBO (Nairobi)
+  [3.3214, 6.5774],      // LOS (Lagos)
+  [-7.5898, 33.3675],    // CMN (Casablanca)
+  // Oceania
   [151.1772, -33.9399],  // SYD (Sydney)
   [144.8433, -37.6690],  // MEL (Melbourne)
-  [103.9915, 1.3644],    // SIN (Singapore)
-  [2.5479, 49.0097],     // CDG (Paris)
-  [113.9261, 22.3089],   // HKG (Hong Kong)
-  [30.1444, 31.2357],    // CAI (Cairo)
-  [-58.5350, -34.8222],  // EZE (Buenos Aires)
-  [-118.4085, 33.9416],  // LAX (Los Angeles)
-  [55.3644, 25.2532],    // DXB (Dubai)
-  [37.4119, 55.9726],    // SVO (Moscow)
-  [116.5847, 40.0799],   // PEK (Beijing)
-  [-99.0721, 19.4361],   // MEX (Mexico City)
-  [28.2460, -26.1367],   // JNB (Johannesburg)
-  [-46.4731, -23.4356],  // GRU (Sao Paulo)
-  [126.4407, 37.4602],   // ICN (Seoul)
-  [12.4828, 41.8919],    // FCO (Rome)
-  [-123.1848, 49.1967],  // YVR (Vancouver)
-  [15.2847, -4.2634],    // BZV (Brazzaville)
-  [100.7501, 13.6895],   // BKK (Bangkok)
-  [72.8656, 19.0887],    // BOM (Mumbai)
-  [121.2330, 25.0797],   // TPE (Taipei)
-  [-77.0369, 38.9072],   // IAD (DC)
-  [-43.2494, -22.8132],  // GIG (Rio)
-  [18.6021, -33.9715],   // CPT (Cape Town)
-  [34.8854, 32.0055],    // TLV (Tel Aviv)
-  [24.9458, 60.1733],    // HEL (Helsinki)
+  [174.7917, -37.0081],  // AKL (Auckland)
+  [115.9669, -31.9403],  // PER (Perth)
 ]
 
 const REALISTIC_ROUTES: [number, number][][] = [
-  [[-122.3748, 37.6189], [144.8433, -37.6690]], // SFO -> MEL
   [[-73.7781, 40.6413], [-0.4543, 51.4700]],   // JFK -> LHR
-  [[-122.3748, 37.6189], [139.7798, 35.5494]], // SFO -> HND
-  [[-0.4543, 51.4700], [103.9915, 1.3644]],    // LHR -> SIN
-  [[151.1772, -33.9399], [144.8433, -37.6690]],// SYD -> MEL
-  [[2.5479, 49.0097], [55.3644, 25.2532]],     // CDG -> DXB
-  [[-118.4085, 33.9416], [151.1772, -33.9399]],// LAX -> SYD
-  [[-73.7781, 40.6413], [2.5479, 49.0097]],    // JFK -> CDG
+  [[-46.4731, -23.4356], [2.5479, 49.0097]],   // GRU -> CDG
+  [[-7.5898, 33.3675], [-73.7781, 40.6413]],   // CMN -> JFK
+  [[-3.5672, 40.4839], [-99.0721, 19.4361]],   // MAD -> MEX
+  [[-70.7944, -33.3930], [-3.5672, 40.4839]],  // SCL -> MAD
+  [[-73.7781, 40.6413], [-46.4731, -23.4356]], // JFK -> GRU
+  [[-122.3748, 37.6189], [-99.0721, 19.4361]], // SFO -> MEX
+  [[-79.6248, 43.6777], [-74.1447, 4.7016]],   // YYZ -> BOG
+  [[-74.1447, 4.7016], [-77.1120, -12.0219]],  // BOG -> LIM
+  [[-77.1120, -12.0219], [-70.7944, -33.3930]],// LIM -> SCL
+  [[-58.5350, -34.8222], [-46.4731, -23.4356]],// EZE -> GRU
+  [[-0.4543, 51.4700], [28.2460, -26.1367]],   // LHR -> JNB
+  [[2.5479, 49.0097], [3.3214, 6.5774]],       // CDG -> LOS
+  [[31.4117, 30.1219], [55.3644, 25.2532]],    // CAI -> DXB
+  [[38.7993, 8.9773], [72.8656, 19.0887]],     // ADD -> BOM
+  [[36.9257, -1.3191], [38.7993, 8.9773]],     // NBO -> ADD
+  [[12.2389, 41.8003], [31.4117, 30.1219]],    // FCO -> CAI
+  [[103.9915, 1.3644], [151.1772, -33.9399]],  // SIN -> SYD
+  [[115.9669, -31.9403], [55.3644, 25.2532]],  // PER -> DXB
+  [[151.1772, -33.9399], [174.7917, -37.0081]],// SYD -> AKL
+  [[144.8433, -37.6690], [151.1772, -33.9399]],// MEL -> SYD
+  [[28.2460, -26.1367], [103.9915, 1.3644]],   // JNB -> SIN
+  [[55.3644, 25.2532], [-0.4543, 51.4700]],    // DXB -> LHR
+  [[55.3644, 25.2532], [139.7798, 35.5494]],   // DXB -> HND
   [[116.5847, 40.0799], [139.7798, 35.5494]],  // PEK -> HND
-  [[55.3644, 25.2532], [72.8656, 19.0887]],    // DXB -> BOM
-  [[-46.4731, -23.4356], [-58.5350, -34.8222]],// GRU -> EZE
-  [[-123.1848, 49.1967], [139.7798, 35.5494]], // YVR -> HND
+  [[116.5847, 40.0799], [-0.4543, 51.4700]],   // PEK -> LHR
+  [[77.1025, 28.5562], [55.3644, 25.2532]],    // DEL -> DXB
+  [[77.1025, 28.5562], [72.8656, 19.0887]],    // DEL -> BOM
+  [[132.1480, 43.3990], [139.7798, 35.5494]],  // VVO -> HND
+  [[132.1480, 43.3990], [116.5847, 40.0799]],  // VVO -> PEK
+  [[103.9470, 30.5785], [116.5847, 40.0799]],  // CTU -> PEK
+  [[103.9470, 30.5785], [114.1674, 22.3193]],  // CTU -> HKG
+  [[103.9470, 30.5785], [100.7501, 13.6895]],  // CTU -> BKK
+  [[139.7798, 35.5494], [126.4407, 37.4602]],  // HND -> ICN
+  [[103.9915, 1.3644], [114.1674, 22.3193]],   // SIN -> HKG
+  [[100.7501, 13.6895], [103.9915, 1.3644]],   // BKK -> SIN
+  [[72.8656, 19.0887], [103.9915, 1.3644]],    // BOM -> SIN
+  [[28.7444, 41.2751], [13.5033, 52.3667]],    // IST -> BER
+  [[126.4407, 37.4602], [28.7444, 41.2751]],   // ICN -> IST
+  [[-122.3748, 37.6189], [139.7798, 35.5494]], // SFO -> HND
+  [[-123.1848, 49.1967], [114.1674, 22.3193]], // YVR -> HKG
+  [[151.1772, -33.9399], [139.7798, 35.5494]], // SYD -> HND
+  [[-87.9073, 41.9742], [-73.7781, 40.6413]],  // ORD -> JFK
+  [[-122.3748, 37.6189], [-104.6737, 39.8561]], // SFO -> DEN
+  [[-104.6737, 39.8561], [-87.9073, 41.9742]],  // DEN -> ORD
+  [[-104.6737, 39.8561], [-99.0721, 19.4361]],  // DEN -> MEX
+  [[-97.2397, 49.9100], [-51.6789, 64.1909]],   // YWG -> GOH
+  [[-97.2397, 49.9100], [-87.9073, 41.9742]],   // YWG -> ORD
+  [[-51.6789, 64.1909], [-0.4543, 51.4700]],    // GOH -> LHR
+  [[-122.3748, 37.6189], [-87.9073, 41.9742]], // SFO -> ORD
+  [[13.5033, 52.3667], [-0.4543, 51.4700]],    // BER -> LHR
 ]
+
 
 const pointInPolygon = (point: [number, number], polygon: number[][]): boolean => {
   const [x, y] = point
@@ -267,7 +324,7 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
 
         const conns: [number, number][][] = []
         
-        // 1. Add explicitly realistic routes first
+        // Use curated realistic routes
         REALISTIC_ROUTES.forEach(([from, to]) => {
           const interpolator = d3.geoInterpolate(from, to)
           const segments: [number, number][] = []
@@ -278,45 +335,8 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
           conns.push(segments)
         })
 
-        // 2. GUARANTEE COVERAGE: Ensure every hub has at least one connection
-        const connectedHubs = new Set<string>()
-        REALISTIC_ROUTES.forEach(([from, to]) => {
-          connectedHubs.add(JSON.stringify(from))
-          connectedHubs.add(JSON.stringify(to))
-        })
-
-        HUB_LOCATIONS.forEach((hub) => {
-          if (!connectedHubs.has(JSON.stringify(hub))) {
-            // Connect this isolated hub to a random other hub
-            let to = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
-            while (JSON.stringify(to) === JSON.stringify(hub)) to = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
-            
-            const interpolator = d3.geoInterpolate(hub, to)
-            const segments: [number, number][] = []
-            const numSegments = 15
-            for (let s = 0; s <= numSegments; s++) {
-              segments.push(interpolator(s / numSegments))
-            }
-            conns.push(segments)
-            connectedHubs.add(JSON.stringify(hub))
-          }
-        })
-
-        // 3. Add some additional random international routes for density
-        for (let i = 0; i < 10; i++) {
-          const from = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
-          let to = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
-          while (to === from) to = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
-          
-          const interpolator = d3.geoInterpolate(from, to)
-          const segments: [number, number][] = []
-          const numSegments = 15
-          for (let s = 0; s <= numSegments; s++) {
-            segments.push(interpolator(s / numSegments))
-          }
-          conns.push(segments)
-        }
         connectionsRef.current = conns
+
 
       } catch (err) {
         setError("Failed to load land map data")
