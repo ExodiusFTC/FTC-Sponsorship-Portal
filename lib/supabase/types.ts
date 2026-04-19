@@ -8,7 +8,7 @@ export type SponsorStatus = 'active' | 'inactive' | 'pending_review'
 export type SponsorSource = 'admin_added' | 'public_optin'
 export type ApplicationStatus = 'pending' | 'approved' | 'rejected'
 export type TaxStatus = '501c3' | 'School' | 'None'
-export type SubmissionStatus = 'draft' | 'pending' | 'approved' | 'declined' | 'changes_requested' | 'opened' | 'bounced' | 'delivered'
+export type SubmissionStatus = 'draft' | 'pending' | 'approved' | 'declined' | 'changes_requested' | 'opened' | 'bounced' | 'delivered' | 'expired'
 
 // ---------------------------------------------------------------------------
 // Line item type for teams.budget_items JSONB
@@ -527,6 +527,16 @@ export type Database = {
           p_token_hash: string
           p_decision: string
           p_partial_amount_cents: number
+        }
+        Returns: Json
+      }
+      sponsor_decide_submission_atomic: {
+        Args: {
+          p_submission_id: string
+          p_sponsor_user_id: string
+          p_decision: string
+          p_feedback?: string
+          p_amount_cents?: number
         }
         Returns: Json
       }

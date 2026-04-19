@@ -1,13 +1,11 @@
 'use client'
 
 import { useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { CheckCircle2, XCircle, AlertCircle, Calendar } from 'lucide-react'
 import { markNotificationRead } from '@/app/actions/notifications'
 import type { Notification } from '@/lib/supabase/types'
 
 export function InboxTab({ notifications, switchTab }: { notifications: Notification[], switchTab: (t: string) => void }) {
-  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   
   const handleRead = (id: string) => {

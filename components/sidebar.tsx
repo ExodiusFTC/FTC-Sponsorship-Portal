@@ -101,6 +101,7 @@ function NavItem({ item, isActive, badge }: { item: NavDef; isActive: boolean; b
           {item.kbd}
         </kbd>
       )}
+      {typeof badge === 'number' && badge > 0 && <Badge count={badge} />}
     </>
   )
 
@@ -283,14 +284,14 @@ export function Sidebar() {
   const { data: queueData } = useSWR<{ count: number }>(
     role === 'admin' ? '/api/admin/queue/count' : null,
     (url: string) => fetch(url).then((r) => r.json()),
-    { refreshInterval: 30000 }
+    { refreshInterval: 60000, revalidateOnFocus: false }
   )
   const queueCount = queueData?.count ?? 0
 
   const { data: inboxData } = useSWR<{ count: number }>(
     role === 'coach' ? '/api/coach/notifications/unread' : null,
     (url: string) => fetch(url).then((r) => r.json()),
-    { refreshInterval: 30000 }
+    { refreshInterval: 60000, revalidateOnFocus: false }
   )
   const coachUnreadCount = inboxData?.count ?? 0
 

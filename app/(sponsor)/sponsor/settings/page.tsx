@@ -23,9 +23,9 @@ export default async function SponsorSettingsPage() {
       </div>
 
       <AccountSettings 
-        currentName={profile?.full_name} 
-        email={profile?.email} 
-        role={profile?.role} 
+        currentName={profile?.full_name ?? ''} 
+        email={profile?.email ?? ''} 
+        role={profile?.role ?? 'sponsor'} 
       />
 
       <Card className="opacity-50 pointer-events-none">

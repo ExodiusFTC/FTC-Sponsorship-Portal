@@ -8,21 +8,6 @@ interface Props {
   params: Promise<{ token: string }>
 }
 
-interface AccessTokenRow {
-  id: string
-  expires_at: string
-  used_at: string | null
-  submissions: {
-    id: string
-    sponsor_id: string
-    team_id: string
-    custom_pitch_alignment: string | null
-    specific_needs_statement: string | null
-    teams: Record<string, unknown>
-    sponsors: Record<string, unknown>
-  }
-}
-
 function taxBadge(status: string): { label: string; className: string } | null {
   if (status === '501c3') return { label: '✓ IRS 501(c)(3) Tax-Exempt', className: 'bg-[var(--badge-success-bg)] text-[var(--badge-success-text)] border-[var(--badge-success-text)]/20' }
   if (status === 'School') return { label: '✓ Public School Program', className: 'bg-[var(--bg-elevated)] text-[var(--text-primary)] border-[var(--border-default)]' }
@@ -31,7 +16,7 @@ function taxBadge(status: string): { label: string; className: string } | null {
 
 export default async function SponsorViewPage({ params }: Props) {
   const { token } = await params
-  const supabase = createAdminClient() as unknown as any
+  const supabase = createAdminClient()
 
   const ip = (await import('next/headers')).headers().then(h => h.get('x-forwarded-for') ?? 'anonymous')
   const { checkActionLimit } = await import('@/lib/rate-limit')
@@ -67,7 +52,6 @@ export default async function SponsorViewPage({ params }: Props) {
   const submission = row.submissions
   type TeamData = Record<string, string | number | null | string[] | unknown[]>
   const team = submission.teams as TeamData
-  const sponsor = submission.sponsors as TeamData
   const budgetItems = (team.budget_items as { label: string; qty: number; unit_cost_cents: number; total_cents: number }[]) ?? []
   const totalAsk = (team.financial_ask_cents as number) ?? 0
   const mediaUrls = (team.media_urls as string[]) ?? []
@@ -186,7 +170,6 @@ export default async function SponsorViewPage({ params }: Props) {
           <SponsorDecisionPanel
             token={token}
             totalAskCents={totalAsk}
-            sponsorName={String(sponsor.company_name ?? '')}
             teamName={String(team.team_name ?? '')}
           />
         )}

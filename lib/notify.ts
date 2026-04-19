@@ -10,6 +10,27 @@ import { env } from '@/lib/env'
 
 const resend = new Resend(env.RESEND_API_KEY)
 
+async function getAdminNotificationRecipients() {
+  const configured = env.ADMIN_NOTIFICATION_EMAILS
+    ?.split(',')
+    .map((email) => email.trim())
+    .filter(Boolean)
+
+  if (configured && configured.length > 0) {
+    return configured
+  }
+
+  const supabase = createAdminClient()
+  const { data: admins } = await supabase
+    .from('profiles')
+    .select('email')
+    .eq('role', 'admin')
+
+  return (admins || [])
+    .map((a) => a.email)
+    .filter((email): email is string => Boolean(email))
+}
+
 /** Email the coach when their submission receives a moderation decision. */
 export async function sendSubmissionDecisionEmail(
   submissionId: string,
@@ -26,8 +47,10 @@ export async function sendSubmissionDecisionEmail(
 
     if (!submission) return
 
-    const coachEmail: string = (submission.teams as any)?.profiles?.email
-    const coachName: string = (submission.teams as any)?.profiles?.full_name ?? 'Coach'
+    const team = submission.teams as { profiles?: { email?: string; full_name?: string } } | null
+    const sponsor = submission.sponsors as { company_name?: string } | null
+    const coachEmail = team?.profiles?.email
+    const coachName = team?.profiles?.full_name ?? 'Coach'
 
     const config = {
       approved: 'Your submission has been approved 🎉',
@@ -35,12 +58,14 @@ export async function sendSubmissionDecisionEmail(
       changes_requested: 'Changes requested on your submission',
     }
 
+    if (!coachEmail) return
+
     await resend.emails.send({
       from: env.RESEND_FROM_EMAIL,
       to: coachEmail,
       subject: config[decision],
       react: SubmissionDecisionEmail({
-        submissionTitle: `Submission to ${(submission.sponsors as any)?.company_name}`,
+        submissionTitle: `Submission to ${sponsor?.company_name ?? 'Sponsor'}`,
         coachName,
         decision,
         feedback,
@@ -53,15 +78,17 @@ export async function sendSubmissionDecisionEmail(
 
 /** Alert admins when a new coach has uploaded their credentials. */
 export async function sendCredentialUploadAlert(
-  coachId: string,
+  _coachId: string,
   coachName: string,
   coachEmail: string
 ) {
   try {
-    // We send this to our own from address or a configured admin list
+    const recipients = await getAdminNotificationRecipients()
+    if (recipients.length === 0) return
+
     await resend.emails.send({
       from: env.RESEND_FROM_EMAIL,
-      to: env.RESEND_FROM_EMAIL, 
+      to: recipients,
       subject: `Action Required: New Coach Credentials (${coachName})`,
       react: CredentialUploadAlert({
         coachName,
@@ -110,7 +137,6 @@ export async function sendHandshakeEmail(submissionId: string, amountCents: numb
       resend.emails.send({
         from: env.RESEND_FROM_EMAIL,
         to: coachProfile.email,
-        replyTo: sponsor.contact_email as string,
         subject: `Match Made! ${sponsor.company_name} will sponsor your team for $${(amountCents / 100).toFixed(2)}`,
         react: HandshakeEmail({ ...shared, recipientName: coachProfile.full_name ?? 'Coach', isSponsor: false }),
         headers: {
@@ -121,7 +147,6 @@ export async function sendHandshakeEmail(submissionId: string, amountCents: numb
       resend.emails.send({
         from: env.RESEND_FROM_EMAIL,
         to: sponsor.contact_email as string,
-        replyTo: coachProfile.email,
         subject: `Match Made! You're sponsoring ${team.team_name} for $${(amountCents / 100).toFixed(2)}`,
         react: HandshakeEmail({ ...shared, recipientName: sponsor.contact_name as string ?? 'Sponsor', isSponsor: true }),
         headers: {

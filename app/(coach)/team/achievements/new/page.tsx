@@ -14,7 +14,9 @@ export default async function NewAchievementPage() {
     .from('teams')
     .select('id, team_name')
     .eq('owner_id', user.id)
-    .single()
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
   if (!team) redirect('/onboarding')
 

@@ -10,7 +10,17 @@ const updateProfileSchema = z.object({
 })
 
 const updatePasswordSchema = z.object({
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z
+    .string()
+    .min(12, 'Password must be at least 12 characters')
+    .regex(/[A-Z]/, 'Password must include at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must include at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must include at least one number'),
+})
+
+const deleteAccountSchema = z.object({
+  confirmEmail: z.string().trim().toLowerCase().email('Enter a valid email address'),
+  currentPassword: z.string().min(1, 'Current password is required'),
 })
 
 export async function updateProfile(data: { fullName: string }) {
@@ -51,10 +61,29 @@ export async function updatePassword(data: { password: string }) {
   return { success: true }
 }
 
-export async function deleteAccount() {
+export async function deleteAccount(data: { confirmEmail: string; currentPassword: string }) {
+  const parsed = deleteAccountSchema.safeParse(data)
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid account deletion request' }
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated' }
+
+  const userEmail = (user.email ?? '').toLowerCase()
+  if (!userEmail || parsed.data.confirmEmail !== userEmail) {
+    return { error: 'Confirmation email does not match your account email.' }
+  }
+
+  // Re-authenticate before destructive account deletion.
+  const { error: reauthError } = await supabase.auth.signInWithPassword({
+    email: userEmail,
+    password: parsed.data.currentPassword,
+  })
+  if (reauthError) {
+    return { error: 'Re-authentication failed. Check your current password and try again.' }
+  }
 
   const adminClient = createAdminClient()
 

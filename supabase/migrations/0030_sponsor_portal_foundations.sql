@@ -56,10 +56,34 @@ CREATE POLICY "sponsors_select_own" ON sponsors FOR SELECT
             WHERE profiles.id = auth.uid()
             AND profiles.role = 'sponsor'
             AND profiles.sponsor_id = sponsors.id
+        )
+    );
+
 -- 5. Helper function to atomically increment sponsor funding
 CREATE OR REPLACE FUNCTION increment_sponsor_funding(sponsor_uuid uuid, amount bigint)
 RETURNS void AS $$
+DECLARE
+    v_used bigint;
+    v_cap bigint;
 BEGIN
+    IF amount <= 0 THEN
+        RAISE EXCEPTION 'amount must be positive';
+    END IF;
+
+    SELECT funding_used_cents, funding_cap_cents
+    INTO v_used, v_cap
+    FROM sponsors
+    WHERE id = sponsor_uuid
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'sponsor not found';
+    END IF;
+
+    IF v_used + amount > v_cap THEN
+        RAISE EXCEPTION 'insufficient sponsor capacity';
+    END IF;
+
     UPDATE sponsors
     SET funding_used_cents = funding_used_cents + amount
     WHERE id = sponsor_uuid;

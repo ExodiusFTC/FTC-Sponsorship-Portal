@@ -28,6 +28,18 @@ export default async function OnboardingPage() {
     redirect('/login')
   }
 
+  const { data: existingTeam } = await supabase
+    .from('teams')
+    .select('id')
+    .eq('owner_id', user.id)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (existingTeam?.id) {
+    redirect('/dashboard')
+  }
+
   return (
     <div className="container mx-auto py-12">
       <OnboardingForm isVerified={profile.coach_verified || false} />

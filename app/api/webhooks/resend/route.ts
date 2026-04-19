@@ -42,32 +42,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing email_id' }, { status: 400 })
     }
 
-    let statusToSet = null
-    switch (type) {
-      case 'email.opened':
-        statusToSet = 'opened'
-        break
-      case 'email.bounced':
-        statusToSet = 'bounced'
-        break
-      case 'email.delivered':
-        // We set 'sent' immediately when calling the API, so we can ignore or update if needed
-        break
-      default:
-        // Ignore other events
-        break
-    }
+    const { data: submission } = await supabase
+      .from('submissions')
+      .select('id')
+      .eq('resend_message_id', data.email_id)
+      .maybeSingle()
 
-    if (statusToSet) {
-      const { error } = await supabase
-        .from('submissions')
-        .update({ status: statusToSet as any })
-        .eq('resend_message_id', data.email_id)
-
-      if (error) {
-        console.error('Failed to update target status', error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
-      }
+    if (submission?.id) {
+      await supabase.from('audit_log').insert({
+        actor_id: null,
+        action: `resend_webhook_${type}`,
+        entity_type: 'submissions',
+        entity_id: submission.id,
+        metadata: { resend_email_id: data.email_id },
+      })
     }
 
     return NextResponse.json({ success: true })

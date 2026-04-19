@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 interface Props {
   token: string
   totalAskCents: number
-  sponsorName: string
   teamName: string
 }
 

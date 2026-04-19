@@ -38,6 +38,12 @@ function parseEnv() {
     // Return partial object for dev — individual fields will be undefined
     return process.env as unknown as z.infer<typeof envSchema>
   }
+  if (
+    process.env.NODE_ENV === 'production' &&
+    !result.data.RESEND_FROM_EMAIL.toLowerCase().startsWith('noreply@')
+  ) {
+    throw new Error('RESEND_FROM_EMAIL must use a noreply@ address in production.')
+  }
   return result.data
 }
 

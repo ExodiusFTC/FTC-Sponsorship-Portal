@@ -7,6 +7,23 @@ import { achievementSchema, type AchievementInput } from '@/lib/schemas/achievem
 import { validateFTCTeam, type FTCTeam } from '@/lib/ftc-roster'
 import { redirect } from 'next/navigation'
 
+function parseList(value: string | string[] | null | undefined): string[] {
+  if (!value) return []
+  if (Array.isArray(value)) return value.map(v => v.trim()).filter(Boolean)
+  return value.split(',').map(v => v.trim()).filter(Boolean)
+}
+
+function normalizeBudgetItems(
+  items: TeamOnboardingInput['budgetItems'] | undefined
+): { label: string; qty: number; unit_cost_cents: number; total_cents: number }[] {
+  return (items || []).map(item => ({
+    label: item.label.trim(),
+    qty: item.qty,
+    unit_cost_cents: item.unitCostCents,
+    total_cents: item.totalCents,
+  }))
+}
+
 export async function lookupFTCTeam(
   teamNumber: number
 ): Promise<{ team: FTCTeam; error?: never } | { team?: never; error: string }> {
@@ -23,7 +40,7 @@ export async function lookupFTCTeam(
 export async function createTeam(data: TeamOnboardingInput) {
   const result = teamOnboardingSchema.safeParse(data)
   if (!result.success) {
-    return { error: 'Invalid data provided', details: result.error.format() }
+    return { error: result.error.issues[0]?.message ?? 'Invalid data provided', details: result.error.format() }
   }
 
   const supabase = await createClient()
@@ -33,111 +50,106 @@ export async function createTeam(data: TeamOnboardingInput) {
     return { error: 'Not authenticated' }
   }
 
-  const {
-    status,
-    ftcTeamNumber,
-    teamName,
-    organization,
-    city,
-    state,
-    tagline,
-    missionStatement,
-    taxStatus,
-    communityInterestText,
-    seedFundingGoalsCents,
-    technicalSummary,
-    outreachSummary,
-    mediaUrls,
-    youtubeUrl,
-    budgetItems,
-    financialAskCents,
-    drivetrain,
-    buildSystem,
-    programming,
-    cadSoftware,
-    controlSystem,
-    sensors,
-    githubLink,
-    autonomousDescription,
-    proudestMechanismName,
-    proudestMechanismProblem,
-    proudestMechanismSolution,
-    subteamBreakdown,
-    manufacturingCapabilities,
-    visualPitchItems,
-    coachPhotoUrl,
-    members,
-  } = result.data
+  const payloadData = result.data
 
-  if (status === 'existing' && ftcTeamNumber) {
-    const ftcData = await validateFTCTeam(ftcTeamNumber)
+  if (payloadData.status === 'existing' && payloadData.ftcTeamNumber) {
+    const ftcData = await validateFTCTeam(payloadData.ftcTeamNumber)
     if (!ftcData) {
-      return { error: `FTC Team #${ftcTeamNumber} could not be found in the FIRST registry.` }
+      return { error: `FTC Team #${payloadData.ftcTeamNumber} could not be found in the FIRST registry.` }
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const insertPayload: any = {
+  const normalizedBudgetItems = normalizeBudgetItems(payloadData.budgetItems)
+  const totalAsk = normalizedBudgetItems.reduce((sum, item) => sum + item.total_cents, 0)
+
+  const teamPayload = {
     owner_id: user.id,
-    status,
-    ftc_team_number: ftcTeamNumber,
-    team_name: teamName,
-    organization,
-    city,
-    state,
-    tagline: tagline ?? null,
-    mission_statement: missionStatement,
-    tax_status: taxStatus,
-    community_interest_text: communityInterestText ?? null,
-    seed_funding_goals_cents: seedFundingGoalsCents ?? 0,
-    technical_summary: technicalSummary,
-    outreach_summary: outreachSummary,
-    drivetrain: drivetrain ?? null,
-    build_system: buildSystem ?? null,
-    programming: programming ?? null,
-    media_urls: mediaUrls || [],
-    youtube_url: youtubeUrl,
-    budget_items: (budgetItems || []).map(item => ({
-      label: item.label,
-      qty: item.qty,
-      unit_cost_cents: item.unitCostCents,
-      total_cents: item.totalCents
-    })),
-    financial_ask_cents: financialAskCents ?? 0,
-    cad_software: cadSoftware ?? null,
-    control_system: controlSystem ?? null,
-    sensors: sensors ?? [],
-    github_link: githubLink ?? null,
-    autonomous_description: autonomousDescription ?? null,
-    subteam_breakdown: subteamBreakdown ?? null,
-    manufacturing_capabilities: manufacturingCapabilities ?? [],
-    visual_pitch_items: visualPitchItems ?? [],
-    proudest_mechanism_name: proudestMechanismName ?? null,
-    proudest_mechanism_problem: proudestMechanismProblem ?? null,
-    proudest_mechanism_solution: proudestMechanismSolution ?? null,
-    coach_photo_url: coachPhotoUrl ?? null,
-    team_members: members || [],
+    status: payloadData.status,
+    ftc_team_number: payloadData.ftcTeamNumber ?? null,
+    team_name: payloadData.teamName.trim(),
+    organization: payloadData.organization?.trim() || null,
+    city: payloadData.city.trim(),
+    state: payloadData.state.trim(),
+    tagline: payloadData.tagline?.trim() || null,
+    mission_statement: payloadData.missionStatement.trim(),
+    tax_status: payloadData.taxStatus,
+    community_interest_text: payloadData.communityInterestText?.trim() || null,
+    seed_funding_goals_cents: payloadData.seedFundingGoalsCents ?? 0,
+    technical_summary: payloadData.technicalSummary?.trim() || null,
+    outreach_summary: payloadData.outreachSummary?.trim() || null,
+    drivetrain: payloadData.drivetrain?.trim() || null,
+    build_system: payloadData.buildSystem?.trim() || null,
+    programming: payloadData.programming?.trim() || null,
+    media_urls: payloadData.mediaUrls || [],
+    youtube_url: payloadData.youtubeUrl || null,
+    budget_items: normalizedBudgetItems,
+    financial_ask_cents: totalAsk,
+    cad_software: payloadData.cadSoftware?.trim() || null,
+    control_system: payloadData.controlSystem?.trim() || null,
+    sensors: parseList(payloadData.sensors),
+    github_link: payloadData.githubLink?.trim() || null,
+    autonomous_description: payloadData.autonomousDescription?.trim() || null,
+    subteam_breakdown: payloadData.subteamBreakdown?.trim() || null,
+    manufacturing_capabilities: parseList(payloadData.manufacturingCapabilities),
+    visual_pitch_items: payloadData.visualPitchItems ?? [],
+    proudest_mechanism_name: payloadData.proudestMechanismName?.trim() || null,
+    proudest_mechanism_problem: payloadData.proudestMechanismProblem?.trim() || null,
+    proudest_mechanism_solution: payloadData.proudestMechanismSolution?.trim() || null,
+    coach_photo_url: payloadData.coachPhotoUrl ?? null,
+    team_members: payloadData.members || [],
   }
 
-  const { data: team, error } = await supabase
+  // Keep onboarding idempotent: one owner should map to one team profile.
+  const { data: existingTeam } = await supabase
     .from('teams')
-    .insert(insertPayload)
     .select('id')
-    .single()
+    .eq('owner_id', user.id)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
-  if (error) {
-    return { error: error.message }
+  let teamId: string | null = null
+
+  if (existingTeam?.id) {
+    const updatePayload = { ...teamPayload } as Record<string, unknown>
+    delete updatePayload.owner_id
+    const { data: updated, error: updateError } = await supabase
+      .from('teams')
+      .update(updatePayload as never)
+      .eq('id', existingTeam.id)
+      .eq('owner_id', user.id)
+      .select('id')
+      .single()
+
+    if (updateError) {
+      return { error: updateError.message }
+    }
+    teamId = updated.id
+  } else {
+    const { data: team, error } = await supabase
+      .from('teams')
+      .insert(teamPayload as never)
+      .select('id')
+      .single()
+
+    if (error) {
+      return { error: error.message }
+    }
+    teamId = team.id
   }
 
   // Audit log — coach create is a material event admins should see
   const admin = createAdminClient()
-  await admin.from('audit_log').insert({
+  const { error: createAuditError } = await admin.from('audit_log').insert({
     actor_id: user.id,
     action: 'create_team',
     entity_type: 'teams',
-    entity_id: team.id,
-    metadata: { team_name: teamName, status },
+    entity_id: teamId,
+    metadata: { team_name: payloadData.teamName, status: payloadData.status },
   })
+  if (createAuditError) {
+    console.error('Failed to write create_team audit log:', createAuditError.message)
+  }
 
   redirect('/dashboard')
 }
@@ -187,51 +199,54 @@ export async function updateTeam(id: string, data: Partial<TeamOnboardingInput>)
     return { error: 'Not authenticated' }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updatePayload: any = {
-    team_name: data.teamName,
-    organization: data.organization,
-    city: data.city,
-    state: data.state,
-    tagline: data.tagline ?? null,
-    mission_statement: data.missionStatement,
-    tax_status: data.taxStatus,
-    technical_summary: data.technicalSummary,
-    outreach_summary: data.outreachSummary,
-    drivetrain: data.drivetrain ?? null,
-    build_system: data.buildSystem ?? null,
-    programming: data.programming ?? null,
-    media_urls: data.mediaUrls,
-    youtube_url: data.youtubeUrl,
-    budget_items: (data.budgetItems || []).map(item => ({
-      label: item.label,
-      qty: item.qty,
-      unit_cost_cents: item.unitCostCents,
-      total_cents: item.totalCents
-    })),
-    financial_ask_cents: data.financialAskCents,
-    cad_software: data.cadSoftware,
-    control_system: data.controlSystem,
-    sensors: typeof data.sensors === 'string'
-      ? data.sensors.split(',').map(s => s.trim()).filter(Boolean)
-      : (data.sensors ?? []),
-    github_link: data.githubLink,
-    autonomous_description: data.autonomousDescription,
-    subteam_breakdown: data.subteamBreakdown,
-    manufacturing_capabilities: typeof data.manufacturingCapabilities === 'string'
-      ? data.manufacturingCapabilities.split(',').map(s => s.trim()).filter(Boolean)
-      : (data.manufacturingCapabilities ?? []),
-    visual_pitch_items: data.visualPitchItems,
-    proudest_mechanism_name: data.proudestMechanismName,
-    proudest_mechanism_problem: data.proudestMechanismProblem,
-    proudest_mechanism_solution: data.proudestMechanismSolution,
-    coach_photo_url: data.coachPhotoUrl,
-    team_members: data.members,
+  const updatePayload: Record<string, unknown> = {}
+
+  if (typeof data.teamName === 'string') updatePayload.team_name = data.teamName.trim()
+  if (typeof data.organization === 'string') updatePayload.organization = data.organization.trim() || null
+  if (typeof data.city === 'string') updatePayload.city = data.city.trim()
+  if (typeof data.state === 'string') updatePayload.state = data.state.trim()
+  if (data.tagline !== undefined) updatePayload.tagline = data.tagline?.trim() || null
+  if (typeof data.missionStatement === 'string') updatePayload.mission_statement = data.missionStatement.trim()
+  if (data.taxStatus) updatePayload.tax_status = data.taxStatus
+  if (data.technicalSummary !== undefined) updatePayload.technical_summary = data.technicalSummary?.trim() || null
+  if (data.outreachSummary !== undefined) updatePayload.outreach_summary = data.outreachSummary?.trim() || null
+  if (data.drivetrain !== undefined) updatePayload.drivetrain = data.drivetrain?.trim() || null
+  if (data.buildSystem !== undefined) updatePayload.build_system = data.buildSystem?.trim() || null
+  if (data.programming !== undefined) updatePayload.programming = data.programming?.trim() || null
+  if (data.mediaUrls !== undefined) updatePayload.media_urls = data.mediaUrls
+  if (data.youtubeUrl !== undefined) updatePayload.youtube_url = data.youtubeUrl || null
+
+  if (data.budgetItems !== undefined) {
+    const normalizedBudgetItems = normalizeBudgetItems(data.budgetItems as TeamOnboardingInput['budgetItems'])
+    updatePayload.budget_items = normalizedBudgetItems
+    updatePayload.financial_ask_cents = normalizedBudgetItems.reduce((sum, item) => sum + item.total_cents, 0)
+  } else if (data.financialAskCents !== undefined) {
+    updatePayload.financial_ask_cents = data.financialAskCents
+  }
+
+  if (data.cadSoftware !== undefined) updatePayload.cad_software = data.cadSoftware?.trim() || null
+  if (data.controlSystem !== undefined) updatePayload.control_system = data.controlSystem?.trim() || null
+  if (data.sensors !== undefined) updatePayload.sensors = parseList(data.sensors as string | string[] | undefined | null)
+  if (data.githubLink !== undefined) updatePayload.github_link = data.githubLink?.trim() || null
+  if (data.autonomousDescription !== undefined) updatePayload.autonomous_description = data.autonomousDescription?.trim() || null
+  if (data.subteamBreakdown !== undefined) updatePayload.subteam_breakdown = data.subteamBreakdown?.trim() || null
+  if (data.manufacturingCapabilities !== undefined) {
+    updatePayload.manufacturing_capabilities = parseList(data.manufacturingCapabilities as string | string[] | undefined | null)
+  }
+  if (data.visualPitchItems !== undefined) updatePayload.visual_pitch_items = data.visualPitchItems
+  if (data.proudestMechanismName !== undefined) updatePayload.proudest_mechanism_name = data.proudestMechanismName?.trim() || null
+  if (data.proudestMechanismProblem !== undefined) updatePayload.proudest_mechanism_problem = data.proudestMechanismProblem?.trim() || null
+  if (data.proudestMechanismSolution !== undefined) updatePayload.proudest_mechanism_solution = data.proudestMechanismSolution?.trim() || null
+  if (data.coachPhotoUrl !== undefined) updatePayload.coach_photo_url = data.coachPhotoUrl || null
+  if (data.members !== undefined) updatePayload.team_members = data.members
+
+  if (Object.keys(updatePayload).length === 0) {
+    return { success: true }
   }
 
   const { error } = await supabase
     .from('teams')
-    .update(updatePayload)
+    .update(updatePayload as never)
     .eq('id', id)
     .eq('owner_id', user.id)
 
@@ -262,13 +277,16 @@ export async function updateTeam(id: string, data: Partial<TeamOnboardingInput>)
 
   // Audit log — profile edits after submission are material
   const admin = createAdminClient()
-  await admin.from('audit_log').insert({
+  const { error: updateAuditError } = await admin.from('audit_log').insert({
     actor_id: user.id,
     action: 'update_team',
     entity_type: 'teams',
     entity_id: id,
     metadata: { fields_updated: Object.keys(data) },
   })
+  if (updateAuditError) {
+    console.error('Failed to write update_team audit log:', updateAuditError.message)
+  }
 
   return { success: true }
 }

@@ -32,11 +32,16 @@ export default async function SponsorDashboardPage() {
     .order('created_at', { ascending: false })
     .limit(20)
 
+  // Extract sponsor from the nested join — cast to any to satisfy TS since Supabase
+  // infers a complex union type for nested selects that doesn't match our local type.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sponsor = (profile as any)?.sponsors ?? null
+
   return (
     <SponsorDashboardShell
-      sponsor={profile.sponsors}
-      profile={profile}
-      submissions={submissions || []}
+      sponsor={sponsor}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      submissions={(submissions || []) as any[]}
       notifications={notifications || []}
     />
   )

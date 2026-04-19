@@ -11,9 +11,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import Link from 'next/link'
+import { RateLimitNotice } from '@/components/ui/rate-limit-notice'
 
 export function LoginForm() {
   const [error, setError] = useState<string | null>(null)
+  const [rateLimitData, setRateLimitData] = useState<{ retryAfterSeconds: number; limit: number } | null>(null)
   const [isPending, setIsPending] = useState(false)
 
   const form = useForm<LoginInput>({
@@ -27,7 +29,13 @@ export function LoginForm() {
   async function onSubmit(values: LoginInput) {
     setIsPending(true)
     setError(null)
+    setRateLimitData(null)
     const result = await signIn(values)
+    if (result?.error === 'rate_limited' && 'retryAfterSeconds' in result) {
+      setRateLimitData({ retryAfterSeconds: result.retryAfterSeconds as number, limit: (result as { limit?: number }).limit || 0 })
+      setIsPending(false)
+      return
+    }
     if (result?.error) {
       setError(result.error)
       setIsPending(false)
@@ -49,6 +57,9 @@ export function LoginForm() {
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
+            )}
+            {rateLimitData && (
+              <RateLimitNotice retryAfterSeconds={rateLimitData.retryAfterSeconds} />
             )}
             <FormField
               control={form.control}
@@ -89,14 +100,6 @@ export function LoginForm() {
             Sign up
           </Link>
         </p>
-        {process.env.NODE_ENV === 'development' && (
-          <Link
-            href="/dev-login"
-            className="text-xs text-yellow-500 hover:text-yellow-400 border border-yellow-900/40 rounded px-2 py-0.5"
-          >
-            ⚡ Dev: skip email verification
-          </Link>
-        )}
       </CardFooter>
     </Card>
   )

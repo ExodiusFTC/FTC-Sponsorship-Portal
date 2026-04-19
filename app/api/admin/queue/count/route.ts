@@ -19,7 +19,7 @@ export async function GET() {
 
   const { count } = await supabase
     .from('submissions')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'planned', head: true })
     .eq('status', 'pending')
 
   return NextResponse.json({ count: count ?? 0 })

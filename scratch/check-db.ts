@@ -1,11 +1,11 @@
-import { createAdminClient } from './lib/supabase/admin'
+import { createAdminClient } from '../lib/supabase/admin'
 
 async function checkSponsor() {
   const admin = createAdminClient()
   const { data: profile, error } = await admin
     .from('profiles')
     .select('*')
-    .eq('email', 'devsponsor@test.local')
+    .eq('email', 'noreply+sponsor@exodiusftc.com')
     .maybeSingle()
   
   if (error) {

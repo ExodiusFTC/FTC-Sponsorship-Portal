@@ -6,19 +6,25 @@ import { redirect } from 'next/navigation'
 import { env } from '@/lib/env'
 import { checkActionLimit } from '@/lib/rate-limit'
 import { sendCredentialUploadAlert } from '@/lib/notify'
+import { headers } from 'next/headers'
+
+async function getClientIp() {
+  const h = await headers()
+  return h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+}
 
 export async function signUp(data: SignupInput) {
-  const limit = await checkActionLimit(`signup_${data.email}`)
-  if (!limit.ok) {
-    return { error: 'rate_limited', retryAfterSeconds: limit.retryAfterSeconds, limit: limit.limit }
-  }
-
   const result = signupSchema.safeParse(data)
   if (!result.success) {
     return { error: 'Invalid data provided' }
   }
 
   const { fullName, email, password } = result.data
+  const limit = await checkActionLimit(`signup_${email}_${await getClientIp()}`)
+  if (!limit.ok) {
+    return { error: 'rate_limited', retryAfterSeconds: limit.retryAfterSeconds, limit: limit.limit }
+  }
+
   const supabase = await createClient()
 
   const { error } = await supabase.auth.signUp({
@@ -34,7 +40,10 @@ export async function signUp(data: SignupInput) {
   })
 
   if (error) {
-    return { error: error.message }
+    if (error.message.toLowerCase().includes('already')) {
+      return { error: 'Unable to create account. If this email is already registered, please log in.' }
+    }
+    return { error: 'Unable to create account right now. Please try again.' }
   }
 
   redirect('/verify-email')
@@ -47,6 +56,11 @@ export async function signIn(data: LoginInput) {
   }
 
   const { email, password } = result.data
+  const limit = await checkActionLimit(`signin_${email}_${await getClientIp()}`)
+  if (!limit.ok) {
+    return { error: 'rate_limited', retryAfterSeconds: limit.retryAfterSeconds, limit: limit.limit }
+  }
+
   const supabase = await createClient()
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -55,7 +69,7 @@ export async function signIn(data: LoginInput) {
   })
 
   if (error) {
-    return { error: error.message }
+    return { error: 'Invalid email or password.' }
   }
 
   redirect('/')

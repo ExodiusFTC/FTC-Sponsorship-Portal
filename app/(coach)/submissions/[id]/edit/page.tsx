@@ -1,8 +1,6 @@
 import { PortfolioForm } from '@/components/portfolio-builder/portfolio-form'
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { InfoIcon, AlertTriangle } from 'lucide-react'
 
 export default async function EditSubmissionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -17,7 +15,9 @@ export default async function EditSubmissionPage({ params }: { params: Promise<{
     .from('teams')
     .select('id')
     .eq('owner_id', user.id)
-    .single()
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
   if (!team) {
     redirect('/onboarding')

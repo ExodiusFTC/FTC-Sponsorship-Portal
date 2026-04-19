@@ -15,7 +15,7 @@ const redis = isUpstashConfigured
 
 /**
  * Global rate limiter: 100 requests per 10 seconds.
- * Intended for use in `middleware.ts` to protect the whole app.
+ * Intended for use in `proxy.ts` to protect the whole app.
  */
 export const globalLimiter = redis
   ? new Ratelimit({

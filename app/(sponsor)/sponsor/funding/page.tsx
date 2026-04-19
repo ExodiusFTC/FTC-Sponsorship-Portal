@@ -17,7 +17,8 @@ export default async function SponsorFundingPage() {
 
   if (!profile?.sponsor_id) redirect('/dashboard')
 
-  const sponsor = profile.sponsors
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sponsor = (profile as any)?.sponsors ?? null
   
   if (!sponsor) {
     return (
@@ -29,7 +30,7 @@ export default async function SponsorFundingPage() {
   }
 
   const { data: transactions } = await supabase
-    .from('transaction_ledger')
+    .from('transactions_ledger')
     .select('*, teams(team_name)')
     .eq('sponsor_id', profile.sponsor_id)
     .order('created_at', { ascending: false })

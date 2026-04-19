@@ -57,6 +57,7 @@ export function AccountSettings({
   const [pwError, setPwError] = useState('')
 
   const [confirmDelete, setConfirmDelete] = useState('')
+  const [deletePassword, setDeletePassword] = useState('')
   const [deleteError, setDeleteError] = useState('')
 
   const [isPending, startTransition] = useTransition()
@@ -84,9 +85,13 @@ export function AccountSettings({
       setDeleteError('Type your email exactly to confirm deletion.')
       return
     }
+    if (!deletePassword) {
+      setDeleteError('Enter your current password to confirm deletion.')
+      return
+    }
     setDeleteError('')
     startTransition(async () => {
-      const res = await deleteAccount()
+      const res = await deleteAccount({ confirmEmail: confirmDelete, currentPassword: deletePassword })
       if (res?.error) setDeleteError(res.error)
     })
   }
@@ -115,7 +120,7 @@ export function AccountSettings({
       </Section>
 
       {/* Password */}
-      <Section title="Change Password" sub="Use a strong password of at least 8 characters.">
+      <Section title="Change Password" sub="Use a strong password of at least 12 characters with uppercase, lowercase, and a number.">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <Field label="New password">
             <input
@@ -126,7 +131,7 @@ export function AccountSettings({
           </Field>
           {pwStatus && <p style={{ fontSize: '13px', color: '#34d399' }}>{pwStatus}</p>}
           {pwError && <p style={{ fontSize: '13px', color: '#f87171' }}>{pwError}</p>}
-          <button style={btnStyle('primary')} onClick={handlePasswordSave} disabled={isPending || newPassword.length < 8}>
+          <button style={btnStyle('primary')} onClick={handlePasswordSave} disabled={isPending || newPassword.length < 12}>
             Update password
           </button>
         </div>
@@ -146,11 +151,20 @@ export function AccountSettings({
               placeholder={email}
             />
           </Field>
+          <Field label="Current password">
+            <input
+              style={inputStyle}
+              type="password"
+              value={deletePassword}
+              onChange={e => setDeletePassword(e.target.value)}
+              placeholder="Enter your current password"
+            />
+          </Field>
           {deleteError && <p style={{ fontSize: '13px', color: '#f87171' }}>{deleteError}</p>}
           <button
             style={btnStyle('danger')}
             onClick={handleDelete}
-            disabled={isPending || confirmDelete !== email}
+            disabled={isPending || confirmDelete !== email || !deletePassword}
           >
             Permanently delete account
           </button>

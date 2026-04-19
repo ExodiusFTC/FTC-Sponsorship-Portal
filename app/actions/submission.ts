@@ -7,6 +7,12 @@ import { redirect } from 'next/navigation'
 
 const EDITABLE_SUBMISSION_STATUSES = ['draft', 'declined', 'changes_requested'] as const
 
+function getCurrentSeasonLabel(now = new Date()) {
+  const startYear = now.getUTCMonth() >= 6 ? now.getUTCFullYear() : now.getUTCFullYear() - 1
+  const endYearShort = String((startYear + 1) % 100).padStart(2, '0')
+  return `${startYear}-${endYearShort}`
+}
+
 async function getCoachTeamId() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -16,7 +22,9 @@ async function getCoachTeamId() {
     .from('teams')
     .select('id')
     .eq('owner_id', user.id)
-    .single()
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
   if (!team) return { error: 'Team not found. Complete onboarding first.' as const }
   return { supabase, user, teamId: team.id }
@@ -51,6 +59,7 @@ export async function saveSubmission(
     }
   }
 
+  const season = getCurrentSeasonLabel()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const payload: any = {
     team_id: teamId,
@@ -60,7 +69,7 @@ export async function saveSubmission(
     local_connection_notes: data.localConnectionNotes ?? null,
     status,
     variant_label: variantLabel,
-    season: '2024-25',
+    season,
     submitted_at: status === 'pending' ? new Date().toISOString() : null,
   }
 
@@ -107,7 +116,7 @@ export async function saveSubmission(
   if (status === 'pending') {
     const admin = createAdminClient()
     await admin.from('audit_log').insert({
-      actor_id: ctx.user.id,
+      actor_id: user.id,
       action: 'submit_submission',
       entity_type: 'submissions',
       entity_id: submissionId ?? null,
@@ -137,7 +146,7 @@ export async function autoSaveSubmissionDraft(
     specific_needs_statement: data.specificNeedsStatement ?? null,
     local_connection_notes: data.localConnectionNotes ?? null,
     status: 'draft' as const,
-    season: '2024-25',
+    season: getCurrentSeasonLabel(),
   }
 
   if (submissionId) {
@@ -210,7 +219,7 @@ export async function cloneSubmission(
     local_connection_notes: source.local_connection_notes,
     status: 'draft',
     variant_label: newVariantLabel,
-    season: source.season || '2024-25',
+    season: source.season || getCurrentSeasonLabel(),
   }
 
   const { data: inserted, error } = await supabase

@@ -6,6 +6,8 @@ import { sponsorApplicationSchema, sponsorSchema, type SponsorApplicationInput, 
 import { sendSponsorApplicationConfirmation } from '@/lib/notify'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { checkActionLimit } from '@/lib/rate-limit'
+import { headers } from 'next/headers'
 
 export async function submitSponsorApplication(data: SponsorApplicationInput) {
   const result = sponsorApplicationSchema.safeParse(data)
@@ -14,6 +16,12 @@ export async function submitSponsorApplication(data: SponsorApplicationInput) {
   }
 
   const { companyName, contactName, contactEmail, proposedCapCents, message } = result.data
+  const h = await headers()
+  const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+  const limit = await checkActionLimit(`sponsor_app_${contactEmail.toLowerCase()}_${ip}`)
+  if (!limit.ok) {
+    return { error: 'rate_limited', retryAfterSeconds: limit.retryAfterSeconds, limit: limit.limit }
+  }
 
   // Use admin client since the user may be unauthenticated
   const supabase = createAdminClient()

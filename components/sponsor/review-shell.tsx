@@ -7,8 +7,6 @@ import {
   MapPin, 
   Target, 
   Award, 
-  Wallet, 
-  FileText, 
   ChevronLeft,
   CheckCircle2,
   XCircle,
@@ -16,28 +14,58 @@ import {
   ExternalLink,
   History
 } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { FadeUp } from '@/components/motion/fade-up'
 import { sponsorUpdateSubmissionStatus } from '@/app/actions/sponsor-decision'
 import { toast } from 'sonner'
 
-export function SponsorReviewShell({ submission, team }: { submission: any; team: any }) {
+type SponsorSubmission = {
+  id: string
+  custom_pitch_alignment?: string | null
+  specific_needs_statement?: string | null
+  sponsors?: { company_name?: string | null } | null
+}
+
+type TeamAchievement = {
+  id: string
+  season?: string | null
+  event_name: string
+  award?: string | null
+  description?: string | null
+}
+
+type SponsorTeam = {
+  ftc_team_number?: number | null
+  team_name: string
+  city?: string | null
+  state?: string | null
+  organization?: string | null
+  mission_statement?: string | null
+  manufacturing_capabilities?: string[] | null
+  team_achievements?: TeamAchievement[] | null
+  financial_ask_cents: number
+  website?: string | null
+}
+
+export function SponsorReviewShell({ submission, team }: { submission: unknown; team: unknown }) {
+  const submissionData = submission as SponsorSubmission
+  const teamData = team as SponsorTeam
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState('')
-  const [fundingAmount, setFundingAmount] = useState(team.financial_ask_cents / 100)
+  const [fundingAmount, setFundingAmount] = useState(teamData.financial_ask_cents / 100)
   const [showConfirm, setShowConfirm] = useState<'approved' | 'declined' | 'changes_requested' | null>(null)
+  const sponsorCompany = submissionData?.sponsors?.company_name || 'your company'
 
   const handleDecision = (status: 'approved' | 'declined' | 'changes_requested') => {
     startTransition(async () => {
       const result = await sponsorUpdateSubmissionStatus(
-        submission.id,
+        submissionData.id,
         status,
         feedback,
         status === 'approved' ? Math.round(fundingAmount * 100) : undefined
@@ -69,19 +97,19 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
           <section className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl">
-                {team.ftc_team_number || '??'}
+                {teamData.ftc_team_number || '??'}
               </div>
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">{team.team_name}</h1>
+                <h1 className="text-3xl font-bold tracking-tight">{teamData.team_name}</h1>
                 <div className="flex flex-wrap items-center gap-3 mt-1 text-muted-foreground">
                   <div className="flex items-center gap-1.5">
                     <MapPin className="h-3.5 w-3.5" />
-                    {team.city}, {team.state}
+                    {teamData.city}, {teamData.state}
                   </div>
                   <span>•</span>
                   <div className="flex items-center gap-1.5">
                     <Building2 className="h-3.5 w-3.5" />
-                    {team.organization || 'Independent'}
+                    {teamData.organization || 'Independent'}
                   </div>
                 </div>
               </div>
@@ -96,7 +124,7 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Target className="h-5 w-5 text-primary" />
-                The Pitch to {submission.company_name}
+                The Pitch to {sponsorCompany}
               </CardTitle>
               <CardDescription>Specifically tailored alignment and needs for your company.</CardDescription>
             </CardHeader>
@@ -104,13 +132,13 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
               <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-widest text-muted-foreground font-mono">Why us?</Label>
                 <p className="text-foreground leading-relaxed italic border-l-2 border-primary/30 pl-4">
-                  "{submission.custom_pitch_alignment || 'No specific alignment provided.'}"
+                  &ldquo;{submissionData.custom_pitch_alignment || 'No specific alignment provided.'}&rdquo;
                 </p>
               </div>
               <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-widest text-muted-foreground font-mono">Specific Needs</Label>
                 <p className="text-foreground leading-relaxed">
-                  {submission.specific_needs_statement || 'General sponsorship request.'}
+                  {submissionData.specific_needs_statement || 'General sponsorship request.'}
                 </p>
               </div>
             </CardContent>
@@ -123,12 +151,12 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
             <div className="grid gap-6 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Mission Statement</Label>
-                <p className="text-sm leading-relaxed">{team.mission_statement || 'No mission statement provided.'}</p>
+                <p className="text-sm leading-relaxed">{teamData.mission_statement || 'No mission statement provided.'}</p>
               </div>
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Technical Capabilities</Label>
                 <div className="flex flex-wrap gap-2">
-                  {team.manufacturing_capabilities?.map((cap: string) => (
+                  {teamData.manufacturing_capabilities?.map((cap: string) => (
                     <span key={cap} className="px-2 py-1 bg-secondary text-secondary-foreground rounded text-[10px] font-medium uppercase tracking-wider">
                       {cap}
                     </span>
@@ -140,7 +168,7 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
             <div className="space-y-3">
               <Label className="text-muted-foreground">Recent Achievements</Label>
               <div className="grid gap-3">
-                {team.team_achievements?.map((ach: any) => (
+                {teamData.team_achievements?.map((ach) => (
                   <div key={ach.id} className="p-3 rounded-lg border border-border bg-card/50 flex items-start gap-3">
                     <Award className="h-4 w-4 text-amber-500 mt-1 shrink-0" />
                     <div>
@@ -187,7 +215,7 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
                         className="pl-7 bg-background/50"
                       />
                     </div>
-                    <p className="text-[10px] text-muted-foreground">Team is asking for ${(team.financial_ask_cents / 100).toLocaleString()}</p>
+                    <p className="text-[10px] text-muted-foreground">Team is asking for ${(teamData.financial_ask_cents / 100).toLocaleString()}</p>
                   </div>
                 </div>
 
@@ -256,12 +284,15 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
             </AnimatePresence>
 
             <div className="text-center">
-              <Button variant="link" size="sm" className="text-muted-foreground gap-1.5" asChild>
-                <a href={team.website || '#'} target="_blank">
-                  <ExternalLink className="h-3 w-3" />
-                  View Team Website
-                </a>
-              </Button>
+              <a
+                href={teamData.website || '#'}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+              >
+                <ExternalLink className="h-3 w-3" />
+                View Team Website
+              </a>
             </div>
           </div>
         </div>

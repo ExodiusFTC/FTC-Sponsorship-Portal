@@ -30,7 +30,6 @@ export async function dispatchApprovedSubmission(submissionId: string, accessTok
 
   const sponsor = submission.sponsors as unknown as Record<string, unknown>
   const team = submission.teams as unknown as Record<string, unknown>
-  const teamProfile = team.profiles as Record<string, string>
 
   const viewerUrl = accessToken
     ? `${env.NEXT_PUBLIC_APP_URL}/sponsor-view/${accessToken}`
@@ -42,7 +41,6 @@ export async function dispatchApprovedSubmission(submissionId: string, accessTok
     const result = await resend.emails.send({
       from: env.RESEND_FROM_EMAIL,
       to: sponsor.contact_email as string,
-      replyTo: teamProfile.email,
       subject,
       react: SubmissionEmail({
         teamName: team.team_name as string,

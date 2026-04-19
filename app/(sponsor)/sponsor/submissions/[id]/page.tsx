@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import { SponsorReviewShell } from '@/components/sponsor/review-shell'
 
-export default async function SponsorSubmissionReviewPage({ params }: { params: { id: string } }) {
+export default async function SponsorSubmissionReviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -23,6 +23,9 @@ export default async function SponsorSubmissionReviewPage({ params }: { params: 
     .from('submissions')
     .select(`
       *,
+      sponsors:sponsor_id (
+        company_name
+      ),
       teams (
         *,
         owner_id,

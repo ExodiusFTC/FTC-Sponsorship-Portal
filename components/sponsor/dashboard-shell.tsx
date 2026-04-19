@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useTransition } from 'react'
 import { 
   Building2, 
   Users, 
@@ -9,13 +8,10 @@ import {
   Wallet, 
   Clock, 
   CheckCircle2, 
-  XCircle, 
-  AlertCircle,
   ArrowUpRight,
-  Search,
-  Filter
+  Search
 } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -48,17 +44,13 @@ type Submission = {
 
 export function SponsorDashboardShell({
   sponsor,
-  profile,
   submissions,
-  notifications
+  notifications: _notifications
 }: {
-  sponsor: Sponsor
-  profile: any
+  sponsor: Sponsor | null
   submissions: Submission[]
   notifications: any[]
 }) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'inbox' | 'funding'>('overview')
-
   const pendingCount = submissions?.filter(s => s.status === 'pending').length ?? 0
   const approvedCount = submissions?.filter(s => s.status === 'approved').length ?? 0
   

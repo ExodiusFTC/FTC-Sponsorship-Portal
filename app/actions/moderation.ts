@@ -59,18 +59,40 @@ export async function approveSubmission(submissionId: string) {
 
   const { data: sub } = await supabase
     .from('submissions')
-    .select('team_id, teams:team_id(owner_id), sponsors:sponsor_id(company_name)')
+    .select('id, sponsor_id, team_id, teams:team_id(owner_id), sponsors:sponsor_id(company_name)')
     .eq('id', submissionId).single()
 
   const coachId = (sub?.teams as any)?.owner_id
   const sponsorName = (sub?.sponsors as any)?.company_name ?? 'a sponsor'
 
-  await createInAppNotification({
-    recipientId: coachId,
-    type: 'submission_approved',
-    title: `Your application to ${sponsorName} was approved`,
-    submissionId,
-  })
+  if (coachId) {
+    await createInAppNotification({
+      recipientId: coachId,
+      type: 'submission_approved',
+      title: `Your application to ${sponsorName} was approved`,
+      submissionId,
+    })
+  }
+
+  if (sub?.sponsor_id) {
+    const { data: sponsorProfiles } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'sponsor')
+      .eq('sponsor_id', sub.sponsor_id)
+
+    await Promise.all(
+      (sponsorProfiles || []).map((p) =>
+        createInAppNotification({
+          recipientId: p.id,
+          type: 'general',
+          title: 'New submission is ready for your decision',
+          body: 'A coach submission has been approved and sent to your inbox for review.',
+          submissionId,
+        })
+      )
+    )
+  }
 
   revalidatePath('/moderation')
   revalidatePath('/dashboard')
@@ -133,13 +155,15 @@ export async function declineSubmission(submissionId: string, feedback: string) 
   const coachId = (sub?.teams as any)?.owner_id
   const sponsorName = (sub?.sponsors as any)?.company_name ?? 'a sponsor'
 
-  await createInAppNotification({
-    recipientId: coachId,
-    type: 'submission_declined',
-    title: `Your application to ${sponsorName} was declined`,
-    body: feedback,
-    submissionId,
-  })
+  if (coachId) {
+    await createInAppNotification({
+      recipientId: coachId,
+      type: 'submission_declined',
+      title: `Your application to ${sponsorName} was declined`,
+      body: feedback,
+      submissionId,
+    })
+  }
 
   revalidatePath('/moderation')
   revalidatePath('/dashboard')
@@ -202,13 +226,15 @@ export async function requestEdit(submissionId: string, feedback: string) {
   const coachId = (sub?.teams as any)?.owner_id
   const sponsorName = (sub?.sponsors as any)?.company_name ?? 'a sponsor'
 
-  await createInAppNotification({
-    recipientId: coachId,
-    type: 'submission_changes_requested',
-    title: `Changes requested for your application to ${sponsorName}`,
-    body: feedback,
-    submissionId,
-  })
+  if (coachId) {
+    await createInAppNotification({
+      recipientId: coachId,
+      type: 'submission_changes_requested',
+      title: `Changes requested for your application to ${sponsorName}`,
+      body: feedback,
+      submissionId,
+    })
+  }
 
   revalidatePath('/moderation')
   revalidatePath('/dashboard')
