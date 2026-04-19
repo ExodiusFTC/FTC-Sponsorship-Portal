@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Trash, Image as ImageIcon, Upload, GripVertical } from 'lucide-react'
+import { Trash, Image as ImageIcon, Upload, GripVertical, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import type { Team } from '@/lib/supabase/types'
@@ -57,10 +57,6 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
       sensors: ((team as any).sensors as string[] | undefined)?.join(', ') ?? '',
       githubLink: (team as any).github_link || '',
       autonomousDescription: (team as any).autonomous_description || '',
-      proudestMechanismName: (team as any).proudest_mechanism_name || '',
-      proudestMechanismProblem: (team as any).proudest_mechanism_problem || '',
-      proudestMechanismSolution: (team as any).proudest_mechanism_solution || '',
-      subteamBreakdown: (team as any).subteam_breakdown || '',
       manufacturingCapabilities: Array.isArray((team as any).manufacturing_capabilities) 
         ? ((team as any).manufacturing_capabilities as string[]).join(', ') 
         : (team as any).manufacturing_capabilities || '',
@@ -71,6 +67,13 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
         award: a.award || '',
         description: a.description || '',
       })),
+      coachPhotoUrl: (team as any).coach_photo_url || '',
+      members: (team as any).team_members?.map((m: any) => ({
+        name: m.name || '',
+        role: m.role || '',
+        experience: m.experience || '',
+        photoUrl: m.photoUrl || '',
+      })) || [],
     } as TeamOnboardingInput,
   })
 
@@ -82,6 +85,11 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
   const { fields: achItems, append: appendAch, remove: removeAch } = useFieldArray({
     control: form.control,
     name: 'achievements',
+  })
+
+  const { fields: memberItems, append: appendMember, remove: removeMember } = useFieldArray({
+    control: form.control,
+    name: 'members',
   })
 
   async function uploadFile(file: File) {
@@ -238,32 +246,139 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
           </div>
         </div>
 
-        {/* Proudest Mechanism */}
-        <div className="rounded-xl border border-border bg-card p-6 space-y-5">
-          <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
-            Proudest Mechanism
-          </h3>
-          <FormField control={form.control} name="proudestMechanismName" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Mechanism Name</FormLabel>
-              <FormControl><Input placeholder="e.g. Outtake Arm" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-          <FormField control={form.control} name="proudestMechanismProblem" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Problem Statement</FormLabel>
-              <FormControl><Textarea placeholder="What problem were you solving?" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-          <FormField control={form.control} name="proudestMechanismSolution" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Solution</FormLabel>
-              <FormControl><Textarea maxLength={1000} placeholder="How did you solve it?" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
+        {/* About the Team & Coach */}
+        <div className="rounded-xl border border-border bg-card p-6 space-y-6">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">About the Team</h3>
+            <div className="flex gap-2">
+              <label className="cursor-pointer inline-flex items-center gap-2 rounded-md border border-border bg-accent px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent/80 transition-colors">
+                <Upload className="h-3.5 w-3.5" /> Coach Photo
+                <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (file) {
+                    toast.loading('Uploading coach photo…', { id: 'coach-photo' })
+                    const url = await uploadFile(file)
+                    if (url) {
+                      form.setValue('coachPhotoUrl', url)
+                      toast.success('Coach photo updated!', { id: 'coach-photo' })
+                    }
+                  }
+                }} />
+              </label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => appendMember({ name: '', role: '', experience: '', photoUrl: '' })}
+                className="h-8 text-xs gap-1.5"
+              >
+                <Plus className="h-3.5 w-3.5" /> Add Member
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-[180px,1fr] gap-8">
+            {/* Coach Sidebar */}
+            <div className="space-y-3">
+              <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground block text-center">Team Coach</FormLabel>
+              <div className="relative aspect-square rounded-xl border-2 border-dashed border-border bg-accent/10 overflow-hidden flex items-center justify-center group">
+                {form.watch('coachPhotoUrl') ? (
+                  <Image src={form.watch('coachPhotoUrl')} alt="Coach" fill className="object-cover" />
+                ) : (
+                  <div className="text-center px-4">
+                    <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+                    <p className="text-[10px] text-muted-foreground">No coach photo</p>
+                  </div>
+                )}
+                {form.watch('coachPhotoUrl') && (
+                  <button
+                    type="button"
+                    onClick={() => form.setValue('coachPhotoUrl', '')}
+                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Member List */}
+            <div className="space-y-4">
+              {memberItems.map((field, index) => (
+                <div key={field.id} className="grid grid-cols-1 sm:grid-cols-[80px,1fr,1fr,auto] gap-4 items-start border border-border/50 rounded-lg p-4 bg-accent/5 relative group">
+                  <div className="space-y-2">
+                    <div className="relative aspect-square rounded-md border border-border bg-background overflow-hidden flex items-center justify-center group/photo">
+                      {form.watch(`members.${index}.photoUrl`) ? (
+                        <Image src={form.watch(`members.${index}.photoUrl`)} alt={field.name} fill className="object-cover" />
+                      ) : (
+                        <label className="cursor-pointer">
+                          <ImageIcon className="h-5 w-5 text-muted-foreground/30" />
+                          <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                            const file = e.target.files?.[0]
+                            if (file) {
+                              toast.loading('Uploading…', { id: `mem-${index}` })
+                              const url = await uploadFile(file)
+                              if (url) {
+                                form.setValue(`members.${index}.photoUrl`, url)
+                                toast.success('Photo uploaded!', { id: `mem-${index}` })
+                              }
+                            }
+                          }} />
+                        </label>
+                      )}
+                      {form.watch(`members.${index}.photoUrl`) && (
+                        <button
+                          type="button"
+                          onClick={() => form.setValue(`members.${index}.photoUrl`, '')}
+                          className="absolute inset-0 bg-black/40 opacity-0 group-hover/photo:opacity-100 transition-opacity flex items-center justify-center"
+                        >
+                          <Trash className="h-4 w-4 text-white" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <FormField control={form.control} name={`members.${index}.name`} render={({ field }) => (
+                      <FormItem>
+                        <FormControl><Input placeholder="Member Name" {...field} className="h-8 text-sm" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name={`members.${index}.role`} render={({ field }) => (
+                      <FormItem>
+                        <FormControl><Input placeholder="Role (e.g. Lead Programmer)" {...field} className="h-8 text-sm" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+
+                  <FormField control={form.control} name={`members.${index}.experience`} render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea placeholder="Experience / Expertise" {...field} className="h-20 text-xs resize-none" />
+                      </FormControl>
+                    </FormItem>
+                  )} />
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive transition-colors"
+                    onClick={() => removeMember(index)}
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {memberItems.length === 0 && (
+                <div className="text-center py-12 border border-dashed border-border rounded-lg bg-accent/5">
+                  <p className="text-sm text-muted-foreground italic">No team members listed. Add your first member to showcase your team!</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Team Structure — text inputs */}

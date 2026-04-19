@@ -47,9 +47,6 @@ export const teamOnboardingSchema = z.object({
   sensors: z.string().optional(),
   githubLink: z.string().url().optional().or(z.literal('')),
   autonomousDescription: z.string().max(750).optional(),
-  proudestMechanismName: z.string().max(200).optional(),
-  proudestMechanismProblem: z.string().max(500).optional(),
-  proudestMechanismSolution: z.string().max(1000).optional(),
   subteamBreakdown: z.string().max(1000).optional(),
   // Comma-separated free-form text; converted to text[] by the action
   manufacturingCapabilities: z.string().optional(),
@@ -60,6 +57,15 @@ export const teamOnboardingSchema = z.object({
       eventName: z.string().min(2, 'Event name required'),
       award: z.string().optional(),
       description: z.string().optional(),
+    })
+  ).default([]),
+  coachPhotoUrl: z.string().optional().nullable(),
+  members: z.array(
+    z.object({
+      name: z.string().min(1, 'Member name required'),
+      role: z.string().min(1, 'Role required'),
+      experience: z.string().optional(),
+      photoUrl: z.string().optional().nullable(),
     })
   ).default([]),
 }).superRefine((data, ctx) => {

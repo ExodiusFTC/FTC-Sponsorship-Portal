@@ -107,12 +107,11 @@ export async function createTeam(data: TeamOnboardingInput) {
     sensors: sensors ?? [],
     github_link: githubLink ?? null,
     autonomous_description: autonomousDescription ?? null,
-    proudest_mechanism_name: proudestMechanismName ?? null,
-    proudest_mechanism_problem: proudestMechanismProblem ?? null,
-    proudest_mechanism_solution: proudestMechanismSolution ?? null,
     subteam_breakdown: subteamBreakdown ?? null,
     manufacturing_capabilities: manufacturingCapabilities ?? [],
     visual_pitch_items: visualPitchItems ?? [],
+    coach_photo_url: coachPhotoUrl ?? null,
+    team_members: members || [],
   }
 
   const { data: team, error } = await supabase
@@ -213,14 +212,13 @@ export async function updateTeam(id: string, data: Partial<TeamOnboardingInput>)
       : (data.sensors ?? []),
     github_link: data.githubLink,
     autonomous_description: data.autonomousDescription,
-    proudest_mechanism_name: data.proudestMechanismName,
-    proudest_mechanism_problem: data.proudestMechanismProblem,
-    proudest_mechanism_solution: data.proudestMechanismSolution,
     subteam_breakdown: data.subteamBreakdown,
     manufacturing_capabilities: typeof data.manufacturingCapabilities === 'string'
       ? data.manufacturingCapabilities.split(',').map(s => s.trim()).filter(Boolean)
       : (data.manufacturingCapabilities ?? []),
     visual_pitch_items: data.visualPitchItems,
+    coach_photo_url: data.coachPhotoUrl,
+    team_members: data.members,
   }
 
   const { error } = await supabase
