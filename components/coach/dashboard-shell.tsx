@@ -58,6 +58,7 @@ export function DashboardShell({
   notifications,
   unreadCount,
   submissions,
+  achievements,
   initialTab,
 }: {
   team: Team
@@ -66,26 +67,48 @@ export function DashboardShell({
   notifications: Notification[]
   unreadCount: number
   submissions: Submission[]
+  achievements: TeamAchievement[]
   initialTab?: string
 }) {
   const router = useRouter()
   const reduce = useReducedMotion()
 
-  const validTabs = TABS.map(t => t.id)
+  const validTabs = useState(() => TABS.map(t => t.id))[0]
   const defaultTab = validTabs.includes(initialTab || '') ? initialTab! : 'overview'
 
   const [tab, setTabState] = useState(defaultTab)
 
+  // Listen for tab changes from external components (like Sidebar)
   useEffect(() => {
-    if (initialTab && initialTab !== tab) {
-      setTabState(initialTab)
+    const handleTabChange = (e: any) => {
+      const newTab = e.detail?.tab
+      if (newTab && TABS.some(t => t.id === newTab)) {
+        setTabState(newTab)
+      }
     }
-  }, [initialTab, tab])
+    window.addEventListener('dashboard-tab-change', handleTabChange)
+    return () => window.removeEventListener('dashboard-tab-change', handleTabChange)
+  }, [])
+
+  // Also listen for browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search)
+      const t = params.get('tab') || 'overview'
+      if (TABS.some(t_ => t_.id === t)) {
+        setTabState(t)
+      }
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   const setTab = (newTab: string) => {
+    if (newTab === tab) return
     setTabState(newTab)
     const url = newTab === 'overview' ? '/dashboard' : `/dashboard?tab=${newTab}`
-    router.replace(url, { scroll: false })
+    // Use replaceState to update URL without triggering a Next.js server-side refresh
+    window.history.replaceState({ ...window.history.state, as: url, url }, '', url)
   }
 
   const activePitches = submissions.filter(s => s.status === 'pending' || s.status === 'approved').length
@@ -100,18 +123,19 @@ export function DashboardShell({
             {team.status === 'existing' ? `FTC · ${team.ftc_team_number}` : 'Incubator'} · {team.city ?? ''}, {team.state ?? ''}
           </div>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">{team.team_name}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{team.organization ?? 'Independent'} · season dashboard</p>
+          <p className="mt-1 text-sm text-muted-foreground">{team.organization ?? 'Independent'}</p>
         </div>
       </div>
 
       {/* Tab content — no visible tab bar; navigation is sidebar-only */}
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="popLayout" initial={false}>
         <motion.div
           key={tab}
-          initial={reduce ? { opacity: 1 } : { opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={reduce ? { opacity: 0 } : { opacity: 0, y: -4 }}
-          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          initial={reduce ? { opacity: 1 } : { opacity: 0, scale: 0.99, filter: 'blur(4px)' }}
+          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+          exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 1.01, filter: 'blur(4px)' }}
+          transition={{ duration: 0.08, ease: 'easeOut' }}
+          className="w-full"
         >
           {tab === 'overview' && (
             <OverviewTab
@@ -123,7 +147,7 @@ export function DashboardShell({
               submissions={submissions}
             />
           )}
-          {tab === 'portfolio' && <PortfolioTab team={team} />}
+          {tab === 'portfolio' && <PortfolioTab team={team} achievements={achievements} />}
           {tab === 'find-sponsors' && <FindSponsorsTab sponsors={sponsors} />}
           {tab === 'submissions' && <SubmissionsTab submissions={submissions} />}
           {tab === 'inbox' && <InboxTab notifications={notifications} switchTab={setTab} />}
@@ -207,8 +231,8 @@ function OverviewTab({
               <div key={s.id} className="rounded-xl border border-border bg-destructive/5 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-destructive" />
-                    <h4 className="text-sm font-medium text-destructive">
+                    <AlertCircle className="h-4 w-4 text-[var(--accent-error)]" />
+                    <h4 className="text-sm font-medium text-[var(--accent-error)]">
                       {s.status === 'declined' ? 'Submission Declined' : 'Changes Requested'}
                     </h4>
                   </div>
@@ -330,7 +354,7 @@ function FindSponsorsTab({ sponsors }: { sponsors: Sponsor[] }) {
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search companies…"
-              className="w-full rounded-lg border border-zinc-800 bg-zinc-950/80 py-2.5 pl-9 pr-3 text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-zinc-600 transition-colors"
+              className="w-full rounded-lg border border-border bg-card/80 py-2.5 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/50 transition-colors"
             />
           </div>
 
@@ -361,8 +385,8 @@ function FindSponsorsTab({ sponsors }: { sponsors: Sponsor[] }) {
                 className={cn(
                   'rounded-full border px-3 py-1 text-xs transition-colors',
                   fundingRange === i
-                    ? 'border-emerald-600 bg-emerald-600/20 text-emerald-300'
-                    : 'border-zinc-800 bg-zinc-950/60 text-zinc-400 hover:text-zinc-100 hover:border-zinc-700'
+                    ? 'border-emerald-600/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                    : 'border-border bg-card/60 text-muted-foreground hover:text-foreground hover:border-border/80'
                 )}
               >
                 {r.label}
@@ -497,8 +521,8 @@ function SubmissionsTab({ submissions }: { submissions: Submission[] }) {
               className={cn(
                 'rounded-full border px-3 py-1 text-xs transition-colors',
                 filter === f.id
-                  ? 'border-zinc-600 bg-zinc-800 text-zinc-100'
-                  : 'border-zinc-800 bg-zinc-950/60 text-zinc-400 hover:text-zinc-100 hover:border-zinc-700'
+                  ? 'border-foreground bg-foreground text-background font-medium'
+                  : 'border-border bg-card/60 text-muted-foreground hover:text-foreground hover:border-border/80'
               )}
             >
               {f.label} <span className="ml-1 opacity-50">{count}</span>
@@ -508,7 +532,7 @@ function SubmissionsTab({ submissions }: { submissions: Submission[] }) {
       </div>
 
       {/* List */}
-      <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/60 divide-y divide-zinc-900">
+      <div className="rounded-xl border border-border bg-card/60 divide-y divide-border">
         {filtered.map(s => {
           const isEditable = ['draft', 'declined', 'changes_requested'].includes(s.status)
           const expanded = expandedId === s.id
@@ -664,7 +688,7 @@ function LedgerTab({ team }: { team: Team }) {
           <button
             onClick={save}
             disabled={isPending}
-            className="inline-flex items-center justify-center rounded-md bg-zinc-100 px-3.5 h-9 text-sm font-medium text-zinc-900 hover:bg-white transition-colors disabled:opacity-50"
+            className="inline-flex items-center justify-center rounded-md bg-foreground px-3.5 h-9 text-sm font-medium text-background hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {isPending ? 'Saving…' : 'Save Ledger'}
           </button>

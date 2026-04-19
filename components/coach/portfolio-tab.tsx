@@ -16,7 +16,7 @@ import type { Team } from '@/lib/supabase/types'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
-export function PortfolioTab({ team }: { team: Team }) {
+export function PortfolioTab({ team, achievements }: { team: Team, achievements: TeamAchievement[] }) {
   const [isPending, startTransition] = useTransition()
   const [draggingOver, setDraggingOver] = useState(false)
   const [uploadingDrop, setUploadingDrop] = useState(false)
@@ -65,12 +65,23 @@ export function PortfolioTab({ team }: { team: Team }) {
         ? ((team as any).manufacturing_capabilities as string[]).join(', ') 
         : (team as any).manufacturing_capabilities || '',
       visualPitchItems: (team as any).visual_pitch_items || [],
+      achievements: achievements.map(a => ({
+        season: a.season || '',
+        eventName: a.event_name,
+        award: a.award || '',
+        description: a.description || '',
+      })),
     } as TeamOnboardingInput,
   })
 
   const { fields: visualItems, append: appendVisual, remove: removeVisual } = useFieldArray({
     control: form.control,
     name: 'visualPitchItems',
+  })
+
+  const { fields: achItems, append: appendAch, remove: removeAch } = useFieldArray({
+    control: form.control,
+    name: 'achievements',
   })
 
   async function uploadFile(file: File) {
@@ -350,6 +361,69 @@ export function PortfolioTab({ team }: { team: Team }) {
                 <div className="rounded-xl bg-card border border-border px-6 py-4 text-sm text-foreground">
                   Uploading…
                 </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Awards & Experience */}
+        <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Awards & Experience</h3>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => appendAch({ season: '', eventName: '', award: '', description: '' })}
+              className="h-8 text-xs gap-1.5"
+            >
+              <Plus className="h-3.5 w-3.5" /> Add Achievement
+            </Button>
+          </div>
+          
+          <div className="space-y-4">
+            {achItems.map((field, index) => (
+              <div key={field.id} className="relative grid grid-cols-1 md:grid-cols-[120px,1fr,1fr,auto] gap-3 items-end border border-border/50 rounded-lg p-4 bg-accent/5">
+                <FormField control={form.control} name={`achievements.${index}.season`} render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Season</FormLabel>
+                    <FormControl><Input placeholder="2024-25" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name={`achievements.${index}.eventName`} render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Event Name</FormLabel>
+                    <FormControl><Input placeholder="Qualifying Tournament" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name={`achievements.${index}.award`} render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Award (Optional)</FormLabel>
+                    <FormControl><Input placeholder="Inspire Award" {...field} /></FormControl>
+                  </FormItem>
+                )} />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-muted-foreground hover:text-destructive transition-colors"
+                  onClick={() => removeAch(index)}
+                >
+                  <Trash className="h-4 w-4" />
+                </Button>
+                <FormField control={form.control} name={`achievements.${index}.description`} render={({ field }) => (
+                  <FormItem className="col-span-1 md:col-span-3">
+                    <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Description / Context</FormLabel>
+                    <FormControl><Input placeholder="Briefly describe the significance…" {...field} /></FormControl>
+                  </FormItem>
+                )} />
+              </div>
+            ))}
+            {achItems.length === 0 && (
+              <div className="text-center py-8 border border-dashed border-border rounded-lg bg-accent/5">
+                <p className="text-sm text-muted-foreground italic">No achievements listed yet. Add your first award or event experience!</p>
               </div>
             )}
           </div>

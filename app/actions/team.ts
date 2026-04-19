@@ -233,6 +233,27 @@ export async function updateTeam(id: string, data: Partial<TeamOnboardingInput>)
     return { error: error.message }
   }
 
+  // Handle achievements sync
+  if (data.achievements) {
+    // Simple sync: delete existing and insert new
+    await supabase.from('team_achievements').delete().eq('team_id', id)
+    if (data.achievements.length > 0) {
+      const { error: achError } = await supabase.from('team_achievements').insert(
+        data.achievements.map(a => ({
+          team_id: id,
+          season: a.season,
+          event_name: a.eventName,
+          award: a.award,
+          description: a.description
+        }))
+      )
+      if (achError) {
+        console.error('Failed to sync achievements:', achError)
+        // We don't return error here because the main team update succeeded
+      }
+    }
+  }
+
   // Audit log — profile edits after submission are material
   const admin = createAdminClient()
   await admin.from('audit_log').insert({

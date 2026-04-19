@@ -151,7 +151,6 @@ export function InsightsTab({ submissions }: { submissions: Submission[] }) {
           value={`$${(totalFunded / 100).toLocaleString()}`}
           icon={DollarSign}
           hint="Across approved pitches"
-          accent
         />
         <StatCard
           label="Approval Rate"

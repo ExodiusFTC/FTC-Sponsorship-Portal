@@ -53,14 +53,26 @@ const adminNavItems: NavDef[] = [
 
 function NavItem({ item, isActive, badge }: { item: NavDef; isActive: boolean; badge?: number }) {
   const Icon = item.icon
-  return (
-    <Link
-      href={item.href}
-      className={cn(
-        'group relative flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors',
-        isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-      )}
-    >
+  const pathname = usePathname()
+  const handleClick = (e: React.MouseEvent) => {
+    // If we are already on the dashboard and clicking a dashboard tab link
+    if (pathname === '/dashboard' && item.href.startsWith('/dashboard')) {
+      const url = new URL(item.href, window.location.origin)
+      const tab = url.searchParams.get('tab') || 'overview'
+      
+      // Prevent full Next.js navigation
+      e.preventDefault()
+      
+      // Update URL manually
+      window.history.replaceState({ ...window.history.state, as: item.href, url: item.href }, '', item.href)
+      
+      // Notify DashboardShell to switch tab instantly
+      window.dispatchEvent(new CustomEvent('dashboard-tab-change', { detail: { tab } }))
+    }
+  }
+
+  const content = (
+    <>
       {isActive && (
         <motion.span
           layoutId="sidebar-active"
@@ -76,12 +88,31 @@ function NavItem({ item, isActive, badge }: { item: NavDef; isActive: boolean; b
         strokeWidth={1.5}
       />
       <span className="relative flex-1 truncate">{item.label}</span>
-      {typeof badge === 'number' && badge > 0 && <Badge count={badge} />}
       {item.kbd && (
         <kbd className="relative font-mono text-[10px] text-muted-foreground/60 group-hover:text-muted-foreground inline-flex items-center gap-0.5 transition-colors">
           {item.kbd}
         </kbd>
       )}
+    </>
+  )
+
+  const className = cn(
+    'group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors text-left',
+    isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+  )
+
+  // Use button for instant dashboard tab switching to avoid Next.js router overhead
+  if (pathname === '/dashboard' && item.href.startsWith('/dashboard')) {
+    return (
+      <button type="button" onClick={handleClick} className={className}>
+        {content}
+      </button>
+    )
+  }
+
+  return (
+    <Link href={item.href} onClick={handleClick} className={className}>
+      {content}
     </Link>
   )
 }
@@ -208,6 +239,12 @@ export function Sidebar() {
   const [userName, setUserName] = useState('User')
   const [userEmail, setUserEmail] = useState('')
   const [theme, setTheme] = useState('dark')
+  const [localActiveTab, setLocalActiveTab] = useState<string | null>(null)
+
+  // Sync local active tab with URL search params on mount and when they change
+  useEffect(() => {
+    setLocalActiveTab(searchParams.get('tab'))
+  }, [searchParams])
 
   // Load persisted theme on mount
   useEffect(() => {
@@ -243,6 +280,15 @@ export function Sidebar() {
     window.dispatchEvent(new Event('storage'))
   }
 
+  // Listen for fast-path tab changes
+  useEffect(() => {
+    const handleTabChange = (e: any) => {
+      setLocalActiveTab(e.detail.tab === 'overview' ? null : e.detail.tab)
+    }
+    window.addEventListener('dashboard-tab-change', handleTabChange)
+    return () => window.removeEventListener('dashboard-tab-change', handleTabChange)
+  }, [])
+
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -250,23 +296,32 @@ export function Sidebar() {
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return
       if (!e.shiftKey) return
 
-      const key = e.key.toUpperCase()
+      const code = e.code
       const routes: Record<string, string> = {
-        'O': '/dashboard',
-        'P': '/dashboard?tab=portfolio',
-        'S': '/dashboard?tab=find-sponsors',
-        'H': '/dashboard?tab=submissions',
-        'N': '/dashboard?tab=inbox',
-        'I': '/dashboard?tab=insights',
-        'L': '/dashboard?tab=ledger',
-        ',': '/dashboard?tab=settings',
-        '<': '/dashboard?tab=settings',
+        'KeyO': '/dashboard',
+        'KeyP': '/dashboard?tab=portfolio',
+        'KeyS': '/dashboard?tab=find-sponsors',
+        'KeyH': '/dashboard?tab=submissions',
+        'KeyN': '/dashboard?tab=inbox',
+        'KeyI': '/dashboard?tab=insights',
+        'KeyL': '/dashboard?tab=ledger',
+        'Comma': role === 'admin' ? '/settings' : '/dashboard?tab=settings',
       }
 
-      if (routes[key]) {
+      if (routes[code]) {
         e.preventDefault()
-        router.push(routes[key])
-      } else if (key === 'M') {
+        const targetUrl = routes[code]
+        
+        // Fast path for dashboard tabs
+        if (pathname === '/dashboard' && targetUrl.startsWith('/dashboard')) {
+          const url = new URL(targetUrl, window.location.origin)
+          const tab = url.searchParams.get('tab') || 'overview'
+          window.history.replaceState({ ...window.history.state, as: targetUrl, url: targetUrl }, '', targetUrl)
+          window.dispatchEvent(new CustomEvent('dashboard-tab-change', { detail: { tab } }))
+        } else {
+          router.push(targetUrl)
+        }
+      } else if (code === 'KeyM') {
         e.preventDefault()
         toggleTheme()
       }
@@ -336,9 +391,12 @@ export function Sidebar() {
           <nav className="flex flex-col gap-0.5">
             {navItems.map((item) => {
               const activeTab = searchParams ? (searchParams.get('tab') ?? '') : ''
+              // For coach dashboard items, check against our localActiveTab state
               const isActive = item.href === '/dashboard'
-                ? pathname === '/dashboard' && !activeTab
-                : pathname + (activeTab ? `?tab=${activeTab}` : '') === item.href
+                ? pathname === '/dashboard' && !localActiveTab
+                : (pathname === '/dashboard' && localActiveTab)
+                    ? item.href === `/dashboard?tab=${localActiveTab}`
+                    : pathname + (activeTab ? `?tab=${activeTab}` : '') === item.href
 
               // for admin items
               const isAdminActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))

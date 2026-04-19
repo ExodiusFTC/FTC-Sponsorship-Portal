@@ -54,6 +54,14 @@ export const teamOnboardingSchema = z.object({
   // Comma-separated free-form text; converted to text[] by the action
   manufacturingCapabilities: z.string().optional(),
   visualPitchItems: z.array(z.object({ url: z.string(), caption: z.string().max(100) })).default([]),
+  achievements: z.array(
+    z.object({
+      season: z.string().min(4, 'Season required'),
+      eventName: z.string().min(2, 'Event name required'),
+      award: z.string().optional(),
+      description: z.string().optional(),
+    })
+  ).default([]),
 }).superRefine((data, ctx) => {
   if (data.status === 'existing' && !data.ftcTeamNumber) {
     ctx.addIssue({

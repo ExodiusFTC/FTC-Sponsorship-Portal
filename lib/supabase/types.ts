@@ -68,6 +68,8 @@ export type Team = {
   sensors: string[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   visual_pitch_items: any[]
+  coach_photo_url: string | null
+  team_members: any[]
   created_at: string
   updated_at: string
 }
@@ -196,6 +198,8 @@ export type TeamInsert = {
   sensors?: string[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   visual_pitch_items?: any[]
+  coach_photo_url?: string | null
+  team_members?: any[]
 }
 
 export type TeamAchievementInsert = {
@@ -296,6 +300,8 @@ export type TeamUpdate = {
   sensors?: string[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   visual_pitch_items?: any[]
+  coach_photo_url?: string | null
+  team_members?: any[]
   updated_at?: string
 }
 
