@@ -49,9 +49,9 @@ function SponsorCard({ sponsor }: { sponsor: SponsorLogo }) {
       href={sponsor.website}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex-none flex h-[110px] w-[220px] items-center justify-center rounded-2xl bg-card border border-primary/20 transition-all duration-300 hover:border-primary/50 dark:hover:bg-accent/50 hover:bg-zinc-300/60 dark:hover:shadow-[0_0_40px_-5px_rgba(255,255,255,0.1)] shadow-[0_0_15px_-5px_rgba(0,0,0,0.1)] text-foreground cursor-pointer mx-4"
+      className="group flex-none flex h-[110px] w-[220px] items-center justify-center rounded-2xl bg-card border border-primary/20 transition-all duration-300 hover:border-primary/50 dark:hover:bg-white/[0.04] hover:bg-black/[0.02] shadow-[0_0_15px_-5px_rgba(0,0,0,0.1)] text-foreground cursor-pointer mx-4 hover:scale-[1.02]"
     >
-      <div className="opacity-100 flex items-center justify-center select-none transition-all group-hover:brightness-50 dark:group-hover:brightness-125 group-hover:contrast-100 dark:group-hover:contrast-125">
+      <div className="flex items-center justify-center select-none transition-all group-hover:brightness-50 dark:group-hover:brightness-[1.05]">
         <div className="flex items-center gap-3">
           {sponsor.icon && <span style={{ color: sponsor.color }}>{sponsor.icon}</span>}
           <span
@@ -68,14 +68,14 @@ function SponsorCard({ sponsor }: { sponsor: SponsorLogo }) {
 
 export function SponsorsShowcase() {
   return (
-    <section id="sponsors" className="mx-auto w-full px-6 pb-24 pt-6 overflow-hidden">
+    <section id="sponsors" className="w-full pb-24 pt-6 overflow-hidden">
       <FadeUp>
         <div className="text-center text-[13px] font-medium tracking-widest uppercase text-primary/60 mb-16">
           The Partners Powering Your Season
         </div>
       </FadeUp>
 
-      <div className="flex flex-col gap-8">
+      <div className="mx-auto max-w-7xl px-6 flex flex-col gap-8">
         {/* Row 1: Rotating Left */}
         <div className="relative flex overflow-hidden" style={{ maskImage: 'linear-gradient(to right, transparent, black 15%, black 85%, transparent)' }}>
           <div className="flex animate-marquee-left whitespace-nowrap">
