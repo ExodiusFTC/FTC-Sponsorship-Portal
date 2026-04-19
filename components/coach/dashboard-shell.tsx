@@ -91,7 +91,7 @@ export function DashboardShell({
     window.history.replaceState({ ...window.history.state, as: url, url }, '', url)
   }
 
-  const activePitches = submissions.filter(s => s.status === 'pending' || s.status === 'approved').length
+  const activePitches = submissions.filter(s => s.status === 'pending' || s.status === 'dispatched' || s.status === 'approved').length
   const totalFunded = submissions.filter(s => s.status === 'approved').length
 
   return (
@@ -159,12 +159,14 @@ function KpiCard({ label, value, hint }: { label: string; value: string | number
 function StatusChip({ status }: { status: string }) {
   const statusConfig: Record<string, { bg: string; text: string; border: string }> = {
     approved: { bg: 'var(--badge-success-bg)', text: 'var(--badge-success-text)', border: 'var(--badge-success-text)' },
-    pending: { bg: 'var(--badge-warning-bg)', text: 'var(--badge-warning-text)', border: 'var(--badge-warning-text)' },
+    dispatched: { bg: 'var(--badge-warning-bg)', text: 'var(--badge-warning-text)', border: 'var(--badge-warning-text)' },
+    pending: { bg: 'var(--badge-pending-bg)', text: 'var(--badge-pending-text)', border: 'var(--badge-pending-text)' },
     changes_requested: { bg: 'var(--badge-warning-bg)', text: 'var(--badge-warning-text)', border: 'var(--badge-warning-text)' },
     declined: { bg: 'var(--badge-rejected-bg)', text: 'var(--badge-rejected-text)', border: 'var(--badge-rejected-text)' },
     draft: { bg: 'var(--badge-pending-bg)', text: 'var(--badge-pending-text)', border: 'var(--badge-pending-text)' },
   }
   const config = statusConfig[status] ?? statusConfig.draft
+  const label = status === 'dispatched' ? 'Sent to Sponsor' : status.replace(/_/g, ' ')
   return (
     <span
       className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium"
@@ -174,7 +176,7 @@ function StatusChip({ status }: { status: string }) {
         borderColor: config.border,
       }}
     >
-      {status.replace(/_/g, ' ')}
+      {label}
     </span>
   )
 }
@@ -481,6 +483,7 @@ function SubmissionsTab({ submissions }: { submissions: SubmissionSummary[] }) {
   const filtered = submissions.filter(s => {
     if (filter === 'all') return true
     if (filter === 'declined') return s.status === 'declined' || s.status === 'changes_requested'
+    if (filter === 'pending') return s.status === 'pending' || s.status === 'dispatched'
     return s.status === filter
   })
 
@@ -576,9 +579,9 @@ function SubmissionsTab({ submissions }: { submissions: SubmissionSummary[] }) {
                           <span className="font-semibold text-amber-400">Admin feedback: </span>{s.admin_feedback}
                         </div>
                       )}
-                      {s.financial_ask_cents !== undefined && (
+                      {s.requested_amount_cents !== undefined && (
                         <div className="text-xs text-zinc-500">
-                          Ask: <span className="text-zinc-300 font-mono">${(s.financial_ask_cents / 100).toLocaleString()}</span>
+                          Ask: <span className="text-zinc-300 font-mono">${(s.requested_amount_cents / 100).toLocaleString()}</span>
                         </div>
                       )}
                     </div>

@@ -29,6 +29,7 @@ type SponsorSubmission = {
   custom_pitch_alignment?: string | null
   specific_needs_statement?: string | null
   sponsors?: { company_name?: string | null } | null
+  requested_amount_cents: number
 }
 
 type TeamAchievement = {
@@ -52,13 +53,13 @@ type SponsorTeam = {
   website?: string | null
 }
 
-export function SponsorReviewShell({ submission, team }: { submission: unknown; team: unknown }) {
+export function SponsorReviewShell({ submission, team }: { submission: any; team: any }) {
   const submissionData = submission as SponsorSubmission
   const teamData = team as SponsorTeam
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState('')
-  const [fundingAmount, setFundingAmount] = useState(teamData.financial_ask_cents / 100)
+  const [fundingAmount, setFundingAmount] = useState((submissionData.requested_amount_cents || teamData.financial_ask_cents) / 100)
   const [showConfirm, setShowConfirm] = useState<'approved' | 'declined' | 'changes_requested' | null>(null)
   const sponsorCompany = submissionData?.sponsors?.company_name || 'your company'
 
@@ -215,7 +216,7 @@ export function SponsorReviewShell({ submission, team }: { submission: unknown; 
                         className="pl-7 bg-background/50"
                       />
                     </div>
-                    <p className="text-[10px] text-muted-foreground">Team is asking for ${(teamData.financial_ask_cents / 100).toLocaleString()}</p>
+                    <p className="text-[10px] text-muted-foreground">Team is asking for ${((submissionData.requested_amount_cents || teamData.financial_ask_cents) / 100).toLocaleString()}</p>
                   </div>
                 </div>
 

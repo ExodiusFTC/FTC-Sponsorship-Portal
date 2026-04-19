@@ -71,6 +71,7 @@ export async function saveSubmission(
     variant_label: variantLabel,
     season,
     submitted_at: status === 'pending' ? new Date().toISOString() : null,
+    requested_amount_cents: (await supabase.from('teams').select('financial_ask_cents').eq('id', teamId).single()).data?.financial_ask_cents ?? 0
   }
 
   if (submissionId) {
@@ -147,6 +148,7 @@ export async function autoSaveSubmissionDraft(
     local_connection_notes: data.localConnectionNotes ?? null,
     status: 'draft' as const,
     season: getCurrentSeasonLabel(),
+    requested_amount_cents: (await supabase.from('teams').select('financial_ask_cents').eq('id', teamId).single()).data?.financial_ask_cents ?? 0
   }
 
   if (submissionId) {
@@ -220,6 +222,7 @@ export async function cloneSubmission(
     status: 'draft',
     variant_label: newVariantLabel,
     season: source.season || getCurrentSeasonLabel(),
+    requested_amount_cents: source.requested_amount_cents || (await supabase.from('teams').select('financial_ask_cents').eq('id', teamId).single()).data?.financial_ask_cents || 0
   }
 
   const { data: inserted, error } = await supabase

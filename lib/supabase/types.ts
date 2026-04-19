@@ -8,7 +8,7 @@ export type SponsorStatus = 'active' | 'inactive' | 'pending_review'
 export type SponsorSource = 'admin_added' | 'public_optin'
 export type ApplicationStatus = 'pending' | 'approved' | 'rejected'
 export type TaxStatus = '501c3' | 'School' | 'None'
-export type SubmissionStatus = 'draft' | 'pending' | 'approved' | 'declined' | 'changes_requested' | 'opened' | 'bounced' | 'delivered' | 'expired'
+export type SubmissionStatus = 'draft' | 'pending' | 'dispatched' | 'approved' | 'declined' | 'changes_requested' | 'opened' | 'bounced' | 'delivered' | 'expired'
 
 // ---------------------------------------------------------------------------
 // Line item type for teams.budget_items JSONB
@@ -70,7 +70,6 @@ export type Team = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   visual_pitch_items: any[]
   coach_photo_url: string | null
-  team_members: any[]
   created_at: string
   updated_at: string
 }
@@ -119,6 +118,7 @@ export type Submission = {
   sent_at: string | null
   expires_at: string | null
   season: string | null
+  requested_amount_cents: number
   created_at: string
   updated_at: string
 }
@@ -132,7 +132,7 @@ export type SubmissionSummary = {
   admin_feedback: string | null
   is_locked: boolean
   season: string | null
-  financial_ask_cents: number
+  requested_amount_cents: number
   created_at: string
   updated_at: string
 }
@@ -240,7 +240,6 @@ export type TeamInsert = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   visual_pitch_items?: any[]
   coach_photo_url?: string | null
-  team_members?: any[]
 }
 
 export type TeamAchievementInsert = {
@@ -281,6 +280,7 @@ export type SubmissionInsert = {
   sent_at?: string | null
   expires_at?: string | null
   season?: string | null
+  requested_amount_cents?: number
 }
 
 export type SponsorApplicationInsert = {
@@ -347,7 +347,6 @@ export type TeamUpdate = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   visual_pitch_items?: any[]
   coach_photo_url?: string | null
-  team_members?: any[]
   updated_at?: string
 }
 
@@ -390,6 +389,7 @@ export type SubmissionUpdate = {
   sent_at?: string | null
   expires_at?: string | null
   season?: string | null
+  requested_amount_cents?: number
   updated_at?: string
 }
 

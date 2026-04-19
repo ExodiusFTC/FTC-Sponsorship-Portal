@@ -82,14 +82,6 @@ export const teamOnboardingSchema = z.object({
     })
   ).max(25).default([]),
   coachPhotoUrl: z.preprocess((value) => emptyToUndefined(value), z.string().url().optional().nullable()),
-  members: z.array(
-    z.object({
-      name: z.string().trim().min(1, 'Member name required').max(80),
-      role: z.string().trim().min(1, 'Role required').max(80),
-      experience: z.string().trim().max(500).optional(),
-      photoUrl: z.preprocess((value) => emptyToUndefined(value), z.string().url().optional().nullable()),
-    })
-  ).max(30).default([]),
 }).superRefine((data, ctx) => {
   if (data.status === 'existing' && !data.ftcTeamNumber) {
     ctx.addIssue({

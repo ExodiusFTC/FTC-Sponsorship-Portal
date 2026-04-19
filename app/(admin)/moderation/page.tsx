@@ -47,7 +47,7 @@ export default async function ModerationPage() {
           const sponsor = (submission.sponsors as any)
           const budgetItemsArr = (team?.budget_items as { total_cents?: number }[]) ?? []
           const lineItemSum = budgetItemsArr.reduce((sum, item) => sum + (item.total_cents ?? 0), 0)
-          const financialAsk = team?.financial_ask_cents ?? 0
+          const financialAsk = submission.requested_amount_cents || team?.financial_ask_cents || 0
           const isOverAsk = financialAsk > lineItemSum && lineItemSum > 0
 
           return (
@@ -76,7 +76,7 @@ export default async function ModerationPage() {
                         color: 'var(--text-secondary)',
                         fontFamily: 'var(--font-mono)',
                       }} suppressHydrationWarning>
-                        Ask: ${((team?.financial_ask_cents || 0) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        Ask: ${(financialAsk / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </span>
                       {isOverAsk && (
                         <span style={{ background: 'var(--badge-warning-bg)', color: 'var(--badge-warning-text)', borderRadius: '9999px', padding: '2px 8px', fontSize: '12px', fontWeight: 500 }}>

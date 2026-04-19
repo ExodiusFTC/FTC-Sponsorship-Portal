@@ -66,10 +66,13 @@ export default async function SponsorSubmissionsPage() {
 function SubmissionRow({ submission }: { submission: any }) {
   const statusColors: Record<string, string> = {
     pending: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
+    dispatched: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
     approved: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
     declined: 'text-rose-500 bg-rose-500/10 border-rose-500/20',
     changes_requested: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
   }
+
+  const statusLabel = submission.status === 'dispatched' ? 'New Request' : submission.status.replace('_', ' ')
 
   return (
     <Link href={`/sponsor/submissions/${submission.id}`}>
@@ -90,7 +93,7 @@ function SubmissionRow({ submission }: { submission: any }) {
               "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
               statusColors[submission.status] || 'text-muted-foreground bg-muted/10 border-muted-foreground/20'
             )}>
-              {submission.status.replace('_', ' ')}
+              {statusLabel}
             </div>
             <div className="text-xs text-muted-foreground tabular-nums">
               {new Date(submission.created_at).toLocaleDateString()}

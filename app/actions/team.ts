@@ -96,7 +96,6 @@ export async function createTeam(data: TeamOnboardingInput) {
     proudest_mechanism_problem: payloadData.proudestMechanismProblem?.trim() || null,
     proudest_mechanism_solution: payloadData.proudestMechanismSolution?.trim() || null,
     coach_photo_url: payloadData.coachPhotoUrl ?? null,
-    team_members: payloadData.members || [],
   }
 
   // Keep onboarding idempotent: one owner should map to one team profile.
@@ -238,7 +237,6 @@ export async function updateTeam(id: string, data: Partial<TeamOnboardingInput>)
   if (data.proudestMechanismProblem !== undefined) updatePayload.proudest_mechanism_problem = data.proudestMechanismProblem?.trim() || null
   if (data.proudestMechanismSolution !== undefined) updatePayload.proudest_mechanism_solution = data.proudestMechanismSolution?.trim() || null
   if (data.coachPhotoUrl !== undefined) updatePayload.coach_photo_url = data.coachPhotoUrl || null
-  if (data.members !== undefined) updatePayload.team_members = data.members
 
   if (Object.keys(updatePayload).length === 0) {
     return { success: true }

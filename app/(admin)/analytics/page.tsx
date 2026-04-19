@@ -4,8 +4,9 @@ import { AnalyticsChartsWrapper } from '@/components/admin/analytics-charts-wrap
 
 const STATUS_LABELS: Record<string, { label: string; bg: string; text: string }> = {
   draft:             { label: 'Draft',           bg: 'var(--badge-pending-bg)',  text: 'var(--badge-pending-text)' },
-  pending:           { label: 'Pending Review',  bg: 'var(--badge-warning-bg)',  text: 'var(--badge-warning-text)' },
-  approved:          { label: 'Approved & Sent', bg: 'var(--badge-success-bg)',  text: 'var(--badge-success-text)' },
+  pending:           { label: 'Pending Admin',   bg: 'var(--badge-pending-bg)',  text: 'var(--badge-pending-text)' },
+  dispatched:        { label: 'Sent to Sponsor', bg: 'var(--badge-warning-bg)',  text: 'var(--badge-warning-text)' },
+  approved:          { label: 'Funded',          bg: 'var(--badge-success-bg)',  text: 'var(--badge-success-text)' },
   declined:          { label: 'Declined',        bg: 'var(--badge-rejected-bg)', text: 'var(--badge-rejected-text)' },
   changes_requested: { label: 'Changes Req.',   bg: 'var(--badge-warning-bg)',  text: 'var(--badge-warning-text)' },
 }
@@ -168,7 +169,7 @@ export default async function AnalyticsPage() {
                           <td className="px-4 py-3 font-medium text-foreground">{sub.team_name}</td>
                           <td className="px-4 py-3 text-secondary max-w-[180px] truncate">{sub.company_name}</td>
                           <td className="px-4 py-3 text-secondary font-mono text-xs" suppressHydrationWarning>
-                            ${(sub.financial_ask_cents / 100).toLocaleString('en-US')}
+                            ${(sub.requested_amount_cents / 100).toLocaleString('en-US')}
                           </td>
                           <td className="px-4 py-3">
                             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full"
