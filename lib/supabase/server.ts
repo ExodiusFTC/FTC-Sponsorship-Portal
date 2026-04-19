@@ -1,7 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { Database } from './types'
-import { env } from '@/lib/env'
 
 export async function createClient() {
   const cookieStore = await cookies()
@@ -24,7 +23,6 @@ export async function createClient() {
           }
         },
       },
-      ...(env.SUPABASE_POOLER_URL ? { db: { poolerUrl: env.SUPABASE_POOLER_URL } } : {}),
     }
   )
 }
