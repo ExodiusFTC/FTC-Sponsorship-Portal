@@ -6,7 +6,7 @@
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 // Professional Steel palette (Slate)
-export const ACCENT_DARK_TEXT = "#5879b2ff"  // Slate 400
+export const ACCENT_DARK_TEXT = "#657ba1ff"  // Slate 400
 export const ACCENT_DARK_GLOBE = "#ffffff" // Slate 600
 export const ACCENT_LIGHT_TEXT = "#617c98ff" // Slate 800
 export const ACCENT_LIGHT_GLOBE = "#000000ff" // Slate 500

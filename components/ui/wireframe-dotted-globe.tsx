@@ -9,6 +9,92 @@ interface RotatingEarthProps {
   className?: string
 }
 
+// [lng, lat] format
+const HUB_LOCATIONS: [number, number][] = [
+  [-122.4194, 37.7749], // SF
+  [-74.0060, 40.7128],  // NY
+  [-0.1278, 51.5074],   // London
+  [139.6503, 35.6762],  // Tokyo
+  [151.2093, -33.8688], // Sydney
+  [-46.6333, -23.5505], // Sao Paulo
+  [34.7818, 32.0853],   // Tel Aviv
+  [103.8198, 1.3521],   // Singapore
+  [77.2090, 28.6139],   // New Delhi
+  [2.3522, 48.8566],    // Paris
+  [37.6173, 55.7558],   // Moscow
+  [-118.2437, 34.0522], // LA
+  [-87.6298, 41.8781],  // Chicago
+  [116.4074, 39.9042],  // Beijing
+  [-95.3698, 29.7604],  // Houston
+  [-80.1918, 25.7617],  // Miami
+  [3.3792, 6.5244],     // Lagos, Nigeria
+  [36.8219, -1.2921],   // Nairobi, Kenya
+  [28.0473, -26.2041],  // Johannesburg, SA
+  [-58.3816, -34.6037], // Buenos Aires, Argentina
+  [-77.0428, -12.0464], // Lima, Peru
+  [-70.6483, -33.4489], // Santiago, Chile
+  [-43.1729, -22.9068], // Rio de Janeiro, Brazil
+  [18.4241, -33.9249],  // Cape Town, SA
+  [31.2357, 30.0444],   // Cairo, Egypt
+  [-99.1332, 19.4326],  // Mexico City
+]
+
+const pointInPolygon = (point: [number, number], polygon: number[][]): boolean => {
+  const [x, y] = point
+  let inside = false
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [xi, yi] = polygon[i]
+    const [xj, yj] = polygon[j]
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
+      inside = !inside
+    }
+  }
+  return inside
+}
+
+const pointInFeature = (point: [number, number], feature: any): boolean => {
+  const geometry = feature.geometry
+  if (geometry.type === "Polygon") {
+    const coordinates = geometry.coordinates
+    if (!pointInPolygon(point, coordinates[0])) return false
+    for (let i = 1; i < coordinates.length; i++) {
+      if (pointInPolygon(point, coordinates[i])) return false
+    }
+    return true
+  } else if (geometry.type === "MultiPolygon") {
+    for (const polygon of geometry.coordinates) {
+      if (pointInPolygon(point, polygon[0])) {
+        let inHole = false
+        for (let i = 1; i < polygon.length; i++) {
+          if (pointInPolygon(point, polygon[i])) {
+            inHole = true
+            break
+          }
+        }
+        if (!inHole) return true
+      }
+    }
+    return false
+  }
+  return false
+}
+
+const generateDotsInPolygon = (feature: any, dotSpacing = 16) => {
+  const dots: [number, number][] = []
+  const bounds = d3.geoBounds(feature)
+  const [[minLng, minLat], [maxLng, maxLat]] = bounds
+  const stepSize = dotSpacing * 0.08
+  for (let lng = minLng; lng <= maxLng; lng += stepSize) {
+    for (let lat = minLat; lat <= maxLat; lat += stepSize) {
+      const point: [number, number] = [lng, lat]
+      if (pointInFeature(point, feature)) {
+        dots.push(point)
+      }
+    }
+  }
+  return dots
+}
+
 export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -17,37 +103,81 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
   const dimensions = useRef({ width: 800, height: 800 })
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
 
-  // 1. Listen for theme changes on document element
+  const landFeaturesRef = useRef<any>(null)
+  const allDotsRef = useRef<{ lng: number; lat: number; visible: boolean }[]>([])
+  const connectionsRef = useRef<[number, number][][]>([])
+  const projectionRef = useRef<any>(null)
+  const contextRef = useRef<CanvasRenderingContext2D | null>(null)
+  const timeRef = useRef(0)
+  const themeColorsRef = useRef({ accent: '#94a3b8' })
+
+  // 1. Listen for theme changes
   useEffect(() => {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'class' || mutation.attributeName === 'data-theme') {
-          const isDark = document.documentElement.classList.contains('dark')
-          setTheme(isDark ? 'dark' : 'light')
-        }
-      })
-    })
+    const updateColors = () => {
+      const isDark = document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') !== 'light'
+      setTheme(isDark ? 'dark' : 'light')
 
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class', 'data-theme']
-    })
+      // Update cached colors
+      const accent = window.getComputedStyle(document.documentElement).getPropertyValue('--accent-globe').trim() || '#94a3b8'
+      themeColorsRef.current = { accent }
+    }
 
-    // Initial check
-    const isDark = document.documentElement.classList.contains('dark')
-    setTheme(isDark ? 'dark' : 'light')
+    const observer = new MutationObserver(updateColors)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] })
 
+    updateColors()
     return () => observer.disconnect()
   }, [])
 
+  // 2. Initialize data (Mount only)
+  useEffect(() => {
+    const loadWorldData = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetch(
+          "https://raw.githubusercontent.com/martynafford/natural-earth-geojson/refs/heads/master/110m/physical/ne_110m_land.json",
+        )
+        if (!response.ok) throw new Error("Failed to load land data")
+        const data = await response.json()
+        landFeaturesRef.current = data
+
+        const dots: { lng: number; lat: number; visible: boolean }[] = []
+        data.features.forEach((feature: any) => {
+          const generated = generateDotsInPolygon(feature, 16)
+          generated.forEach(([lng, lat]) => {
+            dots.push({ lng, lat, visible: true })
+          })
+        })
+        allDotsRef.current = dots
+
+        const conns: [number, number][][] = []
+        for (let i = 0; i < 28; i++) {
+          const from = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
+          let to = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
+          while (to === from) to = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
+          conns.push([from, to])
+        }
+        connectionsRef.current = conns
+
+        setIsLoading(false)
+      } catch (err) {
+        setError("Failed to load land map data")
+        setIsLoading(false)
+      }
+    }
+    loadWorldData()
+  }, [])
+
+  // 3. Setup Canvas and Animation (Mount only)
   useEffect(() => {
     if (!canvasRef.current || !containerRef.current) return
 
     const canvas = canvasRef.current
     const context = canvas.getContext("2d")
     if (!context) return
+    contextRef.current = context
 
-    // Setup function to update canvas based on container size
     const updateDimensions = () => {
       if (containerRef.current) {
         dimensions.current = {
@@ -58,129 +188,21 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
     }
     updateDimensions()
 
-    let { width: containerWidth, height: containerHeight } = dimensions.current
-
-    // Make the globe slightly smaller (radius divisor from 2.1 -> 2.5) 
-    // to give it padding and prevent the atmosphere/dots from being cut off.
-    const radius = Math.min(containerWidth, containerHeight) / 2.5
-
+    let { width, height } = dimensions.current
+    const radius = Math.min(width, height) / 2.5
     const dpr = window.devicePixelRatio || 1
-    canvas.width = containerWidth * dpr
-    canvas.height = containerHeight * dpr
-    canvas.style.width = `${containerWidth}px`
-    canvas.style.height = `${containerHeight}px`
+
+    canvas.width = width * dpr
+    canvas.height = height * dpr
+    canvas.style.width = `${width}px`
+    canvas.style.height = `${height}px`
     context.scale(dpr, dpr)
 
-    // Create projection and path generator for Canvas
-    let projection = d3
-      .geoOrthographic()
-      .scale(radius)
-      .translate([containerWidth / 2, containerHeight / 2])
-      .clipAngle(90)
+    const projection = d3.geoOrthographic().scale(radius).translate([width / 2, height / 2]).clipAngle(90)
+    projectionRef.current = projection
 
-    let path = d3.geoPath().projection(projection).context(context)
+    const path = d3.geoPath().projection(projection).context(context)
 
-    const pointInPolygon = (point: [number, number], polygon: number[][]): boolean => {
-      const [x, y] = point
-      let inside = false
-
-      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-        const [xi, yi] = polygon[i]
-        const [xj, yj] = polygon[j]
-
-        if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
-          inside = !inside
-        }
-      }
-
-      return inside
-    }
-
-    const pointInFeature = (point: [number, number], feature: any): boolean => {
-      const geometry = feature.geometry
-
-      if (geometry.type === "Polygon") {
-        const coordinates = geometry.coordinates
-        // Check if point is in outer ring
-        if (!pointInPolygon(point, coordinates[0])) {
-          return false
-        }
-        // Check if point is in any hole (inner rings)
-        for (let i = 1; i < coordinates.length; i++) {
-          if (pointInPolygon(point, coordinates[i])) {
-            return false // Point is in a hole
-          }
-        }
-        return true
-      } else if (geometry.type === "MultiPolygon") {
-        // Check each polygon in the MultiPolygon
-        for (const polygon of geometry.coordinates) {
-          // Check if point is in outer ring
-          if (pointInPolygon(point, polygon[0])) {
-            // Check if point is in any hole
-            let inHole = false
-            for (let i = 1; i < polygon.length; i++) {
-              if (pointInPolygon(point, polygon[i])) {
-                inHole = true
-                break
-              }
-            }
-            if (!inHole) {
-              return true
-            }
-          }
-        }
-        return false
-      }
-
-      return false
-    }
-
-    const generateDotsInPolygon = (feature: any, dotSpacing = 16) => {
-      const dots: [number, number][] = []
-      const bounds = d3.geoBounds(feature)
-      const [[minLng, minLat], [maxLng, maxLat]] = bounds
-
-      const stepSize = dotSpacing * 0.08
-      let pointsGenerated = 0
-
-      for (let lng = minLng; lng <= maxLng; lng += stepSize) {
-        for (let lat = minLat; lat <= maxLat; lat += stepSize) {
-          const point: [number, number] = [lng, lat]
-          if (pointInFeature(point, feature)) {
-            dots.push(point)
-            pointsGenerated++
-          }
-        }
-      }
-
-      console.log(
-        `[v0] Generated ${pointsGenerated} points for land feature:`,
-        feature.properties?.featurecla || "Land",
-      )
-      return dots
-    }
-
-    interface DotData {
-      lng: number
-      lat: number
-      visible: boolean
-    }
-
-    const allDots: DotData[] = []
-    let landFeatures: any
-
-    // ─── Accent Colors & Data ────────────────────────────────────────────────
-    // Helper to get color from CSS variable
-    const getThemeColor = (varName: string, fallback: string) => {
-      if (typeof window === 'undefined') return fallback
-      return window.getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || fallback
-    }
-
-    // Capture the latest colors based on the current theme state
-    const ACCENT_COLOR = getThemeColor('--accent-globe', '#94a3b8')
-    
-    // Helper to apply opacity to hex colors
     const hexToRgba = (hex: string, alpha: number) => {
       if (!hex.startsWith('#')) return hex
       const r = parseInt(hex.slice(1, 3), 16)
@@ -189,186 +211,96 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
       return `rgba(${r}, ${g}, ${b}, ${alpha})`
     }
 
-    const INDIGO_400 = ACCENT_COLOR
-    const INDIGO_500 = ACCENT_COLOR 
-    const INDIGO_300 = ACCENT_COLOR 
-
-    // [lng, lat] format
-    const HUB_LOCATIONS: [number, number][] = [
-      [-122.4194, 37.7749], // SF
-      [-74.0060, 40.7128],  // NY
-      [-0.1278, 51.5074],   // London
-      [139.6503, 35.6762],  // Tokyo
-      [151.2093, -33.8688], // Sydney
-      [-46.6333, -23.5505], // Sao Paulo
-      [34.7818, 32.0853],   // Tel Aviv
-      [103.8198, 1.3521],   // Singapore
-      [77.2090, 28.6139],   // New Delhi
-      [2.3522, 48.8566],    // Paris
-      [37.6173, 55.7558],   // Moscow
-      [-118.2437, 34.0522], // LA
-      [-87.6298, 41.8781],  // Chicago
-      [116.4074, 39.9042],  // Beijing
-      [-95.3698, 29.7604],  // Houston
-      [-80.1918, 25.7617],  // Miami
-      // Added inclusive locations
-      [3.3792, 6.5244],     // Lagos, Nigeria
-      [36.8219, -1.2921],   // Nairobi, Kenya
-      [28.0473, -26.2041],  // Johannesburg, SA
-      [-58.3816, -34.6037], // Buenos Aires, Argentina
-      [-77.0428, -12.0464], // Lima, Peru
-      [-70.6483, -33.4489], // Santiago, Chile
-      [-43.1729, -22.9068], // Rio de Janeiro, Brazil
-      [18.4241, -33.9249],  // Cape Town, SA
-      [31.2357, 30.0444],   // Cairo, Egypt
-      [-99.1332, 19.4326],  // Mexico City
-    ]
-
-    const connections: [number, number][][] = []
-    for (let i = 0; i < 28; i++) { // Increased connections for better spread
-      const from = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
-      let to = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
-      while (to === from) to = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
-      connections.push([from, to])
-    }
-
-    let time = 0;
-
     const render = () => {
-      time += 1;
-      // Clear canvas
-      context.clearRect(0, 0, containerWidth, containerHeight)
+      if (!contextRef.current || !projectionRef.current) return
+      const ctx = contextRef.current
+      const proj = projectionRef.current
 
-      const currentScale = projection.scale()
+      timeRef.current += 1
+      ctx.clearRect(0, 0, dimensions.current.width, dimensions.current.height)
+
+      const currentScale = proj.scale()
       const scaleFactor = currentScale / radius
 
-      // Draw subtle atmosphere glow behind globe
-      const gradient = context.createRadialGradient(
-        containerWidth / 2, containerHeight / 2, currentScale * 0.8,
-        containerWidth / 2, containerHeight / 2, currentScale * 1.2
+      const ACCENT_COLOR = themeColorsRef.current.accent
+      const gradient = ctx.createRadialGradient(
+        dimensions.current.width / 2, dimensions.current.height / 2, currentScale * 0.8,
+        dimensions.current.width / 2, dimensions.current.height / 2, currentScale * 1.2
       );
-      gradient.addColorStop(0, hexToRgba(INDIGO_500, 0.0));
-      gradient.addColorStop(0.8, hexToRgba(INDIGO_500, 0.12));
-      gradient.addColorStop(1, hexToRgba(INDIGO_500, 0.0));
+      gradient.addColorStop(0, hexToRgba(ACCENT_COLOR, 0.0));
+      gradient.addColorStop(0.8, hexToRgba(ACCENT_COLOR, 0.12));
+      gradient.addColorStop(1, hexToRgba(ACCENT_COLOR, 0.0));
 
-      context.beginPath()
-      context.arc(containerWidth / 2, containerHeight / 2, currentScale * 1.2, 0, 2 * Math.PI)
-      context.fillStyle = gradient
-      context.fill()
+      ctx.beginPath()
+      ctx.arc(dimensions.current.width / 2, dimensions.current.height / 2, currentScale * 1.2, 0, 2 * Math.PI)
+      ctx.fillStyle = gradient
+      ctx.fill()
 
-      if (landFeatures) {
-        // Draw graticule
+      if (landFeaturesRef.current) {
         const graticule = d3.geoGraticule()
-        context.beginPath()
+        ctx.beginPath()
         path(graticule())
-        context.strokeStyle = hexToRgba(INDIGO_400, 0.15)
-        context.lineWidth = 1 * scaleFactor
-        context.stroke()
+        ctx.strokeStyle = hexToRgba(ACCENT_COLOR, 0.15)
+        ctx.lineWidth = 1 * scaleFactor
+        ctx.stroke()
 
-        // Draw land outlines
-        context.beginPath()
-        landFeatures.features.forEach((feature: any) => {
-          path(feature)
-        })
-        context.strokeStyle = hexToRgba(INDIGO_400, 0.25)
-        context.lineWidth = 1 * scaleFactor
-        context.stroke()
+        ctx.beginPath()
+        landFeaturesRef.current.features.forEach((feature: any) => { path(feature) })
+        ctx.strokeStyle = hexToRgba(ACCENT_COLOR, 0.25)
+        ctx.lineWidth = 1 * scaleFactor
+        ctx.stroke()
 
-        // Draw halftone dots
-        context.fillStyle = hexToRgba(INDIGO_400, 0.4)
-        allDots.forEach((dot) => {
-          const projected = projection([dot.lng, dot.lat])
-          if (
-            projected &&
-            projected[0] >= 0 &&
-            projected[0] <= containerWidth &&
-            projected[1] >= 0 &&
-            projected[1] <= containerHeight
-          ) {
-            context.beginPath()
-            context.arc(projected[0], projected[1], 1.0 * scaleFactor, 0, 2 * Math.PI)
-            context.fill()
+        ctx.fillStyle = hexToRgba(ACCENT_COLOR, 0.4)
+        allDotsRef.current.forEach((dot) => {
+          const p = proj([dot.lng, dot.lat])
+          if (p && p[0] >= 0 && p[0] <= dimensions.current.width && p[1] >= 0 && p[1] <= dimensions.current.height) {
+            ctx.beginPath()
+            ctx.arc(p[0], p[1], 1.0 * scaleFactor, 0, 2 * Math.PI)
+            ctx.fill()
           }
         })
 
-        // Draw Connections
-        context.strokeStyle = INDIGO_400
-        context.lineWidth = 1.5 * scaleFactor
-        connections.forEach((conn) => {
-          context.beginPath()
+        ctx.strokeStyle = ACCENT_COLOR
+        ctx.lineWidth = 1.5 * scaleFactor
+        connectionsRef.current.forEach((conn) => {
+          ctx.beginPath()
           path({ type: 'LineString', coordinates: conn })
-          context.setLineDash([8 * scaleFactor, 12 * scaleFactor])
-          context.lineDashOffset = -time * 0.5
-          context.stroke()
+          ctx.setLineDash([8 * scaleFactor, 12 * scaleFactor])
+          ctx.lineDashOffset = -timeRef.current * 0.5
+          ctx.stroke()
         })
-        context.setLineDash([])
+        ctx.setLineDash([])
 
-        // Draw Hubs
-        // We use d3 geoPath with pointRadius to correctly clip hubs to the front
         path.pointRadius(3.5 * scaleFactor)
-        context.fillStyle = INDIGO_300
+        ctx.fillStyle = ACCENT_COLOR
         HUB_LOCATIONS.forEach((hub) => {
-          context.beginPath()
+          ctx.beginPath()
           path({ type: 'Point', coordinates: hub })
-          context.fill()
+          ctx.fill()
         })
 
-        // Add a glow to the hubs
         path.pointRadius(7 * scaleFactor)
-        context.fillStyle = hexToRgba(INDIGO_300, 0.25)
+        ctx.fillStyle = hexToRgba(ACCENT_COLOR, 0.25)
         HUB_LOCATIONS.forEach((hub) => {
-          context.beginPath()
+          ctx.beginPath()
           path({ type: 'Point', coordinates: hub })
-          context.fill()
+          ctx.fill()
         })
       }
     }
 
-    const loadWorldData = async () => {
-      try {
-        setIsLoading(true)
-
-        const response = await fetch(
-          "https://raw.githubusercontent.com/martynafford/natural-earth-geojson/refs/heads/master/110m/physical/ne_110m_land.json",
-        )
-        if (!response.ok) throw new Error("Failed to load land data")
-
-        landFeatures = await response.json()
-
-        // Generate dots for all land features
-        let totalDots = 0
-        landFeatures.features.forEach((feature: any) => {
-          const dots = generateDotsInPolygon(feature, 16)
-          dots.forEach(([lng, lat]) => {
-            allDots.push({ lng, lat, visible: true })
-            totalDots++
-          })
-        })
-
-        console.log(`[v0] Total dots generated: ${totalDots} across ${landFeatures.features.length} land features`)
-
-        render()
-        setIsLoading(false)
-      } catch (err) {
-        setError("Failed to load land map data")
-        setIsLoading(false)
-      }
-    }
-
-    // Set up rotation and interaction
-    const rotation: [number, number, number] = [0, -15, 0] // Start with slight tilt
+    const rotation: [number, number, number] = [0, -15, 0]
     let autoRotate = true
     const rotationSpeed = 0.5
 
     const rotate = () => {
-      if (autoRotate) {
+      if (autoRotate && projectionRef.current) {
         rotation[0] += rotationSpeed
-        projection.rotate(rotation)
+        projectionRef.current.rotate(rotation)
         render()
       }
     }
 
-    // Auto-rotation timer
     const rotationTimer = d3.timer(rotate)
 
     const handleMouseDown = (event: MouseEvent) => {
@@ -381,22 +313,19 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
         const sensitivity = 0.5
         const dx = moveEvent.clientX - startX
         const dy = moveEvent.clientY - startY
-
         rotation[0] = startRotation[0] + dx * sensitivity
         rotation[1] = startRotation[1] - dy * sensitivity
         rotation[1] = Math.max(-90, Math.min(90, rotation[1]))
-
-        projection.rotate(rotation)
-        render()
+        if (projectionRef.current) {
+          projectionRef.current.rotate(rotation)
+          render()
+        }
       }
 
       const handleMouseUp = () => {
         document.removeEventListener("mousemove", handleMouseMove)
         document.removeEventListener("mouseup", handleMouseUp)
-
-        setTimeout(() => {
-          autoRotate = true
-        }, 10)
+        setTimeout(() => { autoRotate = true }, 10)
       }
 
       document.addEventListener("mousemove", handleMouseMove)
@@ -405,40 +334,31 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
 
     canvas.addEventListener("mousedown", handleMouseDown)
 
-    // Handle resize
     const handleResize = () => {
-      if (!containerRef.current) return
-      const newWidth = containerRef.current.offsetWidth
-      const newHeight = containerRef.current.offsetHeight
+      if (!containerRef.current || !projectionRef.current) return
+      const nw = containerRef.current.offsetWidth
+      const nh = containerRef.current.offsetHeight
+      if (nw === dimensions.current.width && nh === dimensions.current.height) return
 
-      if (newWidth === containerWidth && newHeight === containerHeight) return
-
-      containerWidth = newWidth
-      containerHeight = newHeight
-      const newRadius = Math.min(containerWidth, containerHeight) / 2.5
-
-      canvas.width = containerWidth * dpr
-      canvas.height = containerHeight * dpr
-      canvas.style.width = `${containerWidth}px`
-      canvas.style.height = `${containerHeight}px`
+      dimensions.current = { width: nw, height: nh }
+      const nr = Math.min(nw, nh) / 2.5
+      canvas.width = nw * dpr
+      canvas.height = nh * dpr
+      canvas.style.width = `${nw}px`
+      canvas.style.height = `${nh}px`
       context.scale(dpr, dpr)
-
-      projection.scale(newRadius).translate([containerWidth / 2, containerHeight / 2])
+      projectionRef.current.scale(nr).translate([nw / 2, nh / 2])
       render()
     }
 
     window.addEventListener("resize", handleResize)
 
-    // Load the world data
-    loadWorldData()
-
-    // Cleanup
     return () => {
       rotationTimer.stop()
       canvas.removeEventListener("mousedown", handleMouseDown)
       window.removeEventListener("resize", handleResize)
     }
-  }, [theme]) // Re-run effect when theme changes to update INDIGO_* colors
+  }, [])
 
   if (error) {
     return (
