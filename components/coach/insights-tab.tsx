@@ -19,28 +19,28 @@ function StatCard({
 }: {
   label: string
   value: string | number
-  icon: React.ElementType
+  icon: any
   hint?: string
   accent?: boolean
 }) {
   return (
     <div
-      className={`relative rounded-xl border p-5 overflow-hidden transition-colors hover:border-zinc-700 ${
+      className={`relative rounded-xl border p-5 overflow-hidden transition-colors hover:border-border/80 ${
         accent
-          ? 'border-indigo-900/60 bg-indigo-950/30'
-          : 'border-zinc-800/80 bg-zinc-950/60'
+          ? 'border-primary/20 bg-primary/5'
+          : 'border-border bg-card'
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 mb-2">{label}</div>
-          <div className={`text-2xl font-semibold tracking-tight tabular-nums ${accent ? 'text-indigo-300' : 'text-zinc-50'}`}>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2">{label}</div>
+          <div className={`text-2xl font-semibold tracking-tight tabular-nums ${accent ? 'text-primary' : 'text-foreground'}`}>
             {value}
           </div>
-          {hint && <div className="mt-1 text-xs text-zinc-500">{hint}</div>}
+          {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
         </div>
         <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${
-          accent ? 'bg-indigo-900/40 text-indigo-400' : 'bg-zinc-900 text-zinc-400'
+          accent ? 'bg-primary/10 text-primary' : 'bg-accent text-muted-foreground'
         }`}>
           <Icon className="h-4 w-4" strokeWidth={1.5} />
         </div>
@@ -75,13 +75,13 @@ function getMonthKey(dateStr: string) {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-lg border border-zinc-700 bg-zinc-900/95 px-3 py-2 shadow-xl text-xs">
-      {label && <div className="text-zinc-400 mb-1">{label}</div>}
+    <div className="rounded-lg border border-border bg-card/95 px-3 py-2 shadow-xl text-xs">
+      {label && <div className="text-muted-foreground mb-1">{label}</div>}
       {payload.map((p: any, i: number) => (
         <div key={i} className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full inline-block" style={{ background: p.color || p.fill }} />
-          <span className="text-zinc-300">{p.name}:</span>
-          <span className="font-mono text-zinc-100 font-medium">{p.value}</span>
+          <span className="text-muted-foreground">{p.name}:</span>
+          <span className="font-mono text-foreground font-medium">{p.value}</span>
         </div>
       ))}
     </div>
@@ -186,9 +186,9 @@ export function InsightsTab({ submissions }: { submissions: Submission[] }) {
       {/* Row 3 — Trend + Donut */}
       <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
         {/* Submission trend */}
-        <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/60 p-5">
-          <h3 className="text-sm font-medium text-zinc-100 mb-1">Submission Trend</h3>
-          <p className="text-xs text-zinc-500 mb-5">Monthly volume — submitted vs. approved</p>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <h3 className="text-sm font-medium text-foreground mb-1">Submission Trend</h3>
+          <p className="text-xs text-muted-foreground mb-5">Monthly volume — submitted vs. approved</p>
           <div className="h-[240px]">
             {trendData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -226,9 +226,9 @@ export function InsightsTab({ submissions }: { submissions: Submission[] }) {
         </div>
 
         {/* Status donut */}
-        <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/60 p-5">
-          <h3 className="text-sm font-medium text-zinc-100 mb-1">Outcome Breakdown</h3>
-          <p className="text-xs text-zinc-500 mb-4">Distribution by status</p>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <h3 className="text-sm font-medium text-foreground mb-1">Outcome Breakdown</h3>
+          <p className="text-xs text-muted-foreground mb-4">Distribution by status</p>
           <div className="h-[200px]">
             {statusData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -263,9 +263,9 @@ export function InsightsTab({ submissions }: { submissions: Submission[] }) {
       </div>
 
       {/* Row 4 — Ask size distribution */}
-      <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/60 p-5">
-        <h3 className="text-sm font-medium text-zinc-100 mb-1">Ask Size Distribution</h3>
-        <p className="text-xs text-zinc-500 mb-5">How your pitches break down by funding requested</p>
+      <div className="rounded-xl border border-border bg-card p-5">
+        <h3 className="text-sm font-medium text-foreground mb-1">Ask Size Distribution</h3>
+        <p className="text-xs text-muted-foreground mb-5">How your pitches break down by funding requested</p>
         <div className="h-[180px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={askDistData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>

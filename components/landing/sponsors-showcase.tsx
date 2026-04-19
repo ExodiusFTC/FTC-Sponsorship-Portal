@@ -17,7 +17,7 @@ export function SponsorsShowcase() {
   return (
     <section id="sponsors" className="mx-auto max-w-5xl px-6 pb-24 pt-6">
       <FadeUp>
-        <div className="text-center text-[13px] font-medium tracking-wide text-zinc-300 mb-8">
+        <div className="text-center text-[13px] font-medium tracking-wide text-muted-foreground mb-8">
 
         </div>
       </FadeUp>
@@ -42,7 +42,7 @@ export function SponsorsShowcase() {
               {LOGO_CARDS.map((name, i) => (
                 <div
                   key={`a-${i}`}
-                  className="group flex-none flex h-[72px] w-[150px] items-center justify-center rounded-xl bg-zinc-900/60 border border-zinc-800/80 transition-colors hover:bg-zinc-800 hover:border-zinc-700 hover:text-white text-zinc-200 shadow-sm cursor-default"
+                  className="group flex-none flex h-[72px] w-[150px] items-center justify-center rounded-xl bg-card border border-border transition-colors hover:bg-accent hover:border-border hover:text-foreground text-muted-foreground shadow-sm cursor-default"
                 >
                   <div className="opacity-90 flex items-center justify-center select-none transition-opacity group-hover:opacity-100">
                     {name === 'stripe' ? (
@@ -90,7 +90,7 @@ export function SponsorsShowcase() {
               {LOGO_CARDS.map((name, i) => (
                 <div
                   key={`b-${i}`}
-                  className="group flex-none flex h-[72px] w-[150px] items-center justify-center rounded-xl bg-zinc-900/60 border border-zinc-800/80 transition-colors hover:bg-zinc-800 hover:border-zinc-700 hover:text-white text-zinc-200 shadow-sm cursor-default"
+                  className="group flex-none flex h-[72px] w-[150px] items-center justify-center rounded-xl bg-card border border-border transition-colors hover:bg-accent hover:border-border hover:text-foreground text-muted-foreground shadow-sm cursor-default"
                 >
                   <div className="opacity-90 flex items-center justify-center select-none transition-opacity group-hover:opacity-100">
                     {name === 'stripe' ? (

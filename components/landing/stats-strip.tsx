@@ -50,12 +50,12 @@ export function StatsStrip() {
         {PLATFORM_STATS.map((s) => (
           <StaggerItem
             key={s.label}
-            className="rounded-xl border border-zinc-800/80 bg-zinc-950/60 p-5 backdrop-blur transition-colors hover:border-zinc-700"
+            className="rounded-xl border border-border/80 bg-background/60 p-5 backdrop-blur transition-colors hover:border-border"
           >
-            <div className="text-3xl font-semibold tracking-tight text-zinc-50">
+            <div className="text-3xl font-semibold tracking-tight text-foreground">
               <Counter to={s.value} suffix={s.suffix} />
             </div>
-            <div className="mt-1 text-xs uppercase tracking-wider text-zinc-500">{s.label}</div>
+            <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">{s.label}</div>
           </StaggerItem>
         ))}
       </StaggerContainer>

@@ -90,7 +90,7 @@ function GlobeWireframe() {
   const meshRef = useRef<THREE.LineSegments>(null)
 
   const geometry = useMemo(() => {
-    const geo = new THREE.IcosahedronGeometry(1.98, 6)
+    const geo = new THREE.IcosahedronGeometry(2.4, 6)
     const wireGeo = new THREE.WireframeGeometry(geo)
     return wireGeo
   }, [])
@@ -111,7 +111,7 @@ function GlobeWireframe() {
 function GlobeGrid() {
   const gridLines = useMemo(() => {
     const lines: THREE.BufferGeometry[] = []
-    const radius = 2.0
+    const radius = 2.42
 
     // Latitude lines (every 30 degrees)
     for (let lat = -60; lat <= 60; lat += 30) {
@@ -138,16 +138,15 @@ function GlobeGrid() {
 
   return (
     <group>
-      {gridLines.map((geo, i) => (
-        <line key={i} geometry={geo}>
-          <lineBasicMaterial
-            color={INDIGO_400}
-            transparent
-            opacity={0.1}
-            depthWrite={false}
-          />
-        </line>
-      ))}
+      {gridLines.map((geo, i) => {
+        const line = new THREE.Line(geo, new THREE.LineBasicMaterial({
+          color: INDIGO_400,
+          transparent: true,
+          opacity: 0.1,
+          depthWrite: false,
+        }))
+        return <primitive key={i} object={line} />
+      })}
     </group>
   )
 }
@@ -158,7 +157,7 @@ function TeamDots() {
   const glowRef = useRef<THREE.InstancedMesh>(null)
   const dummy = useMemo(() => new THREE.Object3D(), [])
   const positions = useMemo(
-    () => TEAM_LOCATIONS.map(([lat, lng]) => latLngToVec3(lat, lng, 2.01)),
+    () => TEAM_LOCATIONS.map(([lat, lng]) => latLngToVec3(lat, lng, 2.42)),
     []
   )
 
@@ -222,7 +221,7 @@ function AnimatedArcs() {
   const pulseRefs = useRef<(THREE.Mesh | null)[]>([])
 
   const positions = useMemo(
-    () => TEAM_LOCATIONS.map(([lat, lng]) => latLngToVec3(lat, lng, 2.01)),
+    () => TEAM_LOCATIONS.map(([lat, lng]) => latLngToVec3(lat, lng, 2.42)),
     []
   )
 
@@ -238,7 +237,7 @@ function AnimatedArcs() {
     const arcHeight = Math.max(0.3, distance * 0.35)
 
     return {
-      curve: createArcCurve(start, end, 2.01, arcHeight),
+      curve: createArcCurve(start, end, 2.42, arcHeight),
       startTime: performance.now() / 1000,
       duration: 2.5 + Math.random() * 2,
       fromIdx,
@@ -317,20 +316,22 @@ function AnimatedArcs() {
       {arcs.map((arc, i) => (
         <group key={`arc-${i}`}>
           {/* Arc line */}
-          <line
-            ref={(ref: THREE.Mesh | null) => { arcMeshRefs.current[i] = ref }}
-            geometry={new THREE.BufferGeometry().setFromPoints(arc.curve.getPoints(64))}
-          >
-            <lineBasicMaterial
-              color={INDIGO_400}
-              transparent
-              opacity={0.6}
-              depthWrite={false}
-            />
-          </line>
+          <primitive 
+            key={`arc-line-${i}`}
+            object={new THREE.Line(
+              new THREE.BufferGeometry().setFromPoints(arc.curve.getPoints(64)),
+              new THREE.LineBasicMaterial({
+                color: INDIGO_400,
+                transparent: true,
+                opacity: 0.6,
+                depthWrite: false,
+              })
+            )}
+            ref={(ref: any) => { arcMeshRefs.current[i] = ref }}
+          />
           {/* Traveling pulse */}
           <mesh
-            ref={(ref: THREE.Mesh | null) => { pulseRefs.current[i] = ref }}
+            ref={(ref: any) => { pulseRefs.current[i] = ref }}
           >
             <sphereGeometry args={[0.04, 8, 8]} />
             <meshBasicMaterial
@@ -378,7 +379,7 @@ function Atmosphere() {
   `
 
   return (
-    <mesh scale={[2.18, 2.18, 2.18]}>
+    <mesh scale={[2.65, 2.65, 2.65]}>
       <sphereGeometry args={[1, 64, 64]} />
       <shaderMaterial
         vertexShader={vertexShader}
@@ -395,7 +396,7 @@ function Atmosphere() {
 // ─── Inner subtle glow sphere ───────────────────────────────────────────────
 function InnerGlow() {
   return (
-    <mesh scale={[1.96, 1.96, 1.96]}>
+    <mesh scale={[2.4, 2.4, 2.4]}>
       <sphereGeometry args={[1, 32, 32]} />
       <meshBasicMaterial
         color={INDIGO_500}

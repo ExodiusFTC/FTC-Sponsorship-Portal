@@ -4,6 +4,13 @@
  * across the entire landing page without touching component code.
  */
 
+// ─── Theme ───────────────────────────────────────────────────────────────────
+// Professional Steel palette (Slate)
+export const ACCENT_DARK_TEXT = "#657ba1ff"  // Slate 400
+export const ACCENT_DARK_GLOBE = "#ffffff" // Slate 600
+export const ACCENT_LIGHT_TEXT = "#617c98ff" // Slate 800
+export const ACCENT_LIGHT_GLOBE = "#000000ff" // Slate 500
+
 // ─── Platform stats ─────────────────────────────────────────────────────────
 export const PLATFORM_STATS = [
   { label: 'Teams onboarded', value: 0, suffix: '+' },
@@ -11,12 +18,6 @@ export const PLATFORM_STATS = [
   { label: 'Avg. review time', value: 0, suffix: 'h' },
   { label: 'Pitches dispatched', value: 0, suffix: '' },
 ] as const
-
-// ─── Theme ───────────────────────────────────────────────────────────────────
-// Adjust these to easily change the primary accent color across complex components
-export const THEME_ACCENT_BASE = "#818cf8"  // indigo-400
-export const THEME_ACCENT_DARK = "#6366f1"  // indigo-500
-export const THEME_ACCENT_LIGHT = "#a5b4fc" // indigo-300
 
 // ─── Season ──────────────────────────────────────────────────────────────────
 export const CURRENT_SEASON = '2026'

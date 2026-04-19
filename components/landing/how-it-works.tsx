@@ -17,7 +17,7 @@ export function HowItWorks() {
   return (
     <section id="how" className="mx-auto max-w-6xl px-6 py-24">
       <FadeUp className="max-w-2xl">
-        <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-50">
+        <h2 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
           Four steps between your team and a signed check.
         </h2>
       </FadeUp>
@@ -33,21 +33,16 @@ export function HowItWorks() {
         >
           <motion.line
             x1="0" x2="1000" y1="1" y2="1"
-            stroke="url(#line-grad)"
-            strokeWidth="1"
-            strokeDasharray="4 4"
+            stroke="currentColor"
+            strokeOpacity={0.2}
+            strokeWidth="2"
+            strokeDasharray="6 6"
             initial={reduce ? { pathLength: 1 } : { pathLength: 0 }}
             whileInView={{ pathLength: 1 }}
             viewport={{ once: true, margin: '-80px' }}
             transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+            className="text-foreground"
           />
-          <defs>
-            <linearGradient id="line-grad" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0" stopColor="rgb(63 63 70)" />
-              <stop offset="0.5" stopColor="rgb(113 113 122)" />
-              <stop offset="1" stopColor="rgb(63 63 70)" />
-            </linearGradient>
-          </defs>
         </svg>
 
         <StaggerContainer className="grid gap-8 md:grid-cols-4">
@@ -55,14 +50,14 @@ export function HowItWorks() {
             const Icon = s.icon
             return (
               <StaggerItem key={s.label}>
-                <div className="relative inline-flex h-20 w-20 items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-950/80 backdrop-blur">
-                  <Icon className="h-6 w-6 text-zinc-200" strokeWidth={1.5} />
-                  <span className="absolute -top-2 -right-2 rounded-md border border-zinc-800 bg-zinc-900 px-1.5 py-0.5 text-[10px] font-mono text-zinc-500">
+                <div className="relative inline-flex h-20 w-20 items-center justify-center rounded-2xl border border-border bg-background/80 backdrop-blur">
+                  <Icon className="h-6 w-6 text-foreground" strokeWidth={1.5} />
+                  <span className="absolute -top-2 -right-2 rounded-md border border-border bg-accent px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
                     {s.label}
                   </span>
                 </div>
-                <h3 className="mt-5 text-base font-medium text-zinc-100">{s.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-400">{s.body}</p>
+                <h3 className="mt-5 text-base font-medium text-foreground">{s.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
               </StaggerItem>
             )
           })}

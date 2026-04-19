@@ -18,6 +18,8 @@ import {
   ChevronDown,
   ChevronsUpDown,
   LogOut,
+  Sun,
+  Moon,
   type LucideIcon,
 } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
@@ -56,27 +58,27 @@ function NavItem({ item, isActive, badge }: { item: NavDef; isActive: boolean; b
       href={item.href}
       className={cn(
         'group relative flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors',
-        isActive ? 'text-zinc-100' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900/60'
+        isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
       )}
     >
       {isActive && (
         <motion.span
           layoutId="sidebar-active"
-          className="absolute inset-0 rounded-md bg-zinc-900 ring-1 ring-zinc-800"
+          className="absolute inset-0 rounded-md bg-accent ring-1 ring-border"
           transition={{ type: 'spring', stiffness: 450, damping: 36 }}
         />
       )}
       {isActive && (
-        <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-zinc-200" />
+        <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
       )}
       <Icon
-        className={cn('relative h-4 w-4 transition-colors', isActive ? 'text-zinc-100' : 'text-zinc-500 group-hover:text-zinc-200')}
+        className={cn('relative h-4 w-4 transition-colors', isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground')}
         strokeWidth={1.5}
       />
       <span className="relative flex-1 truncate">{item.label}</span>
       {typeof badge === 'number' && badge > 0 && <Badge count={badge} />}
       {item.kbd && typeof badge !== 'number' && (
-        <kbd className="relative hidden font-mono text-[10px] text-zinc-600 group-hover:inline-flex items-center gap-0.5">
+        <kbd className="relative hidden font-mono text-[10px] text-muted-foreground group-hover:inline-flex items-center gap-0.5">
           {item.kbd}
         </kbd>
       )}
@@ -101,7 +103,7 @@ function Badge({ count }: { count: number }) {
     <motion.span
       animate={pulse ? { scale: [1, 1.15, 1] } : { scale: 1 }}
       transition={{ duration: 0.3 }}
-      className="relative inline-flex items-center rounded-full border border-zinc-800 bg-zinc-900 px-1.5 py-0.5 font-mono text-[10px] text-zinc-300"
+      className="relative inline-flex items-center rounded-full border border-border bg-accent px-1.5 py-0.5 font-mono text-[10px] text-foreground"
     >
       {count}
     </motion.span>
@@ -112,18 +114,18 @@ function WorkspacePill({ role }: { role: Role }) {
   return (
     <button
       type="button"
-      className="flex w-full items-center gap-2 rounded-md border border-zinc-800 bg-zinc-950/60 px-2.5 py-1.5 text-left transition-colors hover:border-zinc-700 hover:bg-zinc-900/60"
+      className="flex w-full items-center gap-2 rounded-md border border-border bg-background/60 px-2.5 py-1.5 text-left transition-colors hover:border-border hover:bg-accent/50"
     >
-      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-indigo-400 to-indigo-600 text-[10px] font-bold text-zinc-950">
+      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-indigo-400 to-indigo-600 text-[10px] font-bold text-white">
         M
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[11px] uppercase tracking-wider text-zinc-500">Workspace</div>
-        <div className="text-xs font-medium text-zinc-100 truncate">
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Workspace</div>
+        <div className="text-xs font-medium text-foreground truncate">
           {role === 'admin' ? 'Matchmaker · Admin' : 'Matchmaker · Team'}
         </div>
       </div>
-      <ChevronsUpDown className="h-3.5 w-3.5 text-zinc-500" strokeWidth={1.5} />
+      <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
     </button>
   )
 }
@@ -150,18 +152,18 @@ function UserRow({ name, email, role, onSignOut }: { name: string; email: string
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors hover:bg-zinc-900/70"
+        className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors hover:bg-accent/50"
       >
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-[11px] font-semibold text-zinc-200 ring-1 ring-zinc-800">
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-[11px] font-semibold text-foreground ring-1 ring-border">
           {getInitials(name)}
         </div>
         <div className="flex-1 min-w-0 text-left">
-          <div className="truncate text-xs font-medium text-zinc-100">{name}</div>
-          <div className="truncate text-[10px] text-zinc-500">
+          <div className="truncate text-xs font-medium text-foreground">{name}</div>
+          <div className="truncate text-[10px] text-muted-foreground">
             {role === 'admin' ? 'Admin' : role === 'coach' ? 'Coach' : 'Member'}
           </div>
         </div>
-        <ChevronDown className="h-3.5 w-3.5 text-zinc-500" strokeWidth={1.5} />
+        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
       </button>
 
       <AnimatePresence>
@@ -171,24 +173,24 @@ function UserRow({ name, email, role, onSignOut }: { name: string; email: string
             animate={{ opacity: 1, y: 0 }}
             exit={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
             transition={{ duration: 0.15 }}
-            className="absolute bottom-full left-0 right-0 mb-2 rounded-lg border border-zinc-800 bg-zinc-950/95 p-1.5 shadow-xl backdrop-blur z-50"
+            className="absolute bottom-full left-0 right-0 mb-2 rounded-lg border border-border bg-popover p-1.5 shadow-xl backdrop-blur z-50"
           >
             <div className="px-2 py-1.5">
-              <div className="truncate text-xs font-medium text-zinc-100">{name}</div>
-              <div className="truncate text-[10px] text-zinc-500">{email}</div>
+              <div className="truncate text-xs font-medium text-foreground">{name}</div>
+              <div className="truncate text-[10px] text-muted-foreground">{email}</div>
             </div>
-            <div className="my-1 h-px bg-zinc-900" />
+            <div className="my-1 h-px bg-border" />
             <Link
               href="/settings"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-900 hover:text-zinc-100"
+              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               <Settings className="h-3.5 w-3.5" strokeWidth={1.5} />
               Settings
             </Link>
             <button
               onClick={onSignOut}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-900 hover:text-zinc-100"
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
               Sign out
@@ -207,12 +209,41 @@ export function Sidebar() {
   const [role, setRole] = useState<Role>(null)
   const [userName, setUserName] = useState('User')
   const [userEmail, setUserEmail] = useState('')
+  const [theme, setTheme] = useState('dark')
 
   // Load persisted theme on mount
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('theme') : null
-    if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light')
+    if (saved === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light')
+      setTheme('light')
+    }
+    
+    // Sync if changed externally
+    const handleStorage = () => {
+      const current = document.documentElement.getAttribute('data-theme') ?? 'dark'
+      setTheme(current)
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
   }, [])
+
+  const toggleTheme = () => {
+    const next = theme === 'light' ? 'dark' : 'light'
+    if (next === 'dark') {
+      document.documentElement.removeAttribute('data-theme')
+      document.documentElement.classList.add('dark')
+      document.documentElement.style.colorScheme = 'dark'
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light')
+      document.documentElement.classList.remove('dark')
+      document.documentElement.style.colorScheme = 'light'
+    }
+    localStorage.setItem('theme', next)
+    setTheme(next)
+    // Dispatch storage event for other components in same tab
+    window.dispatchEvent(new Event('storage'))
+  }
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -220,25 +251,30 @@ export function Sidebar() {
       const tag = (e.target as HTMLElement).tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return
       if (!e.shiftKey) return
-      if (e.key === 'O') {
-        e.preventDefault()
-        router.push('/dashboard')
+      
+      const key = e.key.toUpperCase()
+      const routes: Record<string, string> = {
+        'O': '/dashboard',
+        'P': '/dashboard?tab=portfolio',
+        'S': '/dashboard?tab=find-sponsors',
+        'H': '/dashboard?tab=submissions',
+        'N': '/dashboard?tab=inbox',
+        'I': '/dashboard?tab=insights',
+        'L': '/dashboard?tab=ledger',
+        ',': '/dashboard?tab=settings',
       }
-      if (e.key === 'M') {
+
+      if (routes[key]) {
         e.preventDefault()
-        const current = document.documentElement.getAttribute('data-theme') ?? 'dark'
-        const next = current === 'light' ? 'dark' : 'light'
-        if (next === 'dark') {
-          document.documentElement.removeAttribute('data-theme')
-        } else {
-          document.documentElement.setAttribute('data-theme', 'light')
-        }
-        localStorage.setItem('theme', next)
+        router.push(routes[key])
+      } else if (key === 'M') {
+        e.preventDefault()
+        toggleTheme()
       }
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [router])
+  }, [router, theme])
 
   const { data: queueData } = useSWR<{ count: number }>(
     role === 'admin' ? '/api/admin/queue/count' : null,
@@ -280,22 +316,22 @@ export function Sidebar() {
   const navItems = role === 'admin' ? adminNavItems : role === 'coach' ? coachNavItems : []
 
   return (
-    <aside className="fixed left-0 top-0 z-30 flex h-screen w-[240px] flex-col justify-between border-r border-zinc-900 bg-zinc-950 p-3">
+    <aside className="fixed left-0 top-0 z-30 flex h-screen w-[240px] flex-col justify-between border-r border-border bg-card p-3">
       <div className="flex flex-col gap-5">
         <div className="flex items-center justify-between px-1 pt-1">
           <Link href="/" className="flex items-center gap-2">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="text-zinc-100">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="text-foreground">
               <path d="M9 1L16.5 5.5V12.5L9 17L1.5 12.5V5.5L9 1Z" stroke="currentColor" strokeWidth="1.5" />
               <path d="M9 4L14 7V11.5L9 14.5L4 11.5V7L9 4Z" stroke="currentColor" strokeWidth="1" opacity="0.5" />
             </svg>
-            <span className="text-sm font-semibold tracking-tight text-zinc-100">Matchmaker</span>
+            <span className="text-sm font-semibold tracking-tight text-foreground">Matchmaker</span>
           </Link>
         </div>
 
         <WorkspacePill role={role} />
 
         <div>
-          <div className="px-2 pb-2 text-[10px] font-mono uppercase tracking-widest text-zinc-600">
+          <div className="px-2 pb-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
             {role === 'admin' ? 'Admin' : 'Coach'}
           </div>
           <nav className="flex flex-col gap-0.5">
@@ -322,13 +358,26 @@ export function Sidebar() {
         </div>
       </div>
 
-      <div className="border-t border-zinc-900 pt-2 space-y-1">
+      <div className="border-t border-border pt-2 space-y-1">
         {/* Global shortcut hints */}
-        <div className="flex items-center justify-between px-2.5 py-1">
-          <span className="text-[10px] text-zinc-600">Shift+O overview</span>
-          <span className="text-[10px] text-zinc-600">Shift+M theme</span>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2.5 py-1 border-b border-border mb-1 pb-2">
+          <span className="text-[10px] text-muted-foreground whitespace-nowrap">Shift+O overview</span>
+          <span className="text-[10px] text-muted-foreground whitespace-nowrap">Shift+P portfolio</span>
+          <span className="text-[10px] text-muted-foreground whitespace-nowrap">Shift+S sponsors</span>
+          <span className="text-[10px] text-muted-foreground whitespace-nowrap">Shift+M theme</span>
         </div>
-        <UserRow name={userName} email={userEmail} role={role} onSignOut={handleSignOut} />
+        <div className="flex items-center gap-1">
+          <div className="flex-1 min-w-0">
+            <UserRow name={userName} email={userEmail} role={role} onSignOut={handleSignOut} />
+          </div>
+          <button
+            onClick={toggleTheme}
+            className="flex-shrink-0 p-2 text-muted-foreground hover:bg-accent hover:text-foreground rounded-md transition-colors"
+            aria-label="Toggle theme"
+          >
+            {theme === 'light' ? <Moon className="h-4 w-4" strokeWidth={1.5} /> : <Sun className="h-4 w-4" strokeWidth={1.5} />}
+          </button>
+        </div>
       </div>
     </aside>
   )

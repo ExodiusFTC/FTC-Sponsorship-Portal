@@ -18,7 +18,7 @@ export function Accordion({
   const reduce = useReducedMotion()
 
   return (
-    <div className={cn('divide-y divide-zinc-800/80 border border-zinc-800/80 rounded-xl bg-zinc-950/40 backdrop-blur', className)}>
+    <div className={cn('divide-y divide-border/80 border border-border/80 rounded-xl bg-background/40 backdrop-blur', className)}>
       {items.map((item, i) => {
         const isOpen = openIdx === i
         return (
@@ -26,15 +26,15 @@ export function Accordion({
             <button
               type="button"
               onClick={() => setOpenIdx(isOpen ? null : i)}
-              className="group w-full flex items-center justify-between px-5 py-4 text-left transition-colors hover:bg-zinc-900/40"
+              className="group w-full flex items-center justify-between px-5 py-4 text-left transition-colors hover:bg-accent/40"
               aria-expanded={isOpen}
             >
-              <span className="text-sm font-medium text-zinc-100 pr-6">{item.q}</span>
+              <span className="text-sm font-medium text-foreground pr-6">{item.q}</span>
               <ChevronDown
                 strokeWidth={1.5}
                 className={cn(
-                  'h-4 w-4 text-zinc-400 transition-transform duration-300',
-                  isOpen && 'rotate-180 text-zinc-100'
+                  'h-4 w-4 text-muted-foreground transition-transform duration-300',
+                  isOpen && 'rotate-180 text-foreground'
                 )}
               />
             </button>
@@ -48,7 +48,7 @@ export function Accordion({
                   transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                   className="overflow-hidden"
                 >
-                  <p className="px-5 pb-5 text-sm leading-relaxed text-zinc-400">{item.a}</p>
+                  <p className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">{item.a}</p>
                 </motion.div>
               )}
             </AnimatePresence>
