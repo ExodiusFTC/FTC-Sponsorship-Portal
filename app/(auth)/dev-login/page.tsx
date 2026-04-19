@@ -27,6 +27,7 @@ export default function DevLoginPage() {
 
         <div style={{ marginTop: '16px', padding: '12px', background: '#0f0f0f', borderRadius: '6px', fontFamily: 'monospace', fontSize: '11px', color: '#6b7280' }}>
           <div>coach: devcoach@test.local</div>
+          <div>sponsor: devsponsor@test.local</div>
           <div>admin: devadmin@test.local</div>
           <div style={{ marginTop: '4px', color: '#4b5563' }}>pw: devpassword123!</div>
         </div>

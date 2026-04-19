@@ -12,13 +12,25 @@ export default async function OnboardingPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('coach_verified')
+    .select('role, coach_verified')
     .eq('id', user.id)
     .single()
 
+  if (profile?.role === 'sponsor') {
+    redirect('/sponsor/dashboard')
+  }
+
+  if (profile?.role === 'admin') {
+    redirect('/admin')
+  }
+
+  if (!profile) {
+    redirect('/login')
+  }
+
   return (
     <div className="container mx-auto py-12">
-      <OnboardingForm isVerified={profile.coach_verified} />
+      <OnboardingForm isVerified={profile.coach_verified || false} />
     </div>
   )
 }

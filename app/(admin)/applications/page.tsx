@@ -47,7 +47,7 @@ export default async function ApplicationsPage() {
                     <div>
                       <CardTitle className="text-lg">{app.company_name}</CardTitle>
                       <CardDescription suppressHydrationWarning>
-                        {app.contact_email} · Applied {new Date(app.created_at).toLocaleDateString()}
+                        {app.contact_name} ({app.contact_email}) · Applied {new Date(app.created_at).toLocaleDateString()}
                       </CardDescription>
                     </div>
                     <Badge className={STATUS_STYLE[app.status] ?? 'bg-muted'}>

@@ -105,7 +105,7 @@ function CardEmpty({
   className,
   ...props
 }: React.ComponentProps<"div"> & {
-  icon?: React.ElementType
+  icon?: React.ComponentType<any>
   title?: string
   subtitle?: string
   action?: React.ReactNode

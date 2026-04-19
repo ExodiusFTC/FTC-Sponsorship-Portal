@@ -22,6 +22,7 @@ export async function submitSponsorApplication(data: SponsorApplicationInput) {
     .from('sponsor_applications')
     .insert({
       company_name: companyName,
+      contact_name: contactName,
       contact_email: contactEmail,
       proposed_cap_cents: proposedCapCents,
       message,

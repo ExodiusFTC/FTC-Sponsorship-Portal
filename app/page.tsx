@@ -18,10 +18,14 @@ export default async function HomePage() {
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, coach_verified')
       .eq('id', user.id)
       .single()
     if (profile?.role === 'admin') redirect('/admin')
+    if (profile?.role === 'sponsor') redirect('/sponsor/dashboard')
+    if (profile?.role === 'coach' && !profile.coach_verified) {
+      redirect('/awaiting-verification')
+    }
     redirect('/dashboard')
   }
 

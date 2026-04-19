@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Trash, Image as ImageIcon, Upload, GripVertical, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
-import type { Team } from '@/lib/supabase/types'
+import type { Team, TeamAchievement } from '@/lib/supabase/types'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
@@ -309,7 +309,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
                   <div className="space-y-2">
                     <div className="relative aspect-square rounded-md border border-border bg-background overflow-hidden flex items-center justify-center group/photo">
                       {form.watch(`members.${index}.photoUrl`) ? (
-                        <Image src={form.watch(`members.${index}.photoUrl`)} alt={field.name} fill className="object-cover" />
+                        <Image src={form.watch(`members.${index}.photoUrl`)} alt={form.watch(`members.${index}.name`) || 'Member'} fill className="object-cover" />
                       ) : (
                         <label className="cursor-pointer">
                           <ImageIcon className="h-5 w-5 text-muted-foreground/30" />

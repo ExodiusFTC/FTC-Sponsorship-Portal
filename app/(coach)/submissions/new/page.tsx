@@ -34,7 +34,7 @@ export default async function NewSubmissionPage({ searchParams }: { searchParams
   let initialValues = undefined
   if (params.reuse) {
     const { data: sourceSub } = await supabase
-      .from('pitches')
+      .from('submissions')
       .select('custom_pitch_alignment, specific_needs_statement, local_connection_notes')
       .eq('id', params.reuse)
       .eq('team_id', team.id)
@@ -42,9 +42,9 @@ export default async function NewSubmissionPage({ searchParams }: { searchParams
       
     if (sourceSub) {
       initialValues = {
-        customPitchAlignment: sourceSub.custom_pitch_alignment,
-        specificNeedsStatement: sourceSub.specific_needs_statement,
-        localConnectionNotes: sourceSub.local_connection_notes,
+        customPitchAlignment: sourceSub.custom_pitch_alignment ?? undefined,
+        specificNeedsStatement: sourceSub.specific_needs_statement ?? undefined,
+        localConnectionNotes: sourceSub.local_connection_notes ?? undefined,
       }
     }
   }

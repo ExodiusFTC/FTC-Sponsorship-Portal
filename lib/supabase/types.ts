@@ -2,7 +2,7 @@
 // Database-level enum types
 // ---------------------------------------------------------------------------
 
-export type UserRole = 'coach' | 'admin'
+export type UserRole = 'coach' | 'admin' | 'sponsor'
 export type TeamStatus = 'existing' | 'incubator'
 export type SponsorStatus = 'active' | 'inactive' | 'pending_review'
 export type SponsorSource = 'admin_added' | 'public_optin'
@@ -32,6 +32,7 @@ export type Profile = {
   email: string
   coach_verified: boolean
   coach_credentials_url: string | null
+  sponsor_id: string | null
   created_at: string
   updated_at: string
 }
@@ -139,6 +140,7 @@ export type SubmissionSummary = {
 export type SponsorApplication = {
   id: string
   company_name: string
+  contact_name: string
   contact_email: string
   proposed_cap_cents: number
   message: string | null
@@ -162,7 +164,7 @@ export type AuditLog = {
 export type Notification = {
   id: string
   recipient_id: string
-  type: 'submission_declined' | 'submission_approved' | 'submission_changes_requested' | 'general'
+  type: 'submission_declined' | 'submission_approved' | 'submission_changes_requested' | 'coach_verified' | 'general'
   title: string
   body: string | null
   submission_id: string | null
@@ -203,6 +205,7 @@ export type ProfileInsert = {
   email: string
   coach_verified?: boolean
   coach_credentials_url?: string | null
+  sponsor_id?: string | null
 }
 
 export type TeamInsert = {
@@ -282,6 +285,7 @@ export type SubmissionInsert = {
 
 export type SponsorApplicationInsert = {
   company_name: string
+  contact_name: string
   contact_email: string
   proposed_cap_cents?: number
   message?: string | null
@@ -391,6 +395,7 @@ export type SubmissionUpdate = {
 
 export type SponsorApplicationUpdate = {
   company_name?: string
+  contact_name?: string
   contact_email?: string
   proposed_cap_cents?: number
   message?: string | null

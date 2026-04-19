@@ -27,7 +27,7 @@ import useSWR from 'swr'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
-type Role = 'coach' | 'admin' | null
+type Role = 'coach' | 'admin' | 'sponsor' | null
 
 type NavDef = { icon: LucideIcon; label: string; href: string; kbd?: string; showBadge?: boolean }
 
@@ -49,6 +49,14 @@ const adminNavItems: NavDef[] = [
   { icon: Users, label: 'Teams', href: '/coaches', kbd: 'Shift+T' },
   { icon: BarChart2, label: 'Analytics', href: '/analytics', kbd: 'Shift+A' },
   { icon: Settings, label: 'Settings', href: '/settings', kbd: 'Shift+,' },
+]
+
+const sponsorNavItems: NavDef[] = [
+  { icon: LayoutDashboard, label: 'Dashboard', href: '/sponsor/dashboard', kbd: 'Shift+O' },
+  { icon: FileText, label: 'Requests', href: '/sponsor/submissions', kbd: 'Shift+R' },
+  { icon: Inbox, label: 'Inbox', href: '/sponsor/inbox', kbd: 'Shift+N', showBadge: true },
+  { icon: Wallet, label: 'Funding', href: '/sponsor/funding', kbd: 'Shift+F' },
+  { icon: Settings, label: 'Settings', href: '/sponsor/settings', kbd: 'Shift+,' },
 ]
 
 function NavItem({ item, isActive, badge }: { item: NavDef; isActive: boolean; badge?: number }) {
@@ -151,7 +159,7 @@ function WorkspacePill({ role }: { role: Role }) {
       <div className="flex-1 min-w-0">
         <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Workspace</div>
         <div className="text-xs font-medium text-foreground truncate">
-          {role === 'admin' ? 'Matchmaker · Admin' : 'Matchmaker · Team'}
+          {role === 'admin' ? 'Matchmaker · Admin' : role === 'sponsor' ? 'Matchmaker · Sponsor' : 'Matchmaker · Team'}
         </div>
       </div>
       <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
@@ -184,7 +192,7 @@ function UserRow({ name, email, role, onSignOut }: { name: string; email: string
           <div className="flex-1 min-w-0 text-left">
             <div className="truncate text-xs font-medium text-foreground">{name}</div>
             <div className="truncate text-[10px] text-muted-foreground">
-              {role === 'admin' ? 'Admin' : role === 'coach' ? 'Coach' : 'Member'}
+              {role === 'admin' ? 'Admin' : role === 'coach' ? 'Coach' : role === 'sponsor' ? 'Sponsor' : 'Member'}
             </div>
           </div>
           <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
@@ -309,7 +317,7 @@ export function Sidebar() {
     router.push('/login')
   }
 
-  const navItems = role === 'admin' ? adminNavItems : role === 'coach' ? coachNavItems : []
+  const navItems = role === 'admin' ? adminNavItems : role === 'coach' ? coachNavItems : role === 'sponsor' ? sponsorNavItems : []
 
   return (
     <aside className="fixed left-0 top-0 z-30 flex h-screen w-[240px] flex-col justify-between border-r border-border bg-card p-3">
@@ -328,7 +336,7 @@ export function Sidebar() {
 
         <div>
           <div className="px-2 pb-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-            {role === 'admin' ? 'Admin' : 'Coach'}
+            {role === 'admin' ? 'Admin' : role === 'coach' ? 'Coach' : 'Sponsor'}
           </div>
           <nav className="flex flex-col gap-0.5">
             {navItems.map((item) => {
@@ -362,7 +370,7 @@ export function Sidebar() {
           <div className="flex-1 min-w-0">
             <UserRow name={userName} email={userEmail} role={role} onSignOut={handleSignOut} />
           </div>
-          <Theme variant="dropdown" size="sm" />
+          <Theme variant="button" size="sm" themes={['light', 'dark']} />
         </div>
       </div>
     </aside>

@@ -1,11 +1,12 @@
 'use client'
 
 import { FadeUp } from '@/components/motion/fade-up'
-import { MARQUEE_SPONSORS } from '@/lib/site-config'
+import { SPONSORS_SHOWCASE } from '@/lib/site-config'
 
 export function LogosRail() {
+  const names = SPONSORS_SHOWCASE.map(s => s.name)
   // Duplicate once so the marquee loop is seamless
-  const items = [...MARQUEE_SPONSORS, ...MARQUEE_SPONSORS]
+  const items = [...names, ...names]
 
   return (
     <div className="mx-auto max-w-6xl px-6 pt-28 pb-20">

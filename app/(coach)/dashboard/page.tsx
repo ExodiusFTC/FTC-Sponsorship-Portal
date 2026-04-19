@@ -31,6 +31,10 @@ export default async function DashboardPage({
     supabase.from('team_achievements').select('*').order('season', { ascending: false })
   ])
 
+  if (profile?.role === 'sponsor') {
+    redirect('/sponsor/dashboard')
+  }
+
   if (!team) {
     redirect('/onboarding')
   }

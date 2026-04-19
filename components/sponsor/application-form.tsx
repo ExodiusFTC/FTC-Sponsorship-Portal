@@ -129,7 +129,7 @@ export function ApplicationForm() {
                       <Input 
                         type="number" 
                         min="0"
-                        className="pl-6"
+                        className="pl-10"
                         value={field.value ? field.value / 100 : ''}
                         onChange={(e) => {
                           const cents = Math.round(parseFloat(e.target.value) * 100) || 0

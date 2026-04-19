@@ -65,6 +65,8 @@ export async function createTeam(data: TeamOnboardingInput) {
     subteamBreakdown,
     manufacturingCapabilities,
     visualPitchItems,
+    coachPhotoUrl,
+    members,
   } = result.data
 
   if (status === 'existing' && ftcTeamNumber) {
@@ -110,6 +112,9 @@ export async function createTeam(data: TeamOnboardingInput) {
     subteam_breakdown: subteamBreakdown ?? null,
     manufacturing_capabilities: manufacturingCapabilities ?? [],
     visual_pitch_items: visualPitchItems ?? [],
+    proudest_mechanism_name: proudestMechanismName ?? null,
+    proudest_mechanism_problem: proudestMechanismProblem ?? null,
+    proudest_mechanism_solution: proudestMechanismSolution ?? null,
     coach_photo_url: coachPhotoUrl ?? null,
     team_members: members || [],
   }
@@ -217,6 +222,9 @@ export async function updateTeam(id: string, data: Partial<TeamOnboardingInput>)
       ? data.manufacturingCapabilities.split(',').map(s => s.trim()).filter(Boolean)
       : (data.manufacturingCapabilities ?? []),
     visual_pitch_items: data.visualPitchItems,
+    proudest_mechanism_name: data.proudestMechanismName,
+    proudest_mechanism_problem: data.proudestMechanismProblem,
+    proudest_mechanism_solution: data.proudestMechanismSolution,
     coach_photo_url: data.coachPhotoUrl,
     team_members: data.members,
   }

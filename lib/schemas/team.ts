@@ -47,6 +47,9 @@ export const teamOnboardingSchema = z.object({
   sensors: z.string().optional(),
   githubLink: z.string().url().optional().or(z.literal('')),
   autonomousDescription: z.string().max(750).optional(),
+  proudestMechanismName: z.string().max(200).optional(),
+  proudestMechanismProblem: z.string().max(1000).optional(),
+  proudestMechanismSolution: z.string().max(1000).optional(),
   subteamBreakdown: z.string().max(1000).optional(),
   // Comma-separated free-form text; converted to text[] by the action
   manufacturingCapabilities: z.string().optional(),

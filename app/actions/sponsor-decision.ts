@@ -1,52 +1,89 @@
 'use server'
 
+import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendHandshakeEmail } from '@/lib/notify'
+import { revalidatePath } from 'next/cache'
+import { createInAppNotification } from '@/lib/notify'
 
-type DecisionType = 'decline' | 'full' | 'partial'
+export async function sponsorUpdateSubmissionStatus(
+  submissionId: string, 
+  status: 'approved' | 'declined' | 'changes_requested',
+  feedback?: string,
+  fundingAmountCents?: number
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
 
-export async function recordSponsorDecision(
-  token: string,
-  decision: DecisionType,
-  partialAmountCents?: number
-): Promise<{ ok: boolean; error?: string }> {
-  const supabase = createAdminClient()
-
-  // 1. Hash the token
-  const { createHash } = await import('crypto')
-  const tokenHash = createHash('sha256').update(token).digest('hex')
-
-  // 2. Atomic RPC call
-  const { data: rpcResult, error: rpcError } = await supabase.rpc('record_sponsor_decision_atomic', {
-    p_token_hash: tokenHash,
-    p_decision: decision,
-    p_partial_amount_cents: partialAmountCents || 0
-  })
-
-  if (rpcError) return { ok: false, error: rpcError.message }
-
-  const result = rpcResult as { ok: boolean; error?: string; amount_cents?: number }
-  if (!result.ok) {
-    const messages: Record<string, string> = {
-      invalid_token: 'Invalid or expired link.',
-      token_expired: 'This proposal link has expired.',
-      token_used: 'A decision has already been recorded for this proposal.',
-      insufficient_capacity: 'Sponsor capacity has been exceeded. Please contact us.'
-    }
-    return { ok: false, error: messages[result.error ?? ''] ?? result.error }
-  }
-
-  // 3. Success — Fetch submission ID for handshake email (RPC result only gives amount)
-  const { data: tokenRow } = await supabase
-    .from('submission_access_tokens')
-    .select('submission_id')
-    .eq('token_hash', tokenHash)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, sponsor_id')
+    .eq('id', user.id)
     .single()
 
-  if (tokenRow && (decision === 'full' || decision === 'partial')) {
-    // Dispatch email asynchronously (or background)
-    await sendHandshakeEmail(tokenRow.submission_id, result.amount_cents || 0)
+  if (profile?.role !== 'sponsor' || !profile.sponsor_id) {
+    return { error: 'Forbidden: Sponsor access required' }
   }
 
-  return { ok: true }
+  // Verify this submission belongs to this sponsor
+  const { data: submission } = await supabase
+    .from('submissions')
+    .select('sponsor_id, team_id, teams(owner_id)')
+    .eq('id', submissionId)
+    .single()
+
+  if (!submission || submission.sponsor_id !== profile.sponsor_id) {
+    return { error: 'Submission not found or unauthorized' }
+  }
+
+  const adminClient = createAdminClient()
+
+  // Update submission status
+  const { error: updateError } = await adminClient
+    .from('submissions')
+    .update({ 
+      status, 
+      admin_feedback: feedback || null,
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: user.id
+    })
+    .eq('id', submissionId)
+
+  if (updateError) return { error: updateError.message }
+
+  // If approved, log the transaction and update funding_used_cents
+  if (status === 'approved' && fundingAmountCents) {
+    await adminClient.from('transaction_ledger').insert({
+      sponsor_id: profile.sponsor_id,
+      team_id: submission.team_id,
+      submission_id: submissionId,
+      amount_cents: fundingAmountCents,
+      decision_type: 'full',
+      actor_type: 'sponsor'
+    })
+
+    // Increment sponsor's used budget
+    await adminClient.rpc('increment_sponsor_funding', {
+      sponsor_uuid: profile.sponsor_id,
+      amount: fundingAmountCents
+    })
+  }
+
+  // Notify the coach
+  const recipientId = (submission.teams as any).owner_id
+  if (recipientId) {
+    await createInAppNotification({
+      recipient_id: recipientId,
+      type: status === 'approved' ? 'submission_approved' : status === 'declined' ? 'submission_declined' : 'submission_changes_requested',
+      title: status === 'approved' ? 'Submission Approved!' : 'Update on your Submission',
+      body: feedback || `Your submission has been ${status}.`,
+      submission_id: submissionId
+    })
+  }
+
+  revalidatePath('/sponsor/dashboard')
+  revalidatePath(`/sponsor/submissions/${submissionId}`)
+  revalidatePath('/dashboard') // Revalidate coach dashboard too
+  
+  return { success: true }
 }
