@@ -59,8 +59,23 @@ export function SponsorDashboardShell({
 }) {
   const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'inbox' | 'funding'>('overview')
 
-  const pendingCount = submissions.filter(s => s.status === 'pending').length
-  const approvedCount = submissions.filter(s => s.status === 'approved').length
+  const pendingCount = submissions?.filter(s => s.status === 'pending').length ?? 0
+  const approvedCount = submissions?.filter(s => s.status === 'approved').length ?? 0
+  
+  // Guard against null sponsor
+  if (!sponsor) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border rounded-2xl bg-card/30">
+        <Building2 className="h-10 w-10 text-muted-foreground/30 mb-4" />
+        <h2 className="text-xl font-semibold">No Sponsor Linked</h2>
+        <p className="text-muted-foreground text-center max-w-sm mt-2">
+          Your account is registered as a sponsor, but no company record was found. 
+          Please contact an administrator.
+        </p>
+      </div>
+    )
+  }
+
   const fundingRemaining = sponsor.funding_cap_cents - sponsor.funding_used_cents
 
   return (

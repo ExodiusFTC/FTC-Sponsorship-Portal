@@ -18,6 +18,16 @@ export default async function SponsorFundingPage() {
   if (!profile?.sponsor_id) redirect('/dashboard')
 
   const sponsor = profile.sponsors
+  
+  if (!sponsor) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border rounded-2xl bg-card/30">
+        <h2 className="text-xl font-semibold">No Funding Account</h2>
+        <p className="text-muted-foreground mt-2">Could not find a linked sponsor record for your account.</p>
+      </div>
+    )
+  }
+
   const { data: transactions } = await supabase
     .from('transaction_ledger')
     .select('*, teams(team_name)')
