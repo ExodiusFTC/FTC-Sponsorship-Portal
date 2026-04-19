@@ -114,6 +114,23 @@ export type Submission = {
   admin_feedback: string | null
   reviewed_by: string | null
   reviewed_at: string | null
+  submitted_at: string | null
+  sent_at: string | null
+  season: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type SubmissionSummary = {
+  id: string
+  team_name: string
+  owner_id: string
+  company_name: string
+  status: SubmissionStatus
+  admin_feedback: string | null
+  is_locked: boolean
+  season: string | null
+  financial_ask_cents: number
   created_at: string
   updated_at: string
 }
@@ -236,6 +253,9 @@ export type SubmissionInsert = {
   admin_feedback?: string | null
   reviewed_by?: string | null
   reviewed_at?: string | null
+  submitted_at?: string | null
+  sent_at?: string | null
+  season?: string | null
 }
 
 export type SponsorApplicationInsert = {
@@ -340,6 +360,9 @@ export type SubmissionUpdate = {
   admin_feedback?: string | null
   reviewed_by?: string | null
   reviewed_at?: string | null
+  submitted_at?: string | null
+  sent_at?: string | null
+  season?: string | null
   updated_at?: string
 }
 

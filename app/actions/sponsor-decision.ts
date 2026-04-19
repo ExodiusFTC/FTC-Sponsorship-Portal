@@ -63,7 +63,10 @@ export async function recordSponsorDecision(
   if (decision === 'decline') {
     await supabase
       .from('submissions')
-      .update({ status: 'declined' })
+      .update({ 
+        status: 'declined',
+        reviewed_at: new Date().toISOString()
+      })
       .eq('id', submissionId)
 
     await supabase.from('audit_log').insert({
@@ -108,7 +111,10 @@ export async function recordSponsorDecision(
   // Update submission status
   await supabase
     .from('submissions')
-    .update({ status: 'approved' })
+    .update({ 
+      status: 'approved',
+      reviewed_at: new Date().toISOString()
+    })
     .eq('id', submissionId)
 
   // Debit sponsor; auto-inactivate at cap

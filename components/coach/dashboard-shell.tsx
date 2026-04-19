@@ -18,27 +18,7 @@ import { InsightsTab } from './insights-tab'
 import { AccountSettings } from '@/components/account/account-settings'
 import { updateTeam } from '@/app/actions/team'
 import { toast } from 'sonner'
-import type { Team, Notification } from '@/lib/supabase/types'
-
-type Submission = {
-  id: string
-  company_name: string
-  status: string
-  updated_at: string
-  admin_feedback?: string | null
-  financial_ask_cents?: number
-  created_at?: string
-}
-
-type Sponsor = {
-  id: string
-  company_name: string
-  industry: string | null
-  funding_cap_cents: number
-  funding_used_cents: number
-  website: string | null
-  logo_url?: string | null
-}
+import type { Team, Notification, Submission, Sponsor, TeamAchievement, SubmissionSummary } from '@/lib/supabase/types'
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
@@ -66,7 +46,7 @@ export function DashboardShell({
   sponsors: Sponsor[]
   notifications: Notification[]
   unreadCount: number
-  submissions: Submission[]
+  submissions: SubmissionSummary[]
   achievements: TeamAchievement[]
   initialTab?: string
 }) {
@@ -151,7 +131,7 @@ export function DashboardShell({
           {tab === 'find-sponsors' && <FindSponsorsTab sponsors={sponsors} />}
           {tab === 'submissions' && <SubmissionsTab submissions={submissions} />}
           {tab === 'inbox' && <InboxTab notifications={notifications} switchTab={setTab} />}
-          {tab === 'insights' && <InsightsTab submissions={submissions} />}
+          {tab === 'insights' && <InsightsTab submissions={submissions} sponsors={sponsors} team={team} />}
           {tab === 'ledger' && <LedgerTab team={team} />}
           {tab === 'settings' && (
             <div className="max-w-[600px] mx-auto">
@@ -209,7 +189,7 @@ function OverviewTab({
   submissionsCount: number
   totalFunded: number
   portfolioAsk: number
-  submissions: Submission[]
+  submissions: SubmissionSummary[]
 }) {
   const needsAttention = submissions.filter(s => s.status === 'declined' || s.status === 'changes_requested')
 
@@ -494,7 +474,7 @@ const SUBMISSION_FILTERS: { id: SubmissionFilter; label: string }[] = [
   { id: 'draft', label: 'Drafts' },
 ]
 
-function SubmissionsTab({ submissions }: { submissions: Submission[] }) {
+function SubmissionsTab({ submissions }: { submissions: SubmissionSummary[] }) {
   const [filter, setFilter] = useState<SubmissionFilter>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 

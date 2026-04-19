@@ -1,18 +1,25 @@
 'use client'
 
+import { useState, useMemo } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   AreaChart, Area, CartesianGrid, PieChart, Pie, Cell, Legend,
+  LineChart, Line, RadialBarChart, RadialBar, PolarAngleAxis
 } from 'recharts'
-import { TrendingUp, CheckCircle2, Clock, AlertCircle, DollarSign, Percent, Activity, Send } from 'lucide-react'
-
-type Submission = {
-  id: string
-  status: string
-  financial_ask_cents?: number
-  created_at?: string
-  updated_at?: string
-}
+import { 
+  TrendingUp, CheckCircle2, Clock, DollarSign, 
+  Percent, Activity, Send, Calendar, Target, 
+  BarChart3, PieChart as PieIcon, LineChart as LineIcon,
+  ChevronDown
+} from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
+import type { Submission, Sponsor, Team, SubmissionSummary } from '@/lib/supabase/types'
 
 function StatCard({
   label, value, icon: Icon, hint, accent = false,
@@ -25,22 +32,27 @@ function StatCard({
 }) {
   return (
     <div
-      className={`relative rounded-xl border p-5 overflow-hidden transition-colors hover:border-border/80 ${accent
-          ? 'border-primary/20 bg-primary/5'
-          : 'border-border bg-card'
-        }`}
+      className={cn(
+        "relative rounded-xl border p-5 overflow-hidden transition-all hover:shadow-md group",
+        accent ? "border-primary/20 bg-primary/5" : "border-border bg-card shadow-sm"
+      )}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2">{label}</div>
-          <div className={`text-2xl font-semibold tracking-tight tabular-nums ${accent ? 'text-primary' : 'text-foreground'}`}>
+          <div className={cn(
+            "text-2xl font-bold tracking-tight tabular-nums",
+            accent ? "text-primary" : "text-foreground"
+          )}>
             {value}
           </div>
           {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
         </div>
-        <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${accent ? 'bg-primary/10 text-primary' : 'bg-accent text-muted-foreground'
-          }`}>
-          <Icon className="h-4 w-4" strokeWidth={1.5} />
+        <div className={cn(
+          "flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-110",
+          accent ? "bg-primary/10 text-primary" : "bg-accent text-muted-foreground"
+        )}>
+          <Icon className="h-5 w-5" strokeWidth={1.5} />
         </div>
       </div>
     </div>
@@ -51,228 +63,261 @@ const STATUS_COLORS: Record<string, string> = {
   approved: '#10b981',
   pending: '#6366f1',
   changes_requested: '#f59e0b',
-  declined: '#fe0707ff',
-  draft: '#52525b',
-}
-const STATUS_LABELS: Record<string, string> = {
-  approved: 'Approved',
-  pending: 'Pending',
-  changes_requested: 'Changes Req.',
-  declined: 'Declined',
-  draft: 'Draft',
+  declined: '#ef4444',
+  draft: '#71717a',
 }
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-function getMonthKey(dateStr: string) {
-  const d = new Date(dateStr)
-  return `${MONTH_NAMES[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`
-}
-
-// Custom Tooltip
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-lg border border-border bg-card/95 px-3 py-2 shadow-xl text-xs">
-      {label && <div className="text-muted-foreground mb-1">{label}</div>}
-      {payload.map((p: any, i: number) => (
-        <div key={i} className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full inline-block" style={{ background: p.color || p.fill }} />
-          <span className="text-muted-foreground">{p.name}:</span>
-          <span className="font-mono text-foreground font-medium">{p.value}</span>
-        </div>
-      ))}
+    <div className="rounded-xl border border-border bg-card/95 px-3 py-2.5 shadow-2xl text-xs backdrop-blur-md">
+      {label && <div className="text-muted-foreground font-medium mb-1.5 border-b border-border pb-1">{label}</div>}
+      <div className="space-y-1">
+        {payload.map((p: any, i: number) => (
+          <div key={i} className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full inline-block" style={{ background: p.color || p.fill }} />
+              <span className="text-muted-foreground">{p.name}:</span>
+            </div>
+            <span className="font-mono text-foreground font-semibold">{p.value}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
 
-export function InsightsTab({ submissions }: { submissions: Submission[] }) {
-  // ── Core stats ──────────────────────────────────────────────────────────────
-  const totalFunded = submissions.filter(s => s.status === 'approved').reduce((a, s) => a + (s.financial_ask_cents || 0), 0)
-  const approvedCount = submissions.filter(s => s.status === 'approved').length
-  const declinedCount = submissions.filter(s => s.status === 'declined').length
-  const pendingCount = submissions.filter(s => s.status === 'pending').length
-  const changesCount = submissions.filter(s => s.status === 'changes_requested').length
-  const draftCount = submissions.filter(s => s.status === 'draft').length
+export function InsightsTab({ 
+  submissions, 
+  team 
+}: { 
+  submissions: SubmissionSummary[], 
+  sponsors: Sponsor[],
+  team: Team
+}) {
+  const [currentSeason, setCurrentSeason] = useState<string>('2024-25')
+
+  const filteredSubmissions = useMemo(() => {
+    return submissions.filter(s => s.season === currentSeason || !s.season)
+  }, [submissions, currentSeason])
+
+  // ── Core Stats ─────────────────────────────────────────────────────────────
+  const totalFunded = filteredSubmissions.filter(s => s.status === 'approved').reduce((a, s) => a + (team.financial_ask_cents || 0), 0)
+  const approvedCount = filteredSubmissions.filter(s => s.status === 'approved').length
+  const declinedCount = filteredSubmissions.filter(s => s.status === 'declined').length
+  const pendingCount = filteredSubmissions.filter(s => s.status === 'pending').length
+  const changesCount = filteredSubmissions.filter(s => s.status === 'changes_requested').length
+  const draftCount = filteredSubmissions.filter(s => s.status === 'draft').length
   const decidedCount = approvedCount + declinedCount
   const acceptanceRate = decidedCount === 0 ? 0 : Math.round((approvedCount / decidedCount) * 100)
-  const avgAsk = submissions.length > 0
-    ? Math.round(submissions.reduce((a, s) => a + (s.financial_ask_cents || 0), 0) / submissions.length)
+  const avgAsk = filteredSubmissions.length > 0
+    ? team.financial_ask_cents
     : 0
 
-  // ── Monthly submission volume over time (area chart) ─────────────────────
-  const monthOrder: string[] = []
-  const monthMap: Record<string, { submitted: number; approved: number }> = {}
-  const sorted = [...submissions].filter(s => s.created_at).sort(
-    (a, b) => new Date(a.created_at!).getTime() - new Date(b.created_at!).getTime()
-  )
-  sorted.forEach(s => {
-    const key = getMonthKey(s.created_at!)
-    if (!monthMap[key]) { monthMap[key] = { submitted: 0, approved: 0 }; monthOrder.push(key) }
-    monthMap[key].submitted++
-    if (s.status === 'approved') monthMap[key].approved++
-  })
-  const trendData = monthOrder.map(k => ({ month: k, ...monthMap[k] }))
+  // ── 1. Ask Size Distribution (BarChart) ────────────────────────────────────
+  const askDistData = useMemo(() => {
+    const buckets: Record<string, number> = { '<$500': 0, '$500–$1k': 0, '$1k–$3k': 0, '$3k–$5k': 0, '$5k+': 0 }
+    filteredSubmissions.forEach(s => {
+      const k = (team.financial_ask_cents || 0) / 100
+      if (k < 500) buckets['<$500']++
+      else if (k < 1000) buckets['$500–$1k']++
+      else if (k < 3000) buckets['$1k–$3k']++
+      else if (k < 5000) buckets['$3k–$5k']++
+      else buckets['$5k+']++
+    })
+    return Object.entries(buckets).map(([range, count]) => ({ range, count }))
+  }, [filteredSubmissions, team.financial_ask_cents])
 
-  // ── Status donut data ─────────────────────────────────────────────────────
-  const statusData = Object.entries({
-    approved: approvedCount,
-    pending: pendingCount,
-    changes_requested: changesCount,
-    declined: declinedCount,
-    draft: draftCount,
-  }).filter(([, v]) => v > 0).map(([name, value]) => ({
-    name: STATUS_LABELS[name] ?? name,
-    value,
-    color: STATUS_COLORS[name],
-  }))
+  // ── 2. Submission Funnel (Horizontal Bar) ──────────────────────────────────
+  const funnelData = [
+    { stage: 'Drafts', count: draftCount + pendingCount + approvedCount + declinedCount + changesCount },
+    { stage: 'Submitted', count: pendingCount + approvedCount + declinedCount + changesCount },
+    { stage: 'Reviewed', count: approvedCount + declinedCount + changesCount },
+    { stage: 'Approved', count: approvedCount },
+  ]
 
-  // ── Ask size distribution (bar chart) ────────────────────────────────────
-  const askBuckets: Record<string, number> = { '<$500': 0, '$500–$1k': 0, '$1k–$3k': 0, '$3k–$5k': 0, '$5k+': 0 }
-  submissions.forEach(s => {
-    const k = (s.financial_ask_cents || 0) / 100
-    if (k < 500) askBuckets['<$500']++
-    else if (k < 1000) askBuckets['$500–$1k']++
-    else if (k < 3000) askBuckets['$1k–$3k']++
-    else if (k < 5000) askBuckets['$3k–$5k']++
-    else askBuckets['$5k+']++
-  })
-  const askDistData = Object.entries(askBuckets).map(([range, count]) => ({ range, count }))
+  // ── 3. Cumulative Funding (per season) ─────────────────────────────────────
+  const cumulativeData = useMemo(() => {
+    let total = 0
+    const sortedApproved = filteredSubmissions
+      .filter(s => s.status === 'approved')
+      .sort((a, b) => new Date(a.updated_at || a.created_at).getTime() - new Date(b.updated_at || b.created_at).getTime())
+    
+    return sortedApproved.map(s => {
+      total += (team.financial_ask_cents || 0) / 100
+      return {
+        date: new Date(s.updated_at || s.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        amount: total
+      }
+    })
+  }, [filteredSubmissions])
 
-  const axisStyle = { fill: '#71717a', fontSize: 11 }
-  const gridStyle = { stroke: '#27272a', strokeDasharray: '3 3' }
+  // ── 4. Funding Progress (Radial Bar) ───────────────────────────────────────
+  const goalCents = team.seed_funding_goals_cents || 1000000 
+  const progressPercent = Math.min(100, Math.round((totalFunded / goalCents) * 100))
+  // Recharts RadialBarChart fix: Use a single data point with [0, 100] domain
+  const progressData = [{ value: progressPercent }]
+
+  // ── 5. Status Composition (PieChart) ───────────────────────────────────────
+  const statusData = useMemo(() => [
+    { name: 'Approved', value: approvedCount, color: STATUS_COLORS.approved },
+    { name: 'Pending', value: pendingCount, color: STATUS_COLORS.pending },
+    { name: 'Changes', value: changesCount, color: STATUS_COLORS.changes_requested },
+    { name: 'Declined', value: declinedCount, color: STATUS_COLORS.declined },
+    { name: 'Draft', value: draftCount, color: STATUS_COLORS.draft },
+  ].filter(d => d.value > 0), [approvedCount, pendingCount, changesCount, declinedCount, draftCount])
+
+  const axisStyle = { fill: '#71717a', fontSize: 10, fontWeight: 500 }
+  const gridStyle = { stroke: '#27272a', strokeDasharray: '4 4' }
 
   return (
-    <div className="space-y-6">
-      {/* Row 1 — 4 KPI cards */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Total Secured"
-          value={`$${(totalFunded / 100).toLocaleString()}`}
-          icon={DollarSign}
-          hint="Across approved pitches"
-        />
-        <StatCard
-          label="Approval Rate"
-          value={`${acceptanceRate}%`}
-          icon={Percent}
-          hint={`${approvedCount} of ${decidedCount} decided`}
-        />
-        <StatCard
-          label="Avg Ask Size"
-          value={avgAsk > 0 ? `$${(avgAsk / 100).toLocaleString()}` : '—'}
-          icon={TrendingUp}
-          hint="Per submission"
-        />
-        <StatCard
-          label="Pending Review"
-          value={pendingCount}
-          icon={Clock}
-          hint={`${changesCount} changes requested`}
-        />
+    <div className="space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Season Selector */}
+      <div className="flex items-center justify-between bg-card/50 p-4 rounded-2xl border border-border backdrop-blur-sm shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Calendar className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-foreground">Season Insights</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Performance tracking for {currentSeason}</p>
+          </div>
+        </div>
+        
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="flex items-center gap-2 bg-accent border-none rounded-lg text-sm font-medium px-3 py-2 outline-none cursor-pointer hover:bg-accent/80 transition-colors">
+            <span>{currentSeason} Season</span>
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-[160px]">
+          <DropdownMenuItem onClick={() => setCurrentSeason('2024-25')}>
+            2024-25 Season
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setCurrentSeason('2023-24')}>
+            2023-24 Season
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       </div>
 
-      {/* Row 2 — more stat cards */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total Submissions" value={submissions.length} icon={Send} hint="All time" />
-        <StatCard label="Approved" value={approvedCount} icon={CheckCircle2} hint="By sponsors" />
-        <StatCard label="Declined" value={declinedCount} icon={AlertCircle} hint="Admin decision" />
-        <StatCard label="Active Drafts" value={draftCount} icon={Activity} hint="Awaiting submission" />
+      {/* KPI Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Total Secured" value={`$${(totalFunded / 100).toLocaleString()}`} icon={DollarSign} hint="Current season" accent />
+        <StatCard label="Approval Rate" value={`${acceptanceRate}%`} icon={Percent} hint={`${approvedCount} approved`} />
+        <StatCard label="Avg Ask Size" value={avgAsk > 0 ? `$${(avgAsk / 100).toLocaleString()}` : '—'} icon={TrendingUp} hint="Per submission" />
+        <StatCard label="Active Drafts" value={draftCount} icon={Activity} hint="Ready to send" />
       </div>
 
-      {/* Row 3 — Trend + Donut */}
-      <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
-        {/* Submission trend */}
-        <div className="rounded-xl border border-border bg-card p-5">
-          <h3 className="text-sm font-medium text-foreground mb-1">Submission Trend</h3>
-          <p className="text-xs text-muted-foreground mb-5">Monthly volume — submitted vs. approved</p>
-          <div className="h-[240px]">
-            {trendData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trendData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="grad-submitted" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="grad-approved" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid {...gridStyle} />
-                  <XAxis dataKey="month" tick={axisStyle} tickLine={false} axisLine={false} />
-                  <YAxis tick={axisStyle} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area
-                    type="monotone" dataKey="submitted" name="Submitted"
-                    stroke="#6366f1" strokeWidth={2} fill="url(#grad-submitted)"
-                  />
-                  <Area
-                    type="monotone" dataKey="approved" name="Approved"
-                    stroke="#10b981" strokeWidth={2} fill="url(#grad-approved)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-sm text-zinc-500">
-                No submission data yet
-              </div>
-            )}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Ask Size Distribution */}
+        <div className="rounded-2xl border border-border bg-card p-6 flex flex-col h-[340px]">
+          <div className="flex items-center gap-2 mb-6">
+            <BarChart3 className="h-4 w-4 text-indigo-400" />
+            <h3 className="text-sm font-semibold text-foreground">Ask Size Distribution</h3>
+          </div>
+          <div className="flex-1 min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={askDistData}>
+                <CartesianGrid {...gridStyle} vertical={false} />
+                <XAxis dataKey="range" tick={axisStyle} tickLine={false} axisLine={false} />
+                <YAxis tick={axisStyle} tickLine={false} axisLine={false} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+                <Bar dataKey="count" name="Submissions" fill="#818cf8" radius={[4, 4, 0, 0]} barSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Status donut */}
-        <div className="rounded-xl border border-border bg-card p-5">
-          <h3 className="text-sm font-medium text-foreground mb-1">Outcome Breakdown</h3>
-          <p className="text-xs text-muted-foreground mb-4">Distribution by status</p>
-          <div className="h-[200px]">
-            {statusData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    cx="50%" cy="50%"
-                    innerRadius={58} outerRadius={80}
-                    paddingAngle={3}
-                    dataKey="value"
-                    strokeWidth={0}
-                  >
-                    {statusData.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend
-                    formatter={(v) => <span style={{ color: '#a1a1aa', fontSize: 11 }}>{v}</span>}
-                    iconType="circle"
-                    iconSize={8}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-sm text-zinc-500">
-                No data yet
-              </div>
-            )}
+        {/* Cumulative Funding */}
+        <div className="rounded-2xl border border-border bg-card p-6 flex flex-col h-[340px]">
+          <div className="flex items-center gap-2 mb-6">
+            <TrendingUp className="h-4 w-4 text-emerald-400" />
+            <h3 className="text-sm font-semibold text-foreground">Cumulative Funding</h3>
+          </div>
+          <div className="flex-1 min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={cumulativeData}>
+                <CartesianGrid {...gridStyle} vertical={false} />
+                <XAxis dataKey="date" tick={axisStyle} tickLine={false} axisLine={false} />
+                <YAxis tick={axisStyle} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+                <Tooltip content={<CustomTooltip />} />
+                <Line type="monotone" dataKey="amount" name="Total ($)" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* Row 4 — Ask size distribution */}
-      <div className="rounded-xl border border-border bg-card p-5">
-        <h3 className="text-sm font-medium text-foreground mb-1">Ask Size Distribution</h3>
-        <p className="text-xs text-muted-foreground mb-5">How your pitches break down by funding requested</p>
-        <div className="h-[180px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={askDistData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <CartesianGrid {...gridStyle} />
-              <XAxis dataKey="range" tick={axisStyle} tickLine={false} axisLine={false} />
-              <YAxis tick={axisStyle} tickLine={false} axisLine={false} allowDecimals={false} />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="count" name="Submissions" fill="#818cf8" radius={[4, 4, 0, 0]} maxBarSize={52} />
-            </BarChart>
-          </ResponsiveContainer>
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Submission Funnel */}
+        <div className="rounded-2xl border border-border bg-card p-6 flex flex-col h-[320px]">
+          <h3 className="text-sm font-semibold text-foreground mb-6">Submission Funnel</h3>
+          <div className="flex-1 min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart layout="vertical" data={funnelData} margin={{ left: 20 }}>
+                <XAxis type="number" hide />
+                <YAxis dataKey="stage" type="category" tick={axisStyle} axisLine={false} tickLine={false} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
+                <Bar dataKey="count" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={24} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Status Composition */}
+        <div className="rounded-2xl border border-border bg-card p-6 flex flex-col h-[320px]">
+          <h3 className="text-sm font-semibold text-foreground mb-6">Status Composition</h3>
+          <div className="flex-1 min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={statusData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                  {statusData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 10, paddingTop: 10 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Funding Progress - FIXED RADIAL BAR */}
+        <div className="rounded-2xl border border-border bg-card p-6 flex flex-col h-[320px]">
+          <h3 className="text-sm font-semibold text-foreground mb-6">Goal Progress</h3>
+          <div className="flex-1 min-h-0 relative flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadialBarChart 
+                innerRadius="70%" 
+                outerRadius="100%" 
+                data={progressData} 
+                startAngle={90} 
+                endAngle={90 - (360 * (progressPercent / 100))}
+              >
+                <PolarAngleAxis
+                  type="number"
+                  domain={[0, 100]}
+                  angleAxisId={0}
+                  tick={false}
+                />
+                <RadialBar
+                  background={{ fill: '#27272a' }}
+                  dataKey="value"
+                  cornerRadius={10}
+                  fill="#10b981"
+                />
+              </RadialBarChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-3xl font-bold text-foreground">{progressPercent}%</span>
+              <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-widest mt-1">Funded</span>
+            </div>
+          </div>
+          <div className="mt-4 text-center">
+            <p className="text-xs text-muted-foreground">
+              ${(totalFunded / 100).toLocaleString()} of ${(goalCents / 100).toLocaleString()}
+            </p>
+          </div>
         </div>
       </div>
     </div>

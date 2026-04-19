@@ -12,6 +12,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { ChevronDown } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import type { Sponsor } from '@/lib/supabase/types'
 
 type Props = {
@@ -182,14 +189,29 @@ export function SponsorForm({ initialSponsor }: Props) {
                 <FormItem>
                   <FormLabel>Status *</FormLabel>
                   <FormControl>
-                    <select
-                      {...field}
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                    >
-                      <option value="pending_review">Pending Review</option>
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <FormControl>
+                          <Button variant="outline" className="w-full justify-between font-normal">
+                            {field.value === 'pending_review' ? 'Pending Review' : 
+                             field.value === 'active' ? 'Active' : 
+                             field.value === 'inactive' ? 'Inactive' : 'Select status'}
+                            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-full min-w-[200px]">
+                        <DropdownMenuItem onClick={() => field.onChange('pending_review')}>
+                          Pending Review
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => field.onChange('active')}>
+                          Active
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => field.onChange('inactive')}>
+                          Inactive
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

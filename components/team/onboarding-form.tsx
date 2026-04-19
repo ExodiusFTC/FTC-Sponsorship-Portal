@@ -12,7 +12,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, ChevronDown } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 export function OnboardingForm({ isVerified }: { isVerified: boolean }) {
   const [error, setError] = useState<string | null>(null)
@@ -213,11 +219,29 @@ export function OnboardingForm({ isVerified }: { isVerified: boolean }) {
                   <FormItem>
                     <FormLabel>Tax Status</FormLabel>
                     <FormControl>
-                      <select {...field} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                        <option value="None">Standard / No tax-exempt status</option>
-                        <option value="501c3">501(c)(3) Non-profit</option>
-                        <option value="School">School / Educational Institution</option>
-                      </select>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <FormControl>
+                          <Button variant="outline" className="w-full justify-between font-normal">
+                            {field.value === 'None' ? 'Standard / No tax-exempt status' : 
+                             field.value === '501c3' ? '501(c)(3) Non-profit' : 
+                             field.value === 'School' ? 'School / Educational Institution' : 'Select tax status'}
+                            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-full min-w-[300px]">
+                        <DropdownMenuItem onClick={() => field.onChange('None')}>
+                          Standard / No tax-exempt status
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => field.onChange('501c3')}>
+                          501(c)(3) Non-profit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => field.onChange('School')}>
+                          School / Educational Institution
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

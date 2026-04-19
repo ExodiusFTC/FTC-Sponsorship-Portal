@@ -48,7 +48,11 @@ export async function approveSubmission(submissionId: string) {
 
   // Set expires_at so the sponsor has a 14-day response window
   const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
-  await supabase.from('submissions').update({ expires_at: expiresAt } as never).eq('id', submissionId)
+  const now = new Date().toISOString()
+  await supabase.from('submissions').update({ 
+    expires_at: expiresAt,
+    sent_at: now
+  } as never).eq('id', submissionId)
 
   // Notify coach + dispatch to sponsor with their access token
   await Promise.all([

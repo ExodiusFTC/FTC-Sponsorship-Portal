@@ -13,6 +13,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { RateLimitNotice } from '@/components/ui/rate-limit-notice'
+import { ChevronDown } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import type { Submission } from '@/lib/supabase/types'
 
 const AUTOSAVE_DELAY_MS = 2000
@@ -153,16 +160,23 @@ export function PortfolioForm({ initialSubmission, initialValues, sponsors = [],
                   <FormItem>
                     <FormLabel>Select Sponsor</FormLabel>
                     <FormControl>
-                      <select 
-                        disabled={readOnly || !!initialSubmission} 
-                        {...field} 
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <option value="" disabled>Select a sponsor</option>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild disabled={readOnly || !!initialSubmission}>
+                        <FormControl>
+                          <Button variant="outline" className="w-full justify-between font-normal">
+                            {sponsors.find(s => s.id === field.value)?.company_name ?? 'Select a sponsor'}
+                            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-full min-w-[300px] max-h-[300px] overflow-y-auto">
                         {sponsors.map(s => (
-                          <option key={s.id} value={s.id}>{s.company_name}</option>
+                          <DropdownMenuItem key={s.id} onClick={() => field.onChange(s.id)}>
+                            {s.company_name}
+                          </DropdownMenuItem>
                         ))}
-                      </select>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

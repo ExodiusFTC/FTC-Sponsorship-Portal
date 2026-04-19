@@ -163,71 +163,51 @@ function getInitials(name: string) {
   return name.split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
 }
 
+import { Theme } from '@/components/ui/theme'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+
 function UserRow({ name, email, role, onSignOut }: { name: string; email: string; role: Role; onSignOut: () => void }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  const reduce = useReducedMotion()
-
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [open])
-
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors hover:bg-accent/50"
-      >
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-[11px] font-semibold text-foreground ring-1 ring-border">
-          {getInitials(name)}
-        </div>
-        <div className="flex-1 min-w-0 text-left">
-          <div className="truncate text-xs font-medium text-foreground">{name}</div>
-          <div className="truncate text-[10px] text-muted-foreground">
-            {role === 'admin' ? 'Admin' : role === 'coach' ? 'Coach' : 'Member'}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors hover:bg-accent/50 outline-none">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-[11px] font-semibold text-foreground ring-1 ring-border">
+            {getInitials(name)}
           </div>
-        </div>
-        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={reduce ? { opacity: 1 } : { opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
-            transition={{ duration: 0.15 }}
-            className="absolute bottom-full left-0 right-0 mb-2 rounded-lg border border-border bg-popover p-1.5 shadow-xl backdrop-blur z-50"
-          >
-            <div className="px-2 py-1.5">
-              <div className="truncate text-xs font-medium text-foreground">{name}</div>
-              <div className="truncate text-[10px] text-muted-foreground">{email}</div>
+          <div className="flex-1 min-w-0 text-left">
+            <div className="truncate text-xs font-medium text-foreground">{name}</div>
+            <div className="truncate text-[10px] text-muted-foreground">
+              {role === 'admin' ? 'Admin' : role === 'coach' ? 'Coach' : 'Member'}
             </div>
-            <div className="my-1 h-px bg-border" />
-            <Link
-              href="/settings"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
-            >
-              <Settings className="h-3.5 w-3.5" strokeWidth={1.5} />
-              Settings
-            </Link>
-            <button
-              onClick={onSignOut}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
-            >
-              <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
-              Sign out
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+          </div>
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-[210px] p-1.5 shadow-xl backdrop-blur">
+        <DropdownMenuLabel className="px-2 py-1.5">
+          <div className="truncate text-xs font-medium text-foreground">{name}</div>
+          <div className="truncate text-[10px] font-normal text-muted-foreground">{email}</div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator className="my-1" />
+        <DropdownMenuItem asChild>
+          <Link href="/settings" className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground cursor-pointer hover:bg-accent hover:text-foreground">
+            <Settings className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Settings
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onSignOut} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground cursor-pointer hover:bg-accent hover:text-foreground">
+          <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
+          Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -238,47 +218,12 @@ export function Sidebar() {
   const [role, setRole] = useState<Role>(null)
   const [userName, setUserName] = useState('User')
   const [userEmail, setUserEmail] = useState('')
-  const [theme, setTheme] = useState('dark')
   const [localActiveTab, setLocalActiveTab] = useState<string | null>(null)
 
   // Sync local active tab with URL search params on mount and when they change
   useEffect(() => {
     setLocalActiveTab(searchParams.get('tab'))
   }, [searchParams])
-
-  // Load persisted theme on mount
-  useEffect(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('theme') : null
-    if (saved === 'light') {
-      document.documentElement.setAttribute('data-theme', 'light')
-      setTheme('light')
-    }
-
-    // Sync if changed externally
-    const handleStorage = () => {
-      const current = document.documentElement.getAttribute('data-theme') ?? 'dark'
-      setTheme(current)
-    }
-    window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
-  }, [])
-
-  const toggleTheme = () => {
-    const next = theme === 'light' ? 'dark' : 'light'
-    if (next === 'dark') {
-      document.documentElement.removeAttribute('data-theme')
-      document.documentElement.classList.add('dark')
-      document.documentElement.style.colorScheme = 'dark'
-    } else {
-      document.documentElement.setAttribute('data-theme', 'light')
-      document.documentElement.classList.remove('dark')
-      document.documentElement.style.colorScheme = 'light'
-    }
-    localStorage.setItem('theme', next)
-    setTheme(next)
-    // Dispatch storage event for other components in same tab
-    window.dispatchEvent(new Event('storage'))
-  }
 
   // Listen for fast-path tab changes
   useEffect(() => {
@@ -321,14 +266,11 @@ export function Sidebar() {
         } else {
           router.push(targetUrl)
         }
-      } else if (code === 'KeyM') {
-        e.preventDefault()
-        toggleTheme()
       }
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [router, theme])
+  }, [router, role, pathname, localActiveTab])
 
   const { data: queueData } = useSWR<{ count: number }>(
     role === 'admin' ? '/api/admin/queue/count' : null,
@@ -420,13 +362,7 @@ export function Sidebar() {
           <div className="flex-1 min-w-0">
             <UserRow name={userName} email={userEmail} role={role} onSignOut={handleSignOut} />
           </div>
-          <button
-            onClick={toggleTheme}
-            className="flex-shrink-0 p-2 text-muted-foreground hover:bg-accent hover:text-foreground rounded-md transition-colors"
-            aria-label="Toggle theme"
-          >
-            {theme === 'light' ? <Moon className="h-4 w-4" strokeWidth={1.5} /> : <Sun className="h-4 w-4" strokeWidth={1.5} />}
-          </button>
+          <Theme variant="dropdown" size="sm" />
         </div>
       </div>
     </aside>

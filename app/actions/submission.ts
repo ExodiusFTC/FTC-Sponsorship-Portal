@@ -60,6 +60,8 @@ export async function saveSubmission(
     local_connection_notes: data.localConnectionNotes ?? null,
     status,
     variant_label: variantLabel,
+    season: '2024-25',
+    submitted_at: status === 'pending' ? new Date().toISOString() : null,
   }
 
   if (submissionId) {
@@ -135,6 +137,7 @@ export async function autoSaveSubmissionDraft(
     specific_needs_statement: data.specificNeedsStatement ?? null,
     local_connection_notes: data.localConnectionNotes ?? null,
     status: 'draft' as const,
+    season: '2024-25',
   }
 
   if (submissionId) {
@@ -207,6 +210,7 @@ export async function cloneSubmission(
     local_connection_notes: source.local_connection_notes,
     status: 'draft',
     variant_label: newVariantLabel,
+    season: source.season || '2024-25',
   }
 
   const { data: inserted, error } = await supabase
