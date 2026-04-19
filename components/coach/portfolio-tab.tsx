@@ -21,8 +21,8 @@ export function PortfolioTab({ team }: { team: Team }) {
   const [draggingOver, setDraggingOver] = useState(false)
   const [uploadingDrop, setUploadingDrop] = useState(false)
 
-  const form = useForm<TeamOnboardingInput>({
-    resolver: zodResolver(teamOnboardingSchema),
+  const form = useForm<any>({
+    resolver: zodResolver(teamOnboardingSchema) as any,
     defaultValues: {
       status: team.status,
       ftcTeamNumber: team.ftc_team_number || undefined,
@@ -61,9 +61,11 @@ export function PortfolioTab({ team }: { team: Team }) {
       proudestMechanismProblem: (team as any).proudest_mechanism_problem || '',
       proudestMechanismSolution: (team as any).proudest_mechanism_solution || '',
       subteamBreakdown: (team as any).subteam_breakdown || '',
-      manufacturingCapabilities: ((team as any).manufacturing_capabilities as string[] | undefined)?.join(', ') ?? '',
+      manufacturingCapabilities: Array.isArray((team as any).manufacturing_capabilities) 
+        ? ((team as any).manufacturing_capabilities as string[]).join(', ') 
+        : (team as any).manufacturing_capabilities || '',
       visualPitchItems: (team as any).visual_pitch_items || [],
-    },
+    } as TeamOnboardingInput,
   })
 
   const { fields: visualItems, append: appendVisual, remove: removeVisual } = useFieldArray({
@@ -114,7 +116,7 @@ export function PortfolioTab({ team }: { team: Team }) {
     setUploadingDrop(false)
   }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
-  function onSubmit(values: TeamOnboardingInput) {
+  async function onSubmit(values: any) {
     startTransition(async () => {
       const result = await updateTeam(team.id, values)
       if (result.error) toast.error('Failed to update: ' + result.error)
@@ -127,8 +129,8 @@ export function PortfolioTab({ team }: { team: Team }) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-4xl">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-medium text-zinc-100">Team Portfolio</h2>
-            <p className="text-sm text-zinc-400 mt-1">Manage your team's specs, media, and narrative.</p>
+            <h2 className="text-xl font-medium text-foreground">Team Portfolio</h2>
+            <p className="text-sm text-muted-foreground mt-1">Manage your team's specs, media, and narrative.</p>
           </div>
           <Button type="submit" disabled={isPending}>
             {isPending ? 'Saving…' : 'Save Changes'}
@@ -136,8 +138,8 @@ export function PortfolioTab({ team }: { team: Team }) {
         </div>
 
         {/* Robot Identity — all text inputs */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-6 space-y-5">
-          <h3 className="text-sm font-semibold uppercase tracking-widest text-zinc-500 border-b border-zinc-900 pb-2">
+        <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+          <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
             Robot Identity
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -190,8 +192,8 @@ export function PortfolioTab({ team }: { team: Team }) {
         </div>
 
         {/* Software & Autonomy — text inputs only */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-6 space-y-5">
-          <h3 className="text-sm font-semibold uppercase tracking-widest text-zinc-500 border-b border-zinc-900 pb-2">
+        <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+          <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
             Software & Autonomy
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -226,8 +228,8 @@ export function PortfolioTab({ team }: { team: Team }) {
         </div>
 
         {/* Proudest Mechanism */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-6 space-y-5">
-          <h3 className="text-sm font-semibold uppercase tracking-widest text-zinc-500 border-b border-zinc-900 pb-2">
+        <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+          <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
             Proudest Mechanism
           </h3>
           <FormField control={form.control} name="proudestMechanismName" render={({ field }) => (
@@ -254,8 +256,8 @@ export function PortfolioTab({ team }: { team: Team }) {
         </div>
 
         {/* Team Structure — text inputs */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-6 space-y-5">
-          <h3 className="text-sm font-semibold uppercase tracking-widest text-zinc-500 border-b border-zinc-900 pb-2">
+        <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+          <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
             Team Structure & Capabilities
           </h3>
           <FormField control={form.control} name="manufacturingCapabilities" render={({ field }) => (
@@ -277,10 +279,10 @@ export function PortfolioTab({ team }: { team: Team }) {
         </div>
 
         {/* Visual Pitch Assets — drag & drop */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-6 space-y-5">
-          <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
-            <h3 className="text-sm font-semibold uppercase tracking-widest text-zinc-500">Visual Pitch Assets</h3>
-            <label className="cursor-pointer inline-flex items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800 transition-colors">
+        <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Visual Pitch Assets</h3>
+            <label className="cursor-pointer inline-flex items-center gap-2 rounded-md border border-border bg-accent px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent/80 transition-colors">
               <Upload className="h-3.5 w-3.5" /> Browse
               <input type="file" className="hidden" accept="image/png,image/jpeg,image/webp,image/gif" multiple onChange={handleUpload} />
             </label>
@@ -294,8 +296,8 @@ export function PortfolioTab({ team }: { team: Team }) {
             className={cn(
               'relative rounded-xl border-2 border-dashed transition-all duration-200 overflow-hidden',
               draggingOver
-                ? 'border-indigo-500 bg-indigo-500/5 scale-[1.01]'
-                : 'border-zinc-800 bg-zinc-950/40',
+                ? 'border-primary bg-primary/5 scale-[1.01]'
+                : 'border-border bg-background/40',
               visualItems.length === 0 ? 'min-h-[160px] flex items-center justify-center' : ''
             )}
           >
@@ -307,8 +309,8 @@ export function PortfolioTab({ team }: { team: Team }) {
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3">
-                {visualItems.map((item, index) => (
-                  <div key={item.id} className="relative rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900/50 aspect-video group">
+                {visualItems.map((item: any, index) => (
+                  <div key={item.id} className="relative rounded-lg overflow-hidden border border-border bg-accent/50 aspect-video group">
                     <Image src={item.url} alt={`Slide ${index + 1}`} fill className="object-cover" />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2.5">
                       <button
@@ -344,8 +346,8 @@ export function PortfolioTab({ team }: { team: Team }) {
               </div>
             )}
             {uploadingDrop && (
-              <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/70 pointer-events-none">
-                <div className="rounded-xl bg-zinc-900 border border-zinc-700 px-6 py-4 text-sm text-zinc-200">
+              <div className="absolute inset-0 flex items-center justify-center bg-background/70 pointer-events-none">
+                <div className="rounded-xl bg-card border border-border px-6 py-4 text-sm text-foreground">
                   Uploading…
                 </div>
               </div>
@@ -354,8 +356,8 @@ export function PortfolioTab({ team }: { team: Team }) {
         </div>
 
         {/* Narrative / Mission */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-6 space-y-5">
-          <h3 className="text-sm font-semibold uppercase tracking-widest text-zinc-500 border-b border-zinc-900 pb-2">
+        <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+          <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
             Narrative
           </h3>
           <FormField control={form.control} name="missionStatement" render={({ field }) => (

@@ -26,7 +26,7 @@ export function CopyInput({
   return (
     <div
       className={cn(
-        'group flex items-center gap-2 rounded-md border border-zinc-800 bg-zinc-950/60 px-3 py-2 font-mono text-xs text-zinc-300 transition-colors focus-within:border-zinc-600 hover:border-zinc-700',
+        'group flex items-center gap-2 rounded-md border border-border bg-background/60 px-3 py-2 font-mono text-xs text-muted-foreground transition-colors focus-within:border-border/80 hover:border-border',
         className
       )}
     >
@@ -34,13 +34,13 @@ export function CopyInput({
         aria-label={label ?? 'Copy value'}
         readOnly
         value={value}
-        className="flex-1 bg-transparent outline-none placeholder:text-zinc-600"
+        className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
         onFocus={(e) => e.currentTarget.select()}
       />
       <button
         type="button"
         onClick={onCopy}
-        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900/80 text-zinc-400 transition-all hover:border-zinc-700 hover:bg-zinc-800 hover:text-zinc-100 active:scale-95"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-accent/80 text-muted-foreground transition-all hover:border-border/80 hover:bg-accent hover:text-foreground active:scale-95"
         aria-label="Copy to clipboard"
       >
         {copied ? <Check className="h-3.5 w-3.5" strokeWidth={1.8} /> : <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />}

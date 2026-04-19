@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react"
 import * as d3 from "d3"
-import { THEME_ACCENT_BASE, THEME_ACCENT_DARK, THEME_ACCENT_LIGHT } from "@/lib/site-config"
 
 interface RotatingEarthProps {
   width?: number
@@ -15,7 +14,31 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const dimensions = useRef({ width: 800, height: 800 }) // Initial fallback
+  const dimensions = useRef({ width: 800, height: 800 })
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+
+  // 1. Listen for theme changes on document element
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class' || mutation.attributeName === 'data-theme') {
+          const isDark = document.documentElement.classList.contains('dark')
+          setTheme(isDark ? 'dark' : 'light')
+        }
+      })
+    })
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'data-theme']
+    })
+
+    // Initial check
+    const isDark = document.documentElement.classList.contains('dark')
+    setTheme(isDark ? 'dark' : 'light')
+
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     if (!canvasRef.current || !containerRef.current) return
@@ -148,17 +171,27 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
     let landFeatures: any
 
     // ─── Accent Colors & Data ────────────────────────────────────────────────
-    const INDIGO_400 = THEME_ACCENT_BASE
-    const INDIGO_500 = THEME_ACCENT_DARK
-    const INDIGO_300 = THEME_ACCENT_LIGHT
+    // Helper to get color from CSS variable
+    const getThemeColor = (varName: string, fallback: string) => {
+      if (typeof window === 'undefined') return fallback
+      return window.getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || fallback
+    }
+
+    // Capture the latest colors based on the current theme state
+    const ACCENT_COLOR = getThemeColor('--accent-globe', '#94a3b8')
     
     // Helper to apply opacity to hex colors
     const hexToRgba = (hex: string, alpha: number) => {
+      if (!hex.startsWith('#')) return hex
       const r = parseInt(hex.slice(1, 3), 16)
       const g = parseInt(hex.slice(3, 5), 16)
       const b = parseInt(hex.slice(5, 7), 16)
       return `rgba(${r}, ${g}, ${b}, ${alpha})`
     }
+
+    const INDIGO_400 = ACCENT_COLOR
+    const INDIGO_500 = ACCENT_COLOR 
+    const INDIGO_300 = ACCENT_COLOR 
 
     // [lng, lat] format
     const HUB_LOCATIONS: [number, number][] = [
@@ -178,10 +211,21 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
       [116.4074, 39.9042],  // Beijing
       [-95.3698, 29.7604],  // Houston
       [-80.1918, 25.7617],  // Miami
+      // Added inclusive locations
+      [3.3792, 6.5244],     // Lagos, Nigeria
+      [36.8219, -1.2921],   // Nairobi, Kenya
+      [28.0473, -26.2041],  // Johannesburg, SA
+      [-58.3816, -34.6037], // Buenos Aires, Argentina
+      [-77.0428, -12.0464], // Lima, Peru
+      [-70.6483, -33.4489], // Santiago, Chile
+      [-43.1729, -22.9068], // Rio de Janeiro, Brazil
+      [18.4241, -33.9249],  // Cape Town, SA
+      [31.2357, 30.0444],   // Cairo, Egypt
+      [-99.1332, 19.4326],  // Mexico City
     ]
 
     const connections: [number, number][][] = []
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 28; i++) { // Increased connections for better spread
       const from = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
       let to = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
       while (to === from) to = HUB_LOCATIONS[Math.floor(Math.random() * HUB_LOCATIONS.length)]
@@ -359,16 +403,7 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
       document.addEventListener("mouseup", handleMouseUp)
     }
 
-    const handleWheel = (event: WheelEvent) => {
-      event.preventDefault()
-      const scaleFactor = event.deltaY > 0 ? 0.9 : 1.1
-      const newRadius = Math.max(radius * 0.5, Math.min(radius * 3, projection.scale() * scaleFactor))
-      projection.scale(newRadius)
-      render()
-    }
-
     canvas.addEventListener("mousedown", handleMouseDown)
-    canvas.addEventListener("wheel", handleWheel)
 
     // Handle resize
     const handleResize = () => {
@@ -401,17 +436,16 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
     return () => {
       rotationTimer.stop()
       canvas.removeEventListener("mousedown", handleMouseDown)
-      canvas.removeEventListener("wheel", handleWheel)
       window.removeEventListener("resize", handleResize)
     }
-  }, []) // Removed width/height dependencies as we use internal dimensions
+  }, [theme]) // Re-run effect when theme changes to update INDIGO_* colors
 
   if (error) {
     return (
-      <div className={`dark flex items-center justify-center bg-card rounded-2xl p-8 ${className}`}>
+      <div className={`flex items-center justify-center bg-card border border-border rounded-2xl p-8 ${className}`}>
         <div className="text-center">
-          <p className="dark text-destructive font-semibold mb-2">Error loading Earth visualization</p>
-          <p className="dark text-muted-foreground text-sm">{error}</p>
+          <p className="text-destructive font-semibold mb-2">Error loading Earth visualization</p>
+          <p className="text-muted-foreground text-sm">{error}</p>
         </div>
       </div>
     )
@@ -421,12 +455,9 @@ export default function RotatingEarth({ className = "" }: RotatingEarthProps) {
     <div ref={containerRef} className={`relative overflow-hidden flex items-center justify-center ${className}`}>
       <canvas
         ref={canvasRef}
-        className="w-full h-full bg-transparent"
+        className="w-full h-full bg-transparent cursor-grab active:cursor-grabbing"
         style={{ display: "block" }}
       />
-      <div className="absolute bottom-4 left-4 text-xs text-muted-foreground px-2 py-1 rounded-md dark bg-neutral-900/80 backdrop-blur">
-        Drag to rotate • Scroll to zoom
-      </div>
     </div>
   )
 }

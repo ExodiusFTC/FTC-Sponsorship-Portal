@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -75,6 +75,12 @@ export function DashboardShell({
 
   const [tab, setTabState] = useState(defaultTab)
 
+  useEffect(() => {
+    if (initialTab && initialTab !== tab) {
+      setTabState(initialTab)
+    }
+  }, [initialTab, tab])
+
   const setTab = (newTab: string) => {
     setTabState(newTab)
     const url = newTab === 'overview' ? '/dashboard' : `/dashboard?tab=${newTab}`
@@ -89,11 +95,11 @@ export function DashboardShell({
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="text-xs font-mono uppercase tracking-[0.18em] text-zinc-500">
+          <div className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">
             {team.status === 'existing' ? `FTC · ${team.ftc_team_number}` : 'Incubator'} · {team.city ?? ''}, {team.state ?? ''}
           </div>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-zinc-50">{team.team_name}</h1>
-          <p className="mt-1 text-sm text-zinc-400">{team.organization ?? 'Independent'} · season dashboard</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">{team.team_name}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{team.organization ?? 'Independent'} · season dashboard</p>
         </div>
       </div>
 
@@ -137,10 +143,10 @@ export function DashboardShell({
 
 function KpiCard({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
   return (
-    <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/60 p-5 transition-colors hover:border-zinc-700">
-      <div className="text-[11px] font-mono uppercase tracking-widest text-zinc-500">{label}</div>
-      <div className="mt-2 text-3xl font-semibold tracking-tight text-zinc-50 tabular-nums">{value}</div>
-      {hint && <div className="mt-1 text-xs text-zinc-500">{hint}</div>}
+    <div className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-border/80">
+      <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="mt-2 text-3xl font-semibold tracking-tight text-foreground tabular-nums">{value}</div>
+      {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
     </div>
   )
 }
@@ -190,21 +196,21 @@ function OverviewTab({
         <FadeUp>
           <div className="space-y-3">
             {needsAttention.map(s => (
-              <div key={s.id} className="rounded-xl border border-amber-900/50 bg-amber-900/10 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div key={s.id} className="rounded-xl border border-border bg-destructive/5 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-amber-500" />
-                    <h4 className="text-sm font-medium text-amber-400">
+                    <AlertCircle className="h-4 w-4 text-destructive" />
+                    <h4 className="text-sm font-medium text-destructive">
                       {s.status === 'declined' ? 'Submission Declined' : 'Changes Requested'}
                     </h4>
                   </div>
-                  <p className="mt-1 text-sm text-amber-200/70">
-                    <span className="font-semibold text-amber-200">{s.company_name}</span>: {s.admin_feedback || 'Needs your attention.'}
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    <span className="font-semibold text-foreground">{s.company_name}</span>: {s.admin_feedback || 'Needs your attention.'}
                   </p>
                 </div>
                 <Link
                   href={`/submissions/${s.id}/edit`}
-                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md bg-amber-500 text-amber-950 px-3 h-9 shrink-0 text-sm font-medium transition-colors hover:bg-amber-400"
+                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md bg-destructive text-destructive-foreground px-3 h-9 shrink-0 text-sm font-medium transition-colors hover:opacity-90"
                 >
                   Review Submission
                 </Link>
@@ -223,25 +229,25 @@ function OverviewTab({
 
       {/* Trackable URLs panel — centered */}
       <FadeUp delay={0.05} className="max-w-[800px] mx-auto w-full">
-        <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/60">
-          <div className="flex items-center justify-between border-b border-zinc-900 px-5 py-3">
+        <div className="rounded-xl border border-border bg-card">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3">
             <div>
-              <div className="text-sm font-medium text-zinc-100">Your trackable submission URLs</div>
-              <div className="text-xs text-zinc-500 mt-0.5">Signed links sent to sponsors. Share with care.</div>
+              <div className="text-sm font-medium text-foreground">Your trackable submission URLs</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Signed links sent to sponsors. Share with care.</div>
             </div>
-            <span className="rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-0.5 text-[10px] font-mono text-zinc-400">
+            <span className="rounded-md border border-border bg-accent px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
               {submissions.length} total
             </span>
           </div>
-          <div className="divide-y divide-zinc-900">
+          <div className="divide-y divide-border">
             {submissions.slice(0, 5).map(s => (
               <div key={s.id} className="grid grid-cols-[1fr,auto] items-center gap-4 px-5 py-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900/60">
-                    <Building2 className="h-4 w-4 text-zinc-400" strokeWidth={1.5} />
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-border bg-accent">
+                    <Building2 className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                   </div>
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-zinc-100">{s.company_name}</div>
+                    <div className="truncate text-sm font-medium text-foreground">{s.company_name}</div>
                     <div className="mt-0.5"><StatusChip status={s.status} /></div>
                   </div>
                 </div>

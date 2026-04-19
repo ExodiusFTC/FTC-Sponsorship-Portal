@@ -10,7 +10,7 @@ export function LogosRail() {
   return (
     <div className="mx-auto max-w-6xl px-6 pt-28 pb-20">
       <FadeUp>
-        <div className="text-center text-xs uppercase tracking-[0.2em] text-zinc-500">
+        <div className="text-center text-xs uppercase tracking-[0.2em] text-muted-foreground">
           Trusted by industry leaders, organizations, and sponsors from all over the world
         </div>
       </FadeUp>
@@ -28,7 +28,7 @@ export function LogosRail() {
           {items.map((name, i) => (
             <span
               key={i}
-              className="shrink-0 font-mono text-xl tracking-widest text-zinc-600 hover:text-zinc-300 transition-colors select-none"
+              className="shrink-0 font-mono text-xl tracking-widest text-muted-foreground hover:text-foreground transition-colors select-none"
             >
               {name}
             </span>
