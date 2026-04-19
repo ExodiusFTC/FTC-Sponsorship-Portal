@@ -12,6 +12,12 @@ export const PLATFORM_STATS = [
   { label: 'Pitches dispatched', value: 0, suffix: '' },
 ] as const
 
+// ─── Theme ───────────────────────────────────────────────────────────────────
+// Adjust these to easily change the primary accent color across complex components
+export const THEME_ACCENT_BASE = "#818cf8"  // indigo-400
+export const THEME_ACCENT_DARK = "#6366f1"  // indigo-500
+export const THEME_ACCENT_LIGHT = "#a5b4fc" // indigo-300
+
 // ─── Season ──────────────────────────────────────────────────────────────────
 export const CURRENT_SEASON = '2026'
 export const DISPATCH_SEASON_LABEL = `Season ${CURRENT_SEASON} dispatch window open`
