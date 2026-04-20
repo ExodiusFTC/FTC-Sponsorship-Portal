@@ -77,11 +77,13 @@ export async function approveSubmission(submissionId: string) {
     const plainToken = crypto.randomBytes(32).toString('hex')
     const hash = crypto.createHash('sha256').update(plainToken).digest('hex')
 
-    await adminClient.from('submission_access_tokens').insert({
+    await adminClient.from('submission_access_tokens').insert([{
       submission_id: submissionId,
       token_hash: hash,
-      expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
-    })
+      expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+      used_at: null
+    }])
+
     
     finalToken = plainToken
   } else {

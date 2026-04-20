@@ -83,24 +83,27 @@ export function StateSelector({ value, onChange, placeholder = "Select state..."
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <div
-          role="combobox"
-          aria-expanded={open}
-          className={cn(
-            "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
-            "bg-background border-border text-foreground hover:bg-accent cursor-pointer transition-colors",
-            className
-          )}
-        >
-          <span className="truncate">
-            {value
-              ? states.find((state) => state.abbreviation === value || state.name === value)?.name
-              : placeholder}
-          </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </div>
+      <PopoverTrigger
+        render={
+          <div
+            role="combobox"
+            aria-expanded={open}
+            className={cn(
+              "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+              "bg-background border-border text-foreground hover:bg-accent cursor-pointer transition-colors",
+              className
+            )}
+          />
+        }
+      >
+        <span className="truncate">
+          {value
+            ? states.find((state) => state.abbreviation === value || state.name === value)?.name
+            : placeholder}
+        </span>
+        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </PopoverTrigger>
+
       <PopoverContent className="w-full p-0 bg-popover border-border">
         <Command className="bg-popover text-popover-foreground">
           <CommandInput placeholder="Search state..." className="h-9 border-none focus:ring-0" />
