@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useCallback } from 'react'
+import { useState, useTransition, useCallback, useEffect, useRef } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { teamOnboardingSchema, type TeamOnboardingInput } from '@/lib/schemas/team'
@@ -27,7 +27,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
     resolver: zodResolver(teamOnboardingSchema) as any,
     defaultValues: {
       status: team.status,
-      ftcTeamNumber: team.ftc_team_number || undefined,
+      ftcTeamNumber: team.ftc_team_number ?? '',
       teamName: team.team_name,
       tagline: team.organization || '',
       organization: team.organization || '',
@@ -35,17 +35,17 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
       state: team.state || '',
       missionStatement: team.mission_statement || '',
       taxStatus: team.tax_status,
-      communityInterestText: team.community_interest_text || undefined,
-      studentInterestCount: (team as any).student_interest_count || undefined,
-      sustainabilityPlan: (team as any).sustainability_plan || undefined,
-      seedFundingGoalsCents: team.seed_funding_goals_cents || undefined,
-      technicalSummary: team.technical_summary || undefined,
-      outreachSummary: team.outreach_summary || undefined,
+      communityInterestText: team.community_interest_text || '',
+      studentInterestCount: (team as any).student_interest_count ?? 0,
+      sustainabilityPlan: (team as any).sustainability_plan || '',
+      seedFundingGoalsCents: team.seed_funding_goals_cents ?? 0,
+      technicalSummary: team.technical_summary || '',
+      outreachSummary: team.outreach_summary || '',
       drivetrain: (team as any).drivetrain || '',
       buildSystem: (team as any).build_system || '',
       programming: (team as any).programming || '',
       mediaUrls: team.media_urls || [],
-      youtubeUrl: team.youtube_url || undefined,
+      youtubeUrl: team.youtube_url || '',
       budgetItems: team.budget_items?.map((item: any) => ({
         label: item.label,
         qty: item.qty,
@@ -69,6 +69,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
         description: a.description || '',
       })),
       coachPhotoUrl: (team as any).coach_photo_url || '',
+      subteamBreakdown: (team as any).subteam_breakdown || '',
     } as TeamOnboardingInput,
   })
 
@@ -125,6 +126,19 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
     setUploadingDrop(false)
   }, [])
 
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name?.startsWith('budgetItems')) {
+        const items = value.budgetItems || []
+        const total = items.reduce((sum: number, item: any) => sum + (item.totalCents || 0), 0)
+        if (form.getValues('financialAskCents') !== total) {
+          form.setValue('financialAskCents', total)
+        }
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [form])
+
   async function onSubmit(values: any) {
     startTransition(async () => {
       const result = await updateTeam(team.id, values)
@@ -147,9 +161,77 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
                 : "Manage your team's specs, media, and narrative."}
             </p>
           </div>
-          <Button type="submit" disabled={isPending}>
-            {isPending ? 'Saving…' : 'Save Changes'}
-          </Button>
+          <div className="flex flex-col items-end gap-2">
+            <Button type="submit" disabled={isPending}>
+              {isPending ? 'Saving…' : 'Save Changes'}
+            </Button>
+            {Object.keys(form.formState.errors).length > 0 && (
+              <p className="text-[10px] text-destructive font-medium animate-pulse">
+                Please fix {Object.keys(form.formState.errors).length} error{Object.keys(form.formState.errors).length > 1 ? 's' : ''} above
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Global Identity section — missing fields fix */}
+        <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+          <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
+            Team Identity
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <FormField control={form.control} name="teamName" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Team Name</FormLabel>
+                <FormControl><Input placeholder="e.g. Robot Knights" {...field} value={field.value ?? ''} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="organization" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Organization / School</FormLabel>
+                <FormControl><Input placeholder="e.g. Oak High School" {...field} value={field.value ?? ''} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="city" render={({ field }) => (
+              <FormItem>
+                <FormLabel>City</FormLabel>
+                <FormControl><Input placeholder="e.g. San Jose" {...field} value={field.value ?? ''} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="state" render={({ field }) => (
+              <FormItem>
+                <FormLabel>State</FormLabel>
+                <FormControl><Input placeholder="e.g. California" {...field} value={field.value ?? ''} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="taxStatus" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tax Status</FormLabel>
+                <FormControl>
+                  <select 
+                    {...field} 
+                    className="flex h-9 w-full rounded-md border border-input bg-zinc-950 px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="501c3">501(c)(3) Non-profit</option>
+                    <option value="School">School-based Team</option>
+                    <option value="None">None / Other</option>
+                  </select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="tagline" render={({ field }) => (
+              <FormItem className="col-span-1 md:col-span-2">
+                <FormLabel>Tagline / Motto</FormLabel>
+                <FormControl><Input placeholder="Building the future, one bolt at a time." {...field} value={field.value ?? ''} /></FormControl>
+                <FormDescription>A short phrase that captures your team&apos;s spirit.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
         </div>
 
         {isIncubator && (
@@ -167,7 +249,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
                   <FormLabel>The "Why": Motivation</FormLabel>
                   <FormDescription>Explain why you want to start a team in your specific community.</FormDescription>
                   <FormControl>
-                    <Textarea className="min-h-[120px]" placeholder="Our motivation is to bring STEM access to..." {...field} />
+                    <Textarea className="min-h-[120px]" placeholder="Our motivation is to bring STEM access to..." {...field} value={field.value ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -178,7 +260,12 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
                   <FormLabel>Student Interest Count</FormLabel>
                   <FormDescription>How many students are committed to joining?</FormDescription>
                   <FormControl>
-                    <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value) || 0)} />
+                    <Input 
+                      type="number" 
+                      {...field} 
+                      value={field.value === 0 ? '' : field.value} 
+                      onChange={e => field.onChange(e.target.value === '' ? 0 : parseInt(e.target.value) || 0)} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -189,7 +276,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
                   <FormLabel>Evidence of Community Interest</FormLabel>
                   <FormDescription>Describe local support, waitlists, or school buy-in.</FormDescription>
                   <FormControl>
-                    <Textarea className="min-h-[100px]" placeholder="We have local parents and the PTA supportive of..." {...field} />
+                    <Textarea className="min-h-[100px]" placeholder="We have local parents and the PTA supportive of..." {...field} value={field.value ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -200,7 +287,26 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
                   <FormLabel>Sustainability Plan</FormLabel>
                   <FormDescription>How will the team survive after the first year?</FormDescription>
                   <FormControl>
-                    <Textarea className="min-h-[100px]" placeholder="Our plan for year 2 and beyond is..." {...field} />
+                    <Textarea className="min-h-[100px]" placeholder="Our plan for year 2 and beyond is..." {...field} value={field.value ?? ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="seedFundingGoalsCents" render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>Seed Funding Goal ($)</FormLabel>
+                  <FormDescription>How much total funding do you need to launch?</FormDescription>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      {...field} 
+                      value={field.value === 0 ? '' : field.value / 100} 
+                      onChange={e => {
+                        const val = e.target.value === '' ? 0 : Math.round(parseFloat(e.target.value) * 100) || 0
+                        field.onChange(val)
+                      }} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -248,7 +354,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
                   <FormItem>
                     <FormLabel>CAD Software</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Onshape, SolidWorks, Fusion 360…" {...field} />
+                      <Input placeholder="e.g. Onshape, SolidWorks, Fusion 360…" {...field} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -257,7 +363,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
                   <FormItem className="col-span-1 md:col-span-2">
                     <FormLabel>GitHub Link</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://github.com/your-team" {...field} />
+                      <Input placeholder="https://github.com/your-team" {...field} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -293,7 +399,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
                   <FormItem className="col-span-1 md:col-span-2">
                     <FormLabel>Autonomous Routine Description</FormLabel>
                     <FormControl>
-                      <Textarea maxLength={750} placeholder="Describe your autonomous capabilities…" {...field} />
+                      <Textarea maxLength={750} placeholder="Describe your autonomous capabilities…" {...field} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -321,21 +427,21 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
                     <FormField control={form.control} name={`achievements.${index}.season`} render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Season</FormLabel>
-                        <FormControl><Input placeholder="2024-25" {...field} /></FormControl>
+                        <FormControl><Input placeholder="2024-25" {...field} value={field.value ?? ''} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name={`achievements.${index}.eventName`} render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Event Name</FormLabel>
-                        <FormControl><Input placeholder="Qualifying Tournament" {...field} /></FormControl>
+                        <FormControl><Input placeholder="Qualifying Tournament" {...field} value={field.value ?? ''} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name={`achievements.${index}.award`} render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Award (Optional)</FormLabel>
-                        <FormControl><Input placeholder="Inspire Award" {...field} /></FormControl>
+                        <FormControl><Input placeholder="Inspire Award" {...field} value={field.value ?? ''} /></FormControl>
                       </FormItem>
                     )} />
                     <Button
@@ -350,7 +456,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
                     <FormField control={form.control} name={`achievements.${index}.description`} render={({ field }) => (
                       <FormItem className="col-span-1 md:col-span-3">
                         <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Description / Context</FormLabel>
-                        <FormControl><Input placeholder="Briefly describe the significance…" {...field} /></FormControl>
+                        <FormControl><Input placeholder="Briefly describe the significance…" {...field} value={field.value ?? ''} /></FormControl>
                       </FormItem>
                     )} />
                   </div>
@@ -402,7 +508,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
                         <Trash className="h-3.5 w-3.5" />
                       </button>
                       <FormField control={form.control} name={`visualPitchItems.${index}.caption`} render={({ field }) => (
-                        <FormControl><Input className="bg-zinc-950/80 border-none text-xs h-8 placeholder:text-zinc-500" placeholder="Add caption…" {...field} /></FormControl>
+                        <FormControl><Input className="bg-zinc-950/80 border-none text-xs h-8 placeholder:text-zinc-500" placeholder="Add caption…" {...field} value={field.value ?? ''} /></FormControl>
                       )} />
                     </div>
                   </div>
@@ -429,7 +535,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
           <FormField control={form.control} name="subteamBreakdown" render={({ field }) => (
             <FormItem>
               <FormLabel>{isIncubator ? "Proposed Roles" : "Subteam Breakdown"}</FormLabel>
-              <FormControl><Textarea maxLength={1000} placeholder={isIncubator ? "How will you organize your initial members?" : "Describe your team structure..."} {...field} /></FormControl>
+              <FormControl><Textarea maxLength={1000} placeholder={isIncubator ? "How will you organize your initial members?" : "Describe your team structure..."} {...field} value={field.value ?? ''} /></FormControl>
               <FormMessage />
             </FormItem>
           )} />
@@ -444,24 +550,129 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
             <FormField control={form.control} name="missionStatement" render={({ field }) => (
               <FormItem>
                 <FormLabel>Mission Statement</FormLabel>
-                <FormControl><Textarea className="min-h-[100px]" placeholder="Our objective is…" {...field} /></FormControl>
+                <FormControl><Textarea className="min-h-[100px]" placeholder="Our objective is…" {...field} value={field.value ?? ''} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="technicalSummary" render={({ field }) => (
               <FormItem>
                 <FormLabel>Technical Summary</FormLabel>
-                <FormControl><Textarea className="min-h-[100px]" placeholder="An overview of your technical strategy…" {...field} /></FormControl>
+                <FormControl><Textarea className="min-h-[100px]" placeholder="An overview of your technical strategy…" {...field} value={field.value ?? ''} /></FormControl>
               </FormItem>
             )} />
             <FormField control={form.control} name="outreachSummary" render={({ field }) => (
               <FormItem>
                 <FormLabel>Outreach Summary</FormLabel>
-                <FormControl><Textarea className="min-h-[100px]" placeholder="Your team's community impact…" {...field} /></FormControl>
+                <FormControl><Textarea className="min-h-[100px]" placeholder="Your team's community impact…" {...field} value={field.value ?? ''} /></FormControl>
               </FormItem>
             )} />
           </div>
         )}
+        {/* Budget & Funding */}
+        <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+          <div className="flex items-center justify-between border-b border-border pb-2">
+            <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+              Budget & Funding
+            </h3>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              className="h-8 text-xs"
+              onClick={() => {
+                const current = form.getValues('budgetItems') || []
+                form.setValue('budgetItems', [...current, { label: '', qty: 1, unitCostCents: 0, totalCents: 0 }])
+              }}
+            >
+              <Plus className="w-3.5 h-3.5 mr-1.5" />
+              Add Item
+            </Button>
+          </div>
+          
+          <div className="space-y-4">
+            <FormField control={form.control} name="budgetItems" render={({ field }) => (
+              <div className="space-y-3">
+                {(field.value || []).map((item: any, index: number) => (
+                  <div key={index} className="grid grid-cols-12 gap-3 items-end bg-zinc-950/30 p-3 rounded-lg border border-border/50">
+                    <div className="col-span-6">
+                      <FormLabel className="text-[10px] uppercase text-muted-foreground">Item</FormLabel>
+                      <Input 
+                        placeholder="e.g. REV Control Hub" 
+                        className="h-8 text-sm"
+                        value={item.label}
+                        onChange={e => {
+                          const newItems = [...field.value]
+                          newItems[index].label = e.target.value
+                          field.onChange(newItems)
+                        }}
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <FormLabel className="text-[10px] uppercase text-muted-foreground">Qty</FormLabel>
+                      <Input 
+                        type="number" 
+                        className="h-8 text-sm"
+                        value={item.qty === 0 ? '' : item.qty}
+                        onChange={e => {
+                          const newItems = [...field.value]
+                          const qty = e.target.value === '' ? 0 : parseInt(e.target.value) || 0
+                          newItems[index].qty = qty
+                          newItems[index].totalCents = qty * newItems[index].unitCostCents
+                          field.onChange(newItems)
+                        }}
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <FormLabel className="text-[10px] uppercase text-muted-foreground">Cost ($)</FormLabel>
+                      <Input 
+                        type="number" 
+                        className="h-8 text-sm"
+                        value={item.unitCostCents === 0 ? '' : item.unitCostCents / 100}
+                        onChange={e => {
+                          const newItems = [...field.value]
+                          const cost = e.target.value === '' ? 0 : Math.round(parseFloat(e.target.value) * 100) || 0
+                          newItems[index].unitCostCents = cost
+                          newItems[index].totalCents = newItems[index].qty * cost
+                          field.onChange(newItems)
+                        }}
+                      />
+                    </div>
+                    <div className="col-span-1 flex justify-center">
+                      <button 
+                        type="button"
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                        onClick={() => {
+                          const newItems = field.value.filter((_: any, i: number) => i !== index)
+                          field.onChange(newItems)
+                        }}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {(!field.value || field.value.length === 0) && (
+                  <div className="text-center py-6 border border-dashed border-border rounded-lg text-xs text-muted-foreground">
+                    No budget items yet. Add one to request funding.
+                  </div>
+                )}
+              </div>
+            )} />
+            
+            <div className="flex items-center justify-between pt-2 border-t border-border">
+              <span className="text-sm font-medium text-foreground">Total Request</span>
+              <span className="text-lg font-bold text-indigo-400">
+                ${((form.watch('financialAskCents') || 0) / 100).toLocaleString()}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-4">
+          <Button type="submit" disabled={isPending} className="px-8 h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg shadow-indigo-500/20">
+            {isPending ? 'Saving…' : 'Save Changes'}
+          </Button>
+        </div>
       </form>
     </Form>
   )

@@ -14,7 +14,20 @@ export const signupSchema = z.object({
   confirmPassword: z.string().min(12, 'Password confirmation must be at least 12 characters'),
   
   // Step 2: Coach Identity
-  dateOfBirth: z.string().min(1, 'Date of birth is required').refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" }),
+  dateOfBirth: z
+    .string()
+    .min(1, 'Date of birth is required')
+    .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date format" })
+    .refine((val) => {
+      const birthDate = new Date(val)
+      const today = new Date()
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const m = today.getMonth() - birthDate.getMonth()
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+      }
+      return age >= 18
+    }, { message: "You must be at least 18 years old to register as a coach." }),
   phoneNumber: z.string().trim().min(10, 'Phone number is required (at least 10 digits)'),
   addressLine1: z.string().trim().min(5, 'Address is required'),
   city: z.string().trim().min(2, 'City is required'),

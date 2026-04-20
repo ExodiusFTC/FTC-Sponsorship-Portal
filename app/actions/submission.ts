@@ -69,6 +69,8 @@ export async function saveSubmission(
   }
 
   const season = getCurrentSeasonLabel()
+  const financialAsk = (await supabase.from('teams').select('financial_ask_cents').eq('id', teamId).single()).data?.financial_ask_cents ?? 0
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const payload: any = {
     team_id: teamId,
@@ -80,7 +82,7 @@ export async function saveSubmission(
     variant_label: variantLabel,
     season,
     submitted_at: status === 'pending' ? new Date().toISOString() : null,
-    requested_amount_cents: (await supabase.from('teams').select('financial_ask_cents').eq('id', teamId).single()).data?.financial_ask_cents ?? 0
+    requested_amount_cents: financialAsk
   }
 
   if (submissionId) {
@@ -103,7 +105,7 @@ export async function saveSubmission(
 
     if (error) return { error: error.message }
   } else {
-    // Check if an active submission already exists for this team/sponsor combo in the current season
+    // Check if an active submission already exists for this team/sponsor combo
     const { data: existingTarget } = await supabase
       .from('submissions')
       .select('id, status')
@@ -117,11 +119,14 @@ export async function saveSubmission(
       return { error: 'An active submission for this sponsor already exists in the current season.' }
     }
 
-    const { error } = await supabase
+    const { data: inserted, error } = await supabase
       .from('submissions')
       .insert(payload)
+      .select('id')
+      .single()
 
     if (error) return { error: error.message }
+    submissionId = inserted.id
   }
 
   // Audit log for draft→pending transition (material state change)
@@ -190,7 +195,7 @@ export async function autoSaveSubmissionDraft(
     .select('id, status')
     .eq('team_id', teamId)
     .eq('sponsor_id', data.sponsorId)
-    .eq('season', getCurrentSeasonLabel())
+    .eq('season', payload.season)
     .not('status', 'in', '("declined","expired","bounced")')
     .maybeSingle()
 

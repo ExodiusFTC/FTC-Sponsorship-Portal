@@ -166,7 +166,10 @@ export function DashboardShell({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground">
-            {team.status === 'existing' ? `FTC · ${team.ftc_team_number}` : 'Incubator'} · {team.city ?? ''}, {team.state ?? ''}
+            {team.status === 'existing' ? `FTC · ${team.ftc_team_number}` : 'Incubator'}
+            {(team.city || team.state) && (
+              <> · {team.city}{team.city && team.state && ', '}{team.state}</>
+            )}
           </div>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">{team.team_name}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{team.organization ?? 'Independent'}</p>
@@ -293,12 +296,12 @@ function OverviewTab({
         <FadeUp>
           <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-600 dark:text-indigo-400">
                 <Sparkles className="h-5 w-5" />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-indigo-100">Ready to graduate?</h4>
-                <p className="mt-1 text-sm text-indigo-300/80 max-w-md">
+                <h4 className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">Ready to graduate?</h4>
+                <p className="mt-1 text-sm text-indigo-700 dark:text-indigo-300/80 max-w-md">
                   If you have secured your seed funding and registered with FIRST, you can upgrade your account to unlock technical robot specs and award history.
                 </p>
               </div>
@@ -479,6 +482,8 @@ function FindSponsorsTab({ sponsors, submissions }: { sponsors: Sponsor[], submi
     const q = query.trim().toLowerCase()
     const remaining = s.funding_cap_cents - s.funding_used_cents
     return (
+      s.status === 'active' &&
+      remaining > 0 &&
       (!q || s.company_name.toLowerCase().includes(q)) &&
       (industry === 'all' || s.industry === industry) &&
       remaining >= min && remaining < max

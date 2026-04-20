@@ -24,6 +24,7 @@ export default async function HomePage() {
       .single()
     
     if (profile?.role === 'admin') redirect('/admin')
+    if (profile?.role === 'sponsor') redirect('/sponsor/dashboard')
     if (profile?.role === 'coach' && !profile.coach_verified) {
       redirect('/awaiting-verification')
     }

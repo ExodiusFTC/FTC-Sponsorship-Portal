@@ -3,6 +3,7 @@ import CredentialUploadAlert from '@/emails/credential-upload-alert'
 import SponsorAppConfirmation from '@/emails/sponsor-app-confirmation'
 import HandshakeEmail from '@/emails/handshake-email'
 import CoachVerificationEmail from '@/emails/coach-verification-email'
+import CoachSignupWelcomeEmail from '@/emails/coach-signup-welcome'
 import { Resend } from 'resend'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -38,17 +39,17 @@ export async function sendSubmissionDecisionEmail(
   feedback?: string
 ) {
   try {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data: submission } = await supabase
       .from('submissions')
-      .select('*, teams:team_id(profiles:owner_id(email, full_name)), sponsors:sponsor_id(company_name)')
+      .select('id, team_id, sponsor_id, teams:team_id(owner_id, profiles:owner_id(email, full_name)), sponsors:sponsor_id(company_name)')
       .eq('id', submissionId)
       .single()
 
     if (!submission) return
 
-    const team = submission.teams as { profiles?: { email?: string; full_name?: string } } | null
-    const sponsor = submission.sponsors as { company_name?: string } | null
+    const team = submission.teams as any
+    const sponsor = submission.sponsors as any
     const coachEmail = team?.profiles?.email
     const coachName = team?.profiles?.full_name ?? 'Coach'
 
@@ -108,7 +109,7 @@ export async function sendHandshakeEmail(submissionId: string, amountCents: numb
     const { data: submission } = await supabase
       .from('submissions')
       .select(`
-        *,
+        id, team_id, sponsor_id,
         teams:team_id (
           team_name, ftc_team_number,
           profiles:owner_id (email, full_name)
@@ -248,4 +249,24 @@ export async function sendCoachVerificationEmail(coachId: string, coachName: str
   }
 }
 
+export async function sendCoachSignupWelcomeEmail(coachEmail: string, coachName: string) {
+  try {
+    await resend.emails.send({
+      from: env.RESEND_FROM_EMAIL,
+      to: coachEmail,
+      subject: 'Welcome to the FTC Sponsorship Portal!',
+      react: CoachSignupWelcomeEmail({ coachName }),
+    })
+  } catch (err) {
+    console.error('[notify] sendCoachSignupWelcomeEmail failed', err)
+  }
+}
 
+export async function sendWelcomeInAppNotification(userId: string, name: string) {
+  return createInAppNotification({
+    recipientId: userId,
+    type: 'general',
+    title: 'Welcome to the Matchmaker platform! 🎉',
+    body: `Hi ${name},\n\nWe're thrilled to have you here. Your account is currently pending verification—our team reviews photo IDs within 24-48 hours.\n\nIn the meantime, you can start building your team portfolio to get a head start on your funding requests!`,
+  })
+}

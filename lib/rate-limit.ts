@@ -33,7 +33,7 @@ export const globalLimiter = redis
 export const actionLimiter = redis
   ? new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(5, '1 m'),
+      limiter: Ratelimit.slidingWindow(15, '1 m'),
       analytics: true,
       prefix: 'ftc_action',
     })

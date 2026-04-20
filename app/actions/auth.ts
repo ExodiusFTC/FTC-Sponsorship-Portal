@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { signupSchema } from '@/lib/schemas/auth'
 import { redirect } from 'next/navigation'
 import { env } from '@/lib/env'
-import { sendCredentialUploadAlert } from '@/lib/notify'
+import { sendCredentialUploadAlert, sendCoachSignupWelcomeEmail, sendWelcomeInAppNotification } from '@/lib/notify'
 import { getClientIp, validateRateLimit } from '@/lib/actions-utils'
 
 export async function signUp(formData: FormData) {
@@ -115,6 +115,12 @@ export async function signUp(formData: FormData) {
 
   // Notify admins
   await sendCredentialUploadAlert(userId, payload.fullName, payload.email)
+
+  // Welcome user
+  await Promise.all([
+    sendCoachSignupWelcomeEmail(payload.email, payload.fullName),
+    sendWelcomeInAppNotification(userId, payload.fullName)
+  ])
 
   redirect('/verify-email')
 }

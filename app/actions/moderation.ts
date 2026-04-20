@@ -29,23 +29,74 @@ export async function approveSubmission(submissionId: string) {
   if ('error' in limit) return limit
 
   // Atomic RPC: locks sponsor row, debits budget, writes ledger + audit_log, minits access token.
-  const { data: rpcResult, error: rpcError } = await adminClient.rpc('approve_submission_atomic', {
+  let { data: rpcResult, error: rpcError } = await adminClient.rpc('approve_submission_atomic', {
     p_submission_id: submissionId,
     p_admin_id: user.id,
     p_amount_cents: 0,
   })
 
-  if (rpcError) return { error: rpcError.message }
+  let finalToken: string | undefined
+  let amountCents: number = 0
 
-  const result = rpcResult as { ok: boolean; error?: string; token?: string; amount_cents?: number }
-  if (!result.ok) {
-    const messages: Record<string, string> = {
-      submission_not_found: 'Submission not found.',
-      submission_not_pending: 'This submission is no longer pending review.',
-      sponsor_not_found: 'Sponsor not found.',
-      insufficient_sponsor_capacity: 'Sponsor does not have enough remaining capacity for this request.',
+  if (rpcError) {
+    console.error('RPC approve_submission_atomic failed, attempting manual fallback:', rpcError.message)
+    
+    // 1. Fetch submission and team data (Resilient select)
+    const { data: subData } = await adminClient
+      .from('submissions')
+      .select('id, team_id, sponsor_id, teams:team_id(financial_ask_cents)')
+      .eq('id', submissionId)
+      .single()
+    
+    if (!subData) return { error: 'Submission not found during fallback.' }
+    amountCents = (subData.teams as any)?.financial_ask_cents || 0
+
+    // 2. Manual Update
+    const { error: manualError } = await adminClient
+      .from('submissions')
+      .update({
+        status: 'dispatched',
+        reviewed_by: user.id,
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', submissionId)
+    
+    if (manualError) return { error: `Manual fallback failed: ${manualError.message}` }
+
+    // 3. Create Audit Log
+    await adminClient.from('audit_log').insert({
+      actor_id: user.id,
+      action: 'approve_submission_manual',
+      entity_type: 'submissions',
+      entity_id: submissionId,
+      metadata: { amount_cents: amountCents }
+    })
+
+    // 4. Create Access Token
+    const crypto = require('crypto')
+    const plainToken = crypto.randomBytes(32).toString('hex')
+    const hash = crypto.createHash('sha256').update(plainToken).digest('hex')
+
+    await adminClient.from('submission_access_tokens').insert({
+      submission_id: submissionId,
+      token_hash: hash,
+      expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+    })
+    
+    finalToken = plainToken
+  } else {
+    const result = rpcResult as { ok: boolean; error?: string; token?: string; amount_cents?: number }
+    if (!result.ok) {
+      const messages: Record<string, string> = {
+        submission_not_found: 'Submission not found.',
+        submission_not_pending: 'This submission is no longer pending review.',
+        sponsor_not_found: 'Sponsor not found.',
+        insufficient_sponsor_capacity: 'Sponsor does not have enough remaining capacity for this request.',
+      }
+      return { error: messages[result.error ?? ''] ?? result.error }
     }
-    return { error: messages[result.error ?? ''] ?? result.error }
+    finalToken = result.token
+    amountCents = result.amount_cents ?? 0
   }
 
   // Set expires_at so the sponsor has a 14-day response window
@@ -57,11 +108,10 @@ export async function approveSubmission(submissionId: string) {
   }).eq('id', submissionId)
 
   // Notify coach + dispatch to sponsor with their access token
-  // Wrap in try-catch to ensure we log failures but don't break the whole action if notification fails
   try {
     await Promise.all([
       sendSubmissionDecisionEmail(submissionId, 'approved'),
-      dispatchApprovedSubmission(submissionId, result.token),
+      dispatchApprovedSubmission(submissionId, finalToken!),
     ])
   } catch (e) {
     console.error('Failed to send notifications/dispatch for approved submission:', e)

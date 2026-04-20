@@ -42,8 +42,9 @@ async function resetAccounts() {
     }
   }
 
-  // 3. Clear existing sponsors to avoid naming conflicts during seed
-  console.log('Clearing sponsors table...');
+  // 3. Clear existing sponsors and submissions to avoid conflicts
+  console.log('Clearing sponsors and submissions tables...');
+  await supabase.from('submissions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   await supabase.from('sponsors').delete().neq('company_name', '');
 
   console.log('\n--- Seeding Dev Testing Accounts ---');
@@ -127,6 +128,25 @@ async function resetAccounts() {
       console.error(`Error updating profile for ${acc.email}:`, profileError.message);
     } else {
       console.log(`Successfully created and configured ${acc.email}`);
+      
+      // If it's the verified coach, create a team portfolio immediately
+      if (acc.email === 'coach@test.local') {
+        console.log('Creating team portfolio for verified coach...');
+        const { error: teamError } = await supabase.from('teams').insert({
+          owner_id: user.id,
+          team_name: 'Dev Testing Team',
+          status: 'existing',
+          ftc_team_number: 99999,
+          organization: 'Test Org',
+          city: 'Test City',
+          state: 'TS',
+          tax_status: '501c3',
+          financial_ask_cents: 500000,
+          mission_statement: 'To test the platform thoroughly.',
+        });
+        if (teamError) console.error('Error creating team:', teamError.message);
+        else console.log('Team created successfully.');
+      }
     }
   }
 

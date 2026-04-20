@@ -242,30 +242,37 @@ export function PortfolioForm({ initialSubmission, initialValues, sponsors = [],
             </div>
 
             {!readOnly && (
-              <div className="flex justify-end gap-4 pt-6 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.push('/dashboard')}
-                  disabled={isPending}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={form.handleSubmit((v) => onSubmit(v, 'draft'))}
-                  disabled={isPending}
-                >
-                  Save as Draft
-                </Button>
-                <Button
-                  type="button"
-                  onClick={form.handleSubmit((v) => onSubmit(v, 'pending'))}
-                  disabled={isPending}
-                >
-                  {isPending ? 'Submitting...' : 'Submit for Review'}
-                </Button>
+              <div className="flex flex-col items-end gap-4 pt-6 border-t">
+                {Object.keys(form.formState.errors).length > 0 && (
+                  <p className="text-xs text-destructive font-medium animate-pulse">
+                    Please fix {Object.keys(form.formState.errors).length} validation error{Object.keys(form.formState.errors).length > 1 ? 's' : ''} below
+                  </p>
+                )}
+                <div className="flex justify-end gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.push('/dashboard')}
+                    disabled={isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={form.handleSubmit((v) => onSubmit(v, 'draft'))}
+                    disabled={isPending}
+                  >
+                    Save as Draft
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={form.handleSubmit((v) => onSubmit(v, 'pending'))}
+                    disabled={isPending}
+                  >
+                    {isPending ? 'Submitting...' : 'Submit for Review'}
+                  </Button>
+                </div>
               </div>
             )}
           </form>

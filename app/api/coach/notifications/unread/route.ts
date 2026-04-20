@@ -31,7 +31,7 @@ export async function GET(req: Request) {
   
   const { count, error } = await supabase
     .from('notifications')
-    .select('id', { count: 'planned', head: true })
+    .select('id', { count: 'exact', head: true })
     .eq('recipient_id', user.id)
     .is('read_at', null)
     

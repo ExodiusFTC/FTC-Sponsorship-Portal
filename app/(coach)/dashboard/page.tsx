@@ -29,7 +29,32 @@ export default async function DashboardPage({
     supabase.from('sponsors').select('id, company_name, industry, funding_cap_cents, funding_used_cents, website, logo_url').eq('status', 'active'),
     supabase.from('notifications').select('*', { count: 'planned', head: true }).eq('recipient_id', user.id).is('read_at', null),
     supabase.from('notifications').select('*').eq('recipient_id', user.id).order('created_at', { ascending: false }).limit(50),
-    (supabase as any).from('v_submission_summary').select('*').eq('owner_id', user.id).order('updated_at', { ascending: false }),
+    supabase
+      .from('submissions')
+      .select('id, status, admin_feedback, updated_at, created_at, team_id, sponsor_id, teams:team_id(team_name), sponsors:sponsor_id(company_name)')
+      .then((res: any) => {
+        if (res.error) {
+          console.error('[Dashboard] Failed to fetch submissions:', res.error)
+          return { data: [] }
+        }
+        // Normalize the data to match SubmissionSummary type
+        // Manual filter because inner join filters don't always work as expected with Supabase relations
+        const data = res.data?.filter((s: any) => s.teams !== null).map((s: any) => ({
+          id: s.id,
+          team_name: s.teams?.team_name,
+          owner_id: user.id,
+          sponsor_id: s.sponsor_id,
+          company_name: s.sponsors?.company_name,
+          status: s.status,
+          admin_feedback: s.admin_feedback,
+          is_locked: !['draft', 'changes_requested', 'declined'].includes(s.status),
+          season: (s as any).season || '2025-26',
+          requested_amount_cents: (s as any).requested_amount_cents || 0,
+          created_at: s.created_at,
+          updated_at: s.updated_at,
+        }))
+        return { data: data || [] }
+      }),
   ])
 
   // 2. Role & Verification Guards
