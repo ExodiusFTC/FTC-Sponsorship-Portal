@@ -9,7 +9,7 @@
 export const ACCENT_DARK_TEXT = "#657ba1ff"  // Slate 400
 export const ACCENT_DARK_GLOBE = "#ffffff" // Slate 600
 export const ACCENT_LIGHT_TEXT = "#617c98ff" // Slate 800
-export const ACCENT_LIGHT_GLOBE = "#000000ff" // Slate 500
+export const ACCENT_LIGHT_GLOBE = "#000000" // Slate 500
 
 // ─── Platform stats ─────────────────────────────────────────────────────────
 export const PLATFORM_STATS = [

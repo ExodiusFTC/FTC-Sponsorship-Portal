@@ -111,7 +111,7 @@ export function SponsorForm({ initialSponsor }: Props) {
                 <FormItem>
                   <FormLabel>Website</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://example.com" type="url" {...field} />
+                    <Input placeholder="https://example.com" type="text" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

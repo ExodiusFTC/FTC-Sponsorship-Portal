@@ -138,10 +138,10 @@ export function SignupWizard() {
     if (step === 2) fieldsToValidate = ['dateOfBirth', 'phoneNumber', 'addressLine1', 'city', 'state', 'zipCode']
     if (step === 3) fieldsToValidate = ['photoIdFile', 'ageConfirmed', 'coppaAcknowledged', 'tosAccepted']
     if (step === 4) fieldsToValidate = ['teamData.status', 'teamData.ftcTeamNumber', 'teamData.teamName', 'teamData.organization', 'teamData.city', 'teamData.state', 'teamData.taxStatus']
-    
+
     // Log errors to help debug why validation might be failing
     const isValid = await form.trigger(fieldsToValidate)
-    
+
     if (isValid) {
       if (step === 3 && !file) {
         form.setError('photoIdFile', { message: 'Photo ID is required' })
@@ -191,7 +191,7 @@ export function SignupWizard() {
   async function onSubmit(values: SignupInput) {
     setIsPending(true)
     setError(null)
-    
+
     const formData = new FormData()
     formData.append('data', JSON.stringify(values))
     if (values.photoIdFile) {
@@ -199,7 +199,7 @@ export function SignupWizard() {
     }
 
     const result = await signUp(formData)
-    
+
     if (result?.error) {
       setError(result.error)
       setIsPending(false)
@@ -215,7 +215,8 @@ export function SignupWizard() {
 
   return (
     <section className="fixed inset-0 bg-background text-foreground overflow-y-auto">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .accent-lines{position:absolute;inset:0;pointer-events:none;opacity:.7}
         .hline,.vline{position:absolute;background:var(--border);will-change:transform,opacity}
         .hline{left:0;right:0;height:1px;transform:scaleX(0);transform-origin:50% 50%;animation:drawX .8s cubic-bezier(.22,.61,.36,1) forwards}
@@ -294,7 +295,7 @@ export function SignupWizard() {
               </div>
             </div>
             <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
-              <div 
+              <div
                 className="bg-primary h-full transition-all duration-300 ease-out"
                 style={{ width: `${(step / totalSteps) * 100}%` }}
               />
@@ -307,7 +308,7 @@ export function SignupWizard() {
               {step === 5 && "Define your mission and financial goals."}
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent className="pt-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 text-foreground">
@@ -326,7 +327,7 @@ export function SignupWizard() {
                     transition={{ duration: 0.2 }}
                     className="space-y-6"
                   >
-                    
+
                     {/* STEP 1: Account */}
                     {step === 1 && (
                       <div className="space-y-5">
@@ -412,7 +413,7 @@ export function SignupWizard() {
                               </div>
                             </FormItem>
                           )} />
-                          
+
                           <FormField control={form.control} name="coppaAcknowledged" render={({ field }) => (
                             <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border border-border p-4 shadow-sm bg-accent/30">
                               <FormControl><Checkbox className="border-border data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground" checked={field.value === true} onCheckedChange={(c) => field.onChange(c === true ? true : undefined)} /></FormControl>
@@ -548,7 +549,7 @@ export function SignupWizard() {
                             <FormItem><FormLabel className="text-foreground/80">Outreach Summary (Optional)</FormLabel><FormControl><Textarea placeholder="How do you impact your community?" className="min-h-[100px] resize-none bg-background border-border text-foreground placeholder:text-muted-foreground" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
                           )} />
                         </div>
-                        
+
                         <div className="pt-4 border-t border-border">
                           <div className="flex justify-between items-center mb-4 mt-2">
                             <div>
@@ -559,7 +560,7 @@ export function SignupWizard() {
                               <Plus className="w-4 h-4 mr-1" /> Add Item
                             </Button>
                           </div>
-                          
+
                           <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
                             {budgetFields.map((field, index) => (
                               <div key={field.id} className="grid grid-cols-12 gap-2 items-end bg-background/50 p-3 rounded-lg border border-border">
@@ -569,7 +570,7 @@ export function SignupWizard() {
                                 </div>
                                 <div className="col-span-4 sm:col-span-2">
                                   <FormLabel className="text-xs text-muted-foreground">Qty</FormLabel>
-                                  <Input type="number" {...form.register(`teamData.budgetItems.${index}.qty`, { valueAsNumber: true })} 
+                                  <Input type="number" {...form.register(`teamData.budgetItems.${index}.qty`, { valueAsNumber: true })}
                                     className="h-8 bg-background border-border text-foreground"
                                     onChange={(e) => {
                                       const qty = parseInt(e.target.value) || 0
@@ -581,7 +582,7 @@ export function SignupWizard() {
                                 </div>
                                 <div className="col-span-6 sm:col-span-4">
                                   <FormLabel className="text-xs text-muted-foreground">Unit Cost ($)</FormLabel>
-                                  <Input type="number" step="0.01" 
+                                  <Input type="number" step="0.01"
                                     className="h-8 bg-background border-border text-foreground"
                                     onChange={(e) => {
                                       const dollars = parseFloat(e.target.value) || 0
@@ -606,7 +607,7 @@ export function SignupWizard() {
                               </div>
                             )}
                           </div>
-                          
+
                           <div className="mt-4 bg-primary p-4 rounded-lg flex justify-between items-center font-bold text-primary-foreground">
                             <span>Total Funding Request:</span>
                             <span className="text-xl">${(form.watch('teamData.financialAskCents') / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
@@ -625,7 +626,7 @@ export function SignupWizard() {
                   ) : (
                     <div></div>
                   )}
-                  
+
                   {step < totalSteps ? (
                     <Button type="button" onClick={nextStep} className="bg-primary text-primary-foreground hover:opacity-90">
                       Next <ChevronRight className="w-4 h-4 ml-2" />

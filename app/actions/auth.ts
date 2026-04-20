@@ -8,11 +8,97 @@ import { env } from '@/lib/env'
 import { sendCredentialUploadAlert, sendCoachSignupWelcomeEmail, sendWelcomeInAppNotification } from '@/lib/notify'
 import { getClientIp, validateRateLimit } from '@/lib/actions-utils'
 
+import { sponsorSignupSchema, type SponsorSignupInput } from '@/lib/schemas/sponsor-signup'
+import { sendSponsorApplicationConfirmation } from '@/lib/notify'
+
+export async function signUpSponsor(data: SponsorSignupInput) {
+  const result = sponsorSignupSchema.safeParse(data)
+  if (!result.success) {
+    return { error: 'Validation failed: ' + result.error.issues.map(i => i.message).join(', ') }
+  }
+
+  const payload = result.data
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`sponsor_signup_${payload.email}_${ip}`)
+  if ('error' in limit) return limit
+
+  const supabase = await createClient()
+  const adminClient = createAdminClient()
+
+  // 1. Create Auth User
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email: payload.email,
+    password: payload.password,
+    options: {
+      data: {
+        full_name: payload.fullName,
+      },
+      emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+    },
+  })
+
+  if (authError || !authData.user) {
+    if (authError?.message.toLowerCase().includes('already')) {
+      return { error: 'Unable to create account. If this email is already registered, please log in.' }
+    }
+    return { error: 'Unable to create account right now. Please try again.' }
+  }
+
+  const userId = authData.user.id
+
+  // 2. Update Profile - Set role to sponsor and mark as unverified (awaiting admin review)
+  const { error: profileError } = await adminClient
+    .from('profiles')
+    .update({
+      role: 'sponsor',
+      phone_number: payload.phoneNumber,
+      address_line1: payload.companyAddress,
+      coppa_acknowledged: payload.coppaAcknowledged,
+      tos_accepted: payload.tosAccepted,
+    } as any)
+    .eq('id', userId)
+
+  if (profileError) {
+    console.error('Failed to update sponsor profile:', profileError)
+  }
+
+  // 3. Create a Sponsor Application entry
+  const { error: appError } = await adminClient
+    .from('sponsor_applications')
+    .insert({
+      company_name: payload.companyName,
+      contact_name: payload.fullName,
+      contact_email: payload.email,
+      proposed_cap_cents: payload.proposedCapCents,
+      message: payload.sponsorshipReason,
+      // Store extra wizard data in a metadata field if it exists, otherwise we'll just log it
+      // for now, we'll assume the basic fields are most important
+    })
+
+  if (appError) {
+    console.error('Failed to create sponsor application entry:', appError)
+  }
+
+  // 4. Send Confirmation
+  try {
+    await sendSponsorApplicationConfirmation(
+      payload.companyName,
+      payload.email,
+      payload.fullName,
+      payload.proposedCapCents
+    )
+  } catch (e) {
+    console.error('Failed to send sponsor confirmation email:', e)
+  }
+
+  redirect('/verify-email')
+}
+
 export async function signUp(formData: FormData) {
   // Parse JSON data
   const dataString = formData.get('data') as string
   if (!dataString) return { error: 'No data provided' }
-  
+
   let rawData;
   try {
     rawData = JSON.parse(dataString)
@@ -36,12 +122,12 @@ export async function signUp(formData: FormData) {
   const buffer = await file.arrayBuffer()
   const bytes = new Uint8Array(buffer).subarray(0, 4)
   const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
-  
+
   let isValid = false
   if (file.type === 'application/pdf' && hex.startsWith('25504446')) isValid = true
   if (file.type === 'image/jpeg' && hex.startsWith('ffd8ff')) isValid = true
   if (file.type === 'image/png' && hex === '89504e47') isValid = true
-  
+
   if (!isValid) return { error: 'Invalid Photo ID file format.' }
 
   // Validate Data

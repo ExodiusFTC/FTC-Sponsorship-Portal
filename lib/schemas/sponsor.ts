@@ -13,7 +13,7 @@ export type SponsorApplicationInput = z.infer<typeof sponsorApplicationSchema>
 export const sponsorSchema = z.object({
   companyName: z.string().min(2, 'Company name is required'),
   industry: z.string().optional(),
-  website: z.string().url('Invalid URL').optional().or(z.literal('')),
+  website: z.string().trim().regex(/\./, 'Invalid website format (e.g. company.com)').optional().or(z.literal('')),
   contactName: z.string().min(2, 'Contact name is required'),
   contactEmail: z.string().email('Invalid email address'),
   contactTitle: z.string().optional(),

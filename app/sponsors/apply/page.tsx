@@ -1,9 +1,7 @@
-import { ApplicationForm } from '@/components/sponsor/application-form'
+import { SponsorSignupWizard } from '@/components/auth/sponsor-signup-wizard'
 
 export default function SponsorApplicationPage() {
   return (
-    <div className="container mx-auto flex items-center justify-center min-h-screen py-12">
-      <ApplicationForm />
-    </div>
+    <SponsorSignupWizard />
   )
 }
