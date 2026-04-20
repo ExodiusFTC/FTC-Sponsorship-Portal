@@ -2,7 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is(.dark *, [data-theme="dark"] *, [data-theme="dark"]&));
+@custom-variant light (&:is([data-theme="light"] *, [data-theme="light"]&));
 
 @theme inline {
   --color-background: var(--background);
@@ -229,6 +230,10 @@
   & .text-zinc-500 { color: #71717A !important; }
   & .text-zinc-600 { color: #888888 !important; }
   & .text-zinc-700 { color: #AAAAAA !important; }
+
+  /* Ensure hover brightness filters work even with !important background overrides */
+  & .hover\:brightness-150:hover { filter: brightness(1.5) !important; }
+  & .light\:hover\:brightness-95:hover { filter: brightness(0.95) !important; }
 
   & .bg-zinc-100 { background-color: #0B0B0C !important; }
   & .text-zinc-900 { color: #FFFFFF !important; }

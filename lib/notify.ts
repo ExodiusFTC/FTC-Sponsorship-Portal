@@ -249,6 +249,32 @@ export async function sendCoachVerificationEmail(coachId: string, coachName: str
   }
 }
 
+/** Alert admins when a new sponsor application is submitted. */
+export async function sendSponsorApplicationAlert(
+  companyName: string,
+  contactName: string,
+  contactEmail: string,
+  proposedCapCents: number
+) {
+  try {
+    const recipients = await getAdminNotificationRecipients()
+    if (recipients.length === 0) return
+
+    await resend.emails.send({
+      from: env.RESEND_FROM_EMAIL,
+      to: recipients,
+      subject: `Action Required: New Sponsor Application (${companyName})`,
+      react: CredentialUploadAlert({
+        coachName: contactName,
+        coachEmail: contactEmail,
+        reviewUrl: `${env.NEXT_PUBLIC_APP_URL}/applications`,
+      }),
+    })
+  } catch (err) {
+    console.error('[notify] sendSponsorApplicationAlert failed', err)
+  }
+}
+
 export async function sendCoachSignupWelcomeEmail(coachEmail: string, coachName: string) {
   try {
     await resend.emails.send({

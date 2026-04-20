@@ -9,7 +9,7 @@ import { sendCredentialUploadAlert, sendCoachSignupWelcomeEmail, sendWelcomeInAp
 import { getClientIp, validateRateLimit } from '@/lib/actions-utils'
 
 import { sponsorSignupSchema, type SponsorSignupInput } from '@/lib/schemas/sponsor-signup'
-import { sendSponsorApplicationConfirmation } from '@/lib/notify'
+import { sendSponsorApplicationConfirmation, sendSponsorApplicationAlert, createInAppNotification } from '@/lib/notify'
 
 export async function signUpSponsor(data: SponsorSignupInput) {
   const result = sponsorSignupSchema.safeParse(data)
@@ -25,13 +25,14 @@ export async function signUpSponsor(data: SponsorSignupInput) {
   const supabase = await createClient()
   const adminClient = createAdminClient()
 
-  // 1. Create Auth User
+  // 1. Create Auth User - Include role in metadata so trigger handles it correctly
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email: payload.email,
     password: payload.password,
     options: {
       data: {
         full_name: payload.fullName,
+        role: 'sponsor',
       },
       emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback`,
     },
@@ -41,25 +42,34 @@ export async function signUpSponsor(data: SponsorSignupInput) {
     if (authError?.message.toLowerCase().includes('already')) {
       return { error: 'Unable to create account. If this email is already registered, please log in.' }
     }
-    return { error: 'Unable to create account right now. Please try again.' }
+    return { error: `Unable to create account: ${authError?.message || 'Unknown error'}` }
   }
 
   const userId = authData.user.id
 
-  // 2. Update Profile - Set role to sponsor and mark as unverified (awaiting admin review)
-  const { error: profileError } = await adminClient
-    .from('profiles')
-    .update({
-      role: 'sponsor',
-      phone_number: payload.phoneNumber,
-      address_line1: payload.companyAddress,
-      coppa_acknowledged: payload.coppaAcknowledged,
-      tos_accepted: payload.tosAccepted,
-    } as any)
-    .eq('id', userId)
+  // 2. Update Profile - Set role and extra info (retry if needed due to trigger delay)
+  let profileUpdateSuccess = false
+  for (let i = 0; i < 3; i++) {
+    const { error: profileError } = await adminClient
+      .from('profiles')
+      .update({
+        role: 'sponsor',
+        phone_number: payload.phoneNumber,
+        address_line1: payload.companyAddress,
+        coppa_acknowledged: payload.coppaAcknowledged,
+        tos_accepted: payload.tosAccepted,
+      } as any)
+      .eq('id', userId)
 
-  if (profileError) {
-    console.error('Failed to update sponsor profile:', profileError)
+    if (!profileError) {
+      profileUpdateSuccess = true
+      break
+    }
+    await new Promise(r => setTimeout(r, 500))
+  }
+
+  if (!profileUpdateSuccess) {
+    console.error('Failed to update sponsor profile after retries')
   }
 
   // 3. Create a Sponsor Application entry
@@ -71,24 +81,44 @@ export async function signUpSponsor(data: SponsorSignupInput) {
       contact_email: payload.email,
       proposed_cap_cents: payload.proposedCapCents,
       message: payload.sponsorshipReason,
-      // Store extra wizard data in a metadata field if it exists, otherwise we'll just log it
-      // for now, we'll assume the basic fields are most important
     })
 
   if (appError) {
     console.error('Failed to create sponsor application entry:', appError)
   }
 
-  // 4. Send Confirmation
+  // 4. Send Notifications
   try {
+    // Confirmation to sponsor
     await sendSponsorApplicationConfirmation(
       payload.companyName,
       payload.email,
       payload.fullName,
       payload.proposedCapCents
     )
+
+    // Alert to admins (Email)
+    await sendSponsorApplicationAlert(
+      payload.companyName,
+      payload.fullName,
+      payload.email,
+      payload.proposedCapCents
+    )
+
+    // Alert to admins (In-App)
+    const { data: admins } = await adminClient.from('profiles').select('id').eq('role', 'admin')
+    if (admins) {
+      await Promise.all(admins.map(admin => 
+        createInAppNotification({
+          recipientId: admin.id,
+          type: 'general',
+          title: 'New Sponsor Application',
+          body: `${payload.companyName} (${payload.fullName}) has applied to become a sponsor.`,
+        })
+      ))
+    }
   } catch (e) {
-    console.error('Failed to send sponsor confirmation email:', e)
+    console.error('Failed to send sponsor notifications:', e)
   }
 
   redirect('/verify-email')

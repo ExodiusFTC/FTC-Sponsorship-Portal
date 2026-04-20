@@ -108,13 +108,13 @@ export function DashboardShell({
           e.preventDefault()
           const currentIndex = TABS.findIndex(t => t.id === tab)
           let nextIndex = currentIndex
-          
+
           if (e.key === 'ArrowUp') {
             nextIndex = (currentIndex - 1 + TABS.length) % TABS.length
           } else {
             nextIndex = (currentIndex + 1) % TABS.length
           }
-          
+
           setTab(TABS[nextIndex].id)
           return
         }
@@ -152,7 +152,7 @@ export function DashboardShell({
     const url = newTab === 'overview' ? '/dashboard' : `/dashboard?tab=${newTab}`
     // Use replaceState to update URL without triggering a Next.js server-side refresh
     window.history.replaceState({ ...window.history.state, as: url, url }, '', url)
-    
+
     // Notify external components (like Sidebar) to update their selection state
     window.dispatchEvent(new CustomEvent('dashboard-tab-change', { detail: { tab: newTab } }))
   }
@@ -277,8 +277,8 @@ function OverviewTab({
       return
     }
     startGraduation(async () => {
-      const res = await updateTeam(team.id, { 
-        status: 'existing', 
+      const res = await updateTeam(team.id, {
+        status: 'existing',
         ftcTeamNumber: num,
         teamName: gradName.trim() || team.team_name
       } as any)
@@ -306,7 +306,7 @@ function OverviewTab({
                 </p>
               </div>
             </div>
-            
+
             <Dialog open={showGraduation} onOpenChange={setShowGraduation}>
               <DialogTrigger
                 className="inline-flex items-center justify-center whitespace-nowrap rounded-md bg-indigo-500 px-4 py-2 text-sm font-medium text-white shadow transition-colors hover:bg-indigo-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500 disabled:pointer-events-none disabled:opacity-50"
@@ -345,15 +345,15 @@ function OverviewTab({
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => setShowGraduation(false)}
                     className="border-zinc-800 text-zinc-300 hover:bg-zinc-900 hover:text-white"
                   >
                     Cancel
                   </Button>
-                  <Button 
-                    onClick={handleGraduate} 
+                  <Button
+                    onClick={handleGraduate}
                     disabled={isGraduating || !gradNumber}
                     className="bg-indigo-600 text-white hover:bg-indigo-500"
                   >
@@ -554,10 +554,10 @@ function FindSponsorsTab({ sponsors, submissions }: { sponsors: Sponsor[], submi
             {results.map(s => {
               const remaining = s.funding_cap_cents - s.funding_used_cents
               const pct = s.funding_cap_cents > 0 ? Math.round((s.funding_used_cents / s.funding_cap_cents) * 100) : 0
-              
+
               // Check if there is an active submission (non-terminal)
-              const activeSub = submissions.find(sub => 
-                sub.sponsor_id === s.id && 
+              const activeSub = submissions.find(sub =>
+                sub.sponsor_id === s.id &&
                 !['declined', 'expired', 'bounced'].includes(sub.status)
               )
 
@@ -569,7 +569,7 @@ function FindSponsorsTab({ sponsors, submissions }: { sponsors: Sponsor[], submi
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.97 }}
                   transition={{ duration: 0.18 }}
-                  className="group flex flex-col gap-0 rounded-xl border border-zinc-800/80 bg-zinc-950 overflow-hidden transition-colors hover:border-zinc-600"
+                  className="group flex flex-col gap-0 rounded-xl border border-zinc-800/80 bg-zinc-950 overflow-hidden transition-all hover:brightness-150 light:hover:brightness-95"
                 >
                   {/* Card header */}
                   <div className="flex items-start gap-4 p-5 pb-4">
@@ -864,7 +864,7 @@ function LedgerTab({ team }: { team: Team }) {
             {team.status === 'incubator' ? 'Seed Capital Ledger' : 'Team Ledger'}
           </h2>
           <p className="text-sm text-zinc-400 mt-1">
-            {team.status === 'incubator' 
+            {team.status === 'incubator'
               ? 'Define your startup costs. Use the tool below to load rookie essentials.'
               : 'Edit your budget items directly. Changes save to your portfolio.'}
           </p>

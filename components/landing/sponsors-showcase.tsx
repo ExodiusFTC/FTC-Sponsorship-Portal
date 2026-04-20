@@ -49,7 +49,7 @@ function SponsorCard({ sponsor }: { sponsor: SponsorLogo }) {
       href={sponsor.website}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex-none flex h-[110px] w-[220px] items-center justify-center rounded-2xl bg-card border border-primary/20 transition-all duration-300 shadow-[0_0_15px_-5px_rgba(0,0,0,0.1)] text-foreground cursor-pointer mx-4 hover:brightness-95 dark:hover:brightness-125"
+      className="group flex-none flex h-[110px] w-[220px] items-center justify-center rounded-2xl bg-card border border-primary/20 transition-all duration-300 shadow-[0_0_15px_-5px_rgba(0,0,0,0.1)] text-foreground cursor-pointer mx-4 hover:brightness-150 light:hover:brightness-95"
     >
       <div className="flex items-center justify-center select-none transition-all">
         <div className="flex items-center gap-3">
