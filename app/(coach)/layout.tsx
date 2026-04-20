@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { AppLayout } from '@/components/app-layout'
-import { CoachTour } from '@/components/coach/coach-tour'
 
 export default async function CoachLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -26,7 +25,6 @@ export default async function CoachLayout({ children }: { children: React.ReactN
   return (
     <AppLayout>
       {children}
-      <CoachTour />
     </AppLayout>
   )
 }

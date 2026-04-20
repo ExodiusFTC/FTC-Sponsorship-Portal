@@ -18,6 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { StateSelector } from '@/components/ui/state-selector'
 import type { Team } from '@/lib/supabase/types'
 
 export function TeamEditForm({ team }: { team: Team }) {
@@ -164,7 +165,13 @@ export function TeamEditForm({ team }: { team: Team }) {
                   <FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control as any} name="state" render={({ field }) => (
-                  <FormItem><FormLabel>State</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>State</FormLabel>
+                    <FormControl>
+                      <StateSelector value={field.value} onChange={field.onChange} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
               </div>
 

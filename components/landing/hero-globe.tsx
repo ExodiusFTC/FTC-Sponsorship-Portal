@@ -3,6 +3,7 @@
 import { useRef, useMemo, useCallback, useEffect, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
+import { cn } from '@/lib/utils'
 
 // ─── Hardcoded FTC team hub locations (lat, lng) ─────────────────────────────
 const TEAM_LOCATIONS: [number, number][] = [

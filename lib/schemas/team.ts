@@ -41,6 +41,8 @@ export const teamOnboardingSchema = z.object({
     .max(1500, 'Mission statement must be 1500 characters or fewer'),
   taxStatus: z.enum(['501c3', 'School', 'None']),
   communityInterestText: z.string().trim().max(2000, 'Must be 2000 characters or fewer').optional(),
+  studentInterestCount: z.number().int().nonnegative().optional(),
+  sustainabilityPlan: z.string().trim().max(2000, 'Must be 2000 characters or fewer').optional(),
   seedFundingGoalsCents: z.number().int().nonnegative().optional(),
 
   technicalSummary: z.string().trim().max(2000, 'Must be 2000 characters or fewer').optional(),
@@ -91,11 +93,25 @@ export const teamOnboardingSchema = z.object({
     })
   }
   if (data.status === 'incubator') {
-    if (!data.communityInterestText || data.communityInterestText.length < 50 || data.communityInterestText.length > 2000) {
+    if (!data.communityInterestText || data.communityInterestText.length < 50) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Please describe community interest in at least 50 characters',
+        message: 'Please describe the community interest in at least 50 characters',
         path: ['communityInterestText'],
+      })
+    }
+    if (!data.sustainabilityPlan || data.sustainabilityPlan.length < 50) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Please provide a sustainability plan (min 50 chars)',
+        path: ['sustainabilityPlan'],
+      })
+    }
+    if (data.studentInterestCount === undefined || data.studentInterestCount < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Student interest count must be at least 1',
+        path: ['studentInterestCount'],
       })
     }
     if (data.seedFundingGoalsCents === undefined) {

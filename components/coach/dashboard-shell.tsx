@@ -11,6 +11,17 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { CopyInput } from '@/components/ui/copy-input'
 import { FadeUp } from '@/components/motion/fade-up'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { PortfolioTab } from './portfolio-tab'
 import { InboxTab } from './inbox-tab'
@@ -80,8 +91,60 @@ export function DashboardShell({
       }
     }
     window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
-  }, [])
+
+    // Keyboard shortcuts for navigation
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if typing in an input or textarea
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement)?.isContentEditable
+      ) {
+        return
+      }
+
+      if (e.shiftKey) {
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          e.preventDefault()
+          const currentIndex = TABS.findIndex(t => t.id === tab)
+          let nextIndex = currentIndex
+          
+          if (e.key === 'ArrowUp') {
+            nextIndex = (currentIndex - 1 + TABS.length) % TABS.length
+          } else {
+            nextIndex = (currentIndex + 1) % TABS.length
+          }
+          
+          setTab(TABS[nextIndex].id)
+          return
+        }
+
+        // Letter-based shortcuts
+        const keyMap: Record<string, string> = {
+          'O': 'overview',
+          'P': 'portfolio',
+          'S': 'find-sponsors',
+          'H': 'submissions',
+          'N': 'inbox',
+          'I': 'insights',
+          'L': 'ledger',
+          ',': 'settings',
+        }
+
+        const targetTab = keyMap[e.key.toUpperCase()]
+        if (targetTab) {
+          e.preventDefault()
+          setTab(targetTab)
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [tab])
 
   const setTab = (newTab: string) => {
     if (newTab === tab) return
@@ -89,6 +152,9 @@ export function DashboardShell({
     const url = newTab === 'overview' ? '/dashboard' : `/dashboard?tab=${newTab}`
     // Use replaceState to update URL without triggering a Next.js server-side refresh
     window.history.replaceState({ ...window.history.state, as: url, url }, '', url)
+    
+    // Notify external components (like Sidebar) to update their selection state
+    window.dispatchEvent(new CustomEvent('dashboard-tab-change', { detail: { tab: newTab } }))
   }
 
   const activePitches = submissions.filter(s => s.status === 'pending' || s.status === 'dispatched' || s.status === 'approved').length
@@ -119,6 +185,7 @@ export function DashboardShell({
         >
           {tab === 'overview' && (
             <OverviewTab
+              team={team}
               switchTab={setTab}
               activePitches={activePitches}
               submissionsCount={submissions.length}
@@ -184,8 +251,9 @@ function StatusChip({ status }: { status: string }) {
 /* ── Overview tab ───────────────────────────────────────────────────────────── */
 
 function OverviewTab({
-  switchTab, activePitches, submissionsCount, totalFunded, portfolioAsk, submissions,
+  team, switchTab, activePitches, submissionsCount, totalFunded, portfolioAsk, submissions,
 }: {
+  team: Team
   switchTab: (t: string) => void
   activePitches: number
   submissionsCount: number
@@ -194,9 +262,107 @@ function OverviewTab({
   submissions: SubmissionSummary[]
 }) {
   const needsAttention = submissions.filter(s => s.status === 'declined' || s.status === 'changes_requested')
+  const [showGraduation, setShowGraduation] = useState(false)
+  const [gradNumber, setGradNumber] = useState('')
+  const [gradName, setGradName] = useState(team.team_name)
+  const [isGraduating, startGraduation] = useTransition()
+
+  const handleGraduate = () => {
+    const num = parseInt(gradNumber)
+    if (isNaN(num) || num <= 0) {
+      toast.error('Please enter a valid FTC Team Number')
+      return
+    }
+    startGraduation(async () => {
+      const res = await updateTeam(team.id, { 
+        status: 'existing', 
+        ftcTeamNumber: num,
+        teamName: gradName.trim() || team.team_name
+      } as any)
+      if (res.error) toast.error(res.error)
+      else {
+        toast.success('Congratulations! You are now an official Existing Team.')
+        window.location.reload()
+      }
+    })
+  }
 
   return (
     <div className="space-y-8">
+      {team.status === 'incubator' && (
+        <FadeUp>
+          <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-400">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-indigo-100">Ready to graduate?</h4>
+                <p className="mt-1 text-sm text-indigo-300/80 max-w-md">
+                  If you have secured your seed funding and registered with FIRST, you can upgrade your account to unlock technical robot specs and award history.
+                </p>
+              </div>
+            </div>
+            
+            <Dialog open={showGraduation} onOpenChange={setShowGraduation}>
+              <DialogTrigger
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md bg-indigo-500 px-4 py-2 text-sm font-medium text-white shadow transition-colors hover:bg-indigo-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500 disabled:pointer-events-none disabled:opacity-50"
+              >
+                I have a team now
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px] bg-zinc-950 border-zinc-800">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-indigo-400" />
+                    Level Up Your Team
+                  </DialogTitle>
+                  <DialogDescription className="text-zinc-400">
+                    Enter your official registration details to graduate from an Incubator to an Existing Team.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="space-y-2">
+                    <Label className="text-zinc-300">New FTC Team Number</Label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 12345"
+                      className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-600 focus:ring-indigo-500"
+                      value={gradNumber}
+                      onChange={(e) => setGradNumber(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-zinc-300">Official Team Name</Label>
+                    <Input
+                      placeholder="Enter official team name"
+                      className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-600 focus:ring-indigo-500"
+                      value={gradName}
+                      onChange={(e) => setGradName(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowGraduation(false)}
+                    className="border-zinc-800 text-zinc-300 hover:bg-zinc-900 hover:text-white"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleGraduate} 
+                    disabled={isGraduating || !gradNumber}
+                    className="bg-indigo-600 text-white hover:bg-indigo-500"
+                  >
+                    {isGraduating ? 'Upgrading...' : 'Graduate Team'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </FadeUp>
+      )}
+
       <div className="flex justify-end gap-2">
         <Button
           variant="secondary"
@@ -650,6 +816,18 @@ function LedgerTab({ team }: { team: Team }) {
     })
   }
 
+  function loadIncubatorDefaults() {
+    const defaults: BudgetItem[] = [
+      { label: 'FIRST Rookie Registration Fee', qty: 1, unit_cost_cents: 90000, total_cents: 90000 },
+      { label: 'REV Robotics Core Starter Kit', qty: 1, unit_cost_cents: 120000, total_cents: 120000 },
+      { label: 'Control Hub & Electronics Kit', qty: 1, unit_cost_cents: 65000, total_cents: 65000 },
+      { label: 'Basic Toolset (Metric/Imperial)', qty: 1, unit_cost_cents: 15000, total_cents: 15000 },
+      { label: 'Partial Field Perimeter', qty: 1, unit_cost_cents: 10000, total_cents: 10000 },
+    ]
+    setItems(defaults)
+    toast.info('Loaded startup essentials')
+  }
+
   function addItem() {
     setItems(prev => [...prev, { label: '', qty: 1, unit_cost_cents: 0, total_cents: 0 }])
   }
@@ -677,10 +855,24 @@ function LedgerTab({ team }: { team: Team }) {
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-medium text-zinc-100">Team Ledger</h2>
-          <p className="text-sm text-zinc-400 mt-1">Edit your budget items directly. Changes save to your portfolio.</p>
+          <h2 className="text-xl font-medium text-zinc-100">
+            {team.status === 'incubator' ? 'Seed Capital Ledger' : 'Team Ledger'}
+          </h2>
+          <p className="text-sm text-zinc-400 mt-1">
+            {team.status === 'incubator' 
+              ? 'Define your startup costs. Use the tool below to load rookie essentials.'
+              : 'Edit your budget items directly. Changes save to your portfolio.'}
+          </p>
         </div>
         <div className="flex gap-2">
+          {team.status === 'incubator' && items.length === 0 && (
+            <button
+              onClick={loadIncubatorDefaults}
+              className="inline-flex items-center gap-1.5 rounded-md border border-indigo-500/30 bg-indigo-500/10 px-3 h-9 text-sm text-indigo-300 hover:bg-indigo-500/20 transition-colors"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Load Startup Essentials
+            </button>
+          )}
           <button
             onClick={addItem}
             className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-900 px-3 h-9 text-sm text-zinc-200 hover:bg-zinc-800 transition-colors"

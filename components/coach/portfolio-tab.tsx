@@ -5,11 +5,11 @@ import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { teamOnboardingSchema, type TeamOnboardingInput } from '@/lib/schemas/team'
 import { updateTeam } from '@/app/actions/team'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Trash, Image as ImageIcon, Upload, GripVertical, Plus } from 'lucide-react'
+import { Trash, Image as ImageIcon, Upload, GripVertical, Plus, Sparkles, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import type { Team, TeamAchievement } from '@/lib/supabase/types'
@@ -20,6 +20,8 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
   const [isPending, startTransition] = useTransition()
   const [draggingOver, setDraggingOver] = useState(false)
   const [uploadingDrop, setUploadingDrop] = useState(false)
+
+  const isIncubator = team.status === 'incubator'
 
   const form = useForm<any>({
     resolver: zodResolver(teamOnboardingSchema) as any,
@@ -34,14 +36,14 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
       missionStatement: team.mission_statement || '',
       taxStatus: team.tax_status,
       communityInterestText: team.community_interest_text || undefined,
+      studentInterestCount: (team as any).student_interest_count || undefined,
+      sustainabilityPlan: (team as any).sustainability_plan || undefined,
       seedFundingGoalsCents: team.seed_funding_goals_cents || undefined,
       technicalSummary: team.technical_summary || undefined,
       outreachSummary: team.outreach_summary || undefined,
-      // Free text instead of enum dropdowns
       drivetrain: (team as any).drivetrain || '',
       buildSystem: (team as any).build_system || '',
       programming: (team as any).programming || '',
-
       mediaUrls: team.media_urls || [],
       youtubeUrl: team.youtube_url || undefined,
       budgetItems: team.budget_items?.map((item: any) => ({
@@ -53,7 +55,6 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
       financialAskCents: team.financial_ask_cents || 0,
       cadSoftware: (team as any).cad_software || '',
       controlSystem: (team as any).control_system || '',
-      // sensors & mfg capabilities as comma-joined strings (schema uses z.string)
       sensors: ((team as any).sensors as string[] | undefined)?.join(', ') ?? '',
       githubLink: (team as any).github_link || '',
       autonomousDescription: (team as any).autonomous_description || '',
@@ -122,7 +123,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
     await Promise.all(files.map(uploadFile))
     toast.success('All images uploaded!', { id: 'drop-upload' })
     setUploadingDrop(false)
-  }, [])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   async function onSubmit(values: any) {
     startTransition(async () => {
@@ -137,147 +138,251 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-4xl">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-medium text-foreground">Team Portfolio</h2>
-            <p className="text-sm text-muted-foreground mt-1">Manage your team's specs, media, and narrative.</p>
+            <h2 className="text-xl font-medium text-foreground">
+              {isIncubator ? "Founder's Portfolio" : "Team Portfolio"}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {isIncubator 
+                ? "Manage your vision, community evidence, and startup plan."
+                : "Manage your team's specs, media, and narrative."}
+            </p>
           </div>
           <Button type="submit" disabled={isPending}>
             {isPending ? 'Saving…' : 'Save Changes'}
           </Button>
         </div>
 
-        {/* Robot Identity — all text inputs */}
-        <div className="rounded-xl border border-border bg-card p-6 space-y-5">
-          <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
-            Robot Identity
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <FormField control={form.control} name="drivetrain" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Drivetrain</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. Mecanum, Swerve, Tank…" {...field} value={field.value ?? ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="buildSystem" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Build System</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. GoBILDA, REV, Custom…" {...field} value={field.value ?? ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="controlSystem" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Control System</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. REV Control Hub, Android Phone…" {...field} value={field.value ?? ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="cadSoftware" render={({ field }) => (
-              <FormItem>
-                <FormLabel>CAD Software</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. Onshape, SolidWorks, Fusion 360…" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="githubLink" render={({ field }) => (
-              <FormItem className="col-span-1 md:col-span-2">
-                <FormLabel>GitHub Link</FormLabel>
-                <FormControl>
-                  <Input placeholder="https://github.com/your-team" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
+        {isIncubator && (
+          <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/5 p-6 space-y-5">
+            <div className="flex items-center gap-2 text-indigo-400">
+              <Sparkles className="h-5 w-5" />
+              <h3 className="text-sm font-semibold uppercase tracking-widest border-b border-indigo-500/20 pb-2 flex-1">
+                The Founder's Pitch
+              </h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField control={form.control} name="missionStatement" render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>The "Why": Motivation</FormLabel>
+                  <FormDescription>Explain why you want to start a team in your specific community.</FormDescription>
+                  <FormControl>
+                    <Textarea className="min-h-[120px]" placeholder="Our motivation is to bring STEM access to..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="studentInterestCount" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Student Interest Count</FormLabel>
+                  <FormDescription>How many students are committed to joining?</FormDescription>
+                  <FormControl>
+                    <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value) || 0)} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="communityInterestText" render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>Evidence of Community Interest</FormLabel>
+                  <FormDescription>Describe local support, waitlists, or school buy-in.</FormDescription>
+                  <FormControl>
+                    <Textarea className="min-h-[100px]" placeholder="We have local parents and the PTA supportive of..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="sustainabilityPlan" render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>Sustainability Plan</FormLabel>
+                  <FormDescription>How will the team survive after the first year?</FormDescription>
+                  <FormControl>
+                    <Textarea className="min-h-[100px]" placeholder="Our plan for year 2 and beyond is..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Software & Autonomy — text inputs only */}
-        <div className="rounded-xl border border-border bg-card p-6 space-y-5">
-          <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
-            Software & Autonomy
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <FormField control={form.control} name="programming" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Programming Language</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. Java, Blocks, Python…" {...field} value={field.value ?? ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="sensors" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Sensors & Algorithms</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. Odometry, PID, Computer Vision…" {...field} value={field.value ?? ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="autonomousDescription" render={({ field }) => (
-              <FormItem className="col-span-1 md:col-span-2">
-                <FormLabel>Autonomous Routine Description</FormLabel>
-                <FormControl>
-                  <Textarea maxLength={750} placeholder="Describe your autonomous capabilities…" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          </div>
-        </div>
+        {!isIncubator && (
+          <>
+            {/* Robot Identity */}
+            <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+              <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
+                Robot Identity
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <FormField control={form.control} name="drivetrain" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Drivetrain</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Mecanum, Swerve, Tank…" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="buildSystem" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Build System</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. GoBILDA, REV, Custom…" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="controlSystem" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Control System</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. REV Control Hub, Android Phone…" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="cadSoftware" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CAD Software</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Onshape, SolidWorks, Fusion 360…" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="githubLink" render={({ field }) => (
+                  <FormItem className="col-span-1 md:col-span-2">
+                    <FormLabel>GitHub Link</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://github.com/your-team" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+            </div>
 
-        {/* Team Structure — text inputs */}
-        <div className="rounded-xl border border-border bg-card p-6 space-y-5">
-          <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
-            Team Structure & Capabilities
-          </h3>
-          <FormField control={form.control} name="manufacturingCapabilities" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Manufacturing Capabilities</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g. 3D Printing, CNC, Lathe, Laser Cutter…" {...field} value={field.value ?? ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-          <FormField control={form.control} name="subteamBreakdown" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Subteam Breakdown</FormLabel>
-              <FormControl><Textarea maxLength={1000} placeholder="Describe your team structure and roles…" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-        </div>
+            {/* Software & Autonomy */}
+            <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+              <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
+                Software & Autonomy
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <FormField control={form.control} name="programming" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Programming Language</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Java, Blocks, Python…" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="sensors" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sensors & Algorithms</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Odometry, PID, Computer Vision…" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="autonomousDescription" render={({ field }) => (
+                  <FormItem className="col-span-1 md:col-span-2">
+                    <FormLabel>Autonomous Routine Description</FormLabel>
+                    <FormControl>
+                      <Textarea maxLength={750} placeholder="Describe your autonomous capabilities…" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+            </div>
 
-        {/* Visual Pitch Assets — drag & drop */}
+            {/* Awards & Experience */}
+            <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+              <div className="flex items-center justify-between border-b border-border pb-3">
+                <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Awards & Experience</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => appendAch({ season: '', eventName: '', award: '', description: '' })}
+                  className="h-8 text-xs gap-1.5"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add Achievement
+                </Button>
+              </div>
+              <div className="space-y-4">
+                {achItems.map((field, index) => (
+                  <div key={field.id} className="relative grid grid-cols-1 md:grid-cols-[120px,1fr,1fr,auto] gap-3 items-end border border-border/50 rounded-lg p-4 bg-accent/5">
+                    <FormField control={form.control} name={`achievements.${index}.season`} render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Season</FormLabel>
+                        <FormControl><Input placeholder="2024-25" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name={`achievements.${index}.eventName`} render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Event Name</FormLabel>
+                        <FormControl><Input placeholder="Qualifying Tournament" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name={`achievements.${index}.award`} render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Award (Optional)</FormLabel>
+                        <FormControl><Input placeholder="Inspire Award" {...field} /></FormControl>
+                      </FormItem>
+                    )} />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-muted-foreground hover:text-destructive transition-colors"
+                      onClick={() => removeAch(index)}
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                    <FormField control={form.control} name={`achievements.${index}.description`} render={({ field }) => (
+                      <FormItem className="col-span-1 md:col-span-3">
+                        <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Description / Context</FormLabel>
+                        <FormControl><Input placeholder="Briefly describe the significance…" {...field} /></FormControl>
+                      </FormItem>
+                    )} />
+                  </div>
+                ))}
+                {achItems.length === 0 && (
+                  <div className="text-center py-8 border border-dashed border-border rounded-lg bg-accent/5">
+                    <p className="text-sm text-muted-foreground italic">No achievements listed yet. Add your first award or event experience!</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Visual Pitch Assets */}
         <div className="rounded-xl border border-border bg-card p-6 space-y-5">
           <div className="flex items-center justify-between border-b border-border pb-3">
-            <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Visual Pitch Assets</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+              {isIncubator ? "Concept & Community Media" : "Visual Pitch Assets"}
+            </h3>
             <label className="cursor-pointer inline-flex items-center gap-2 rounded-md border border-border bg-accent px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent/80 transition-colors">
               <Upload className="h-3.5 w-3.5" /> Browse
               <input type="file" className="hidden" accept="image/png,image/jpeg,image/webp,image/gif" multiple onChange={handleUpload} />
             </label>
           </div>
-
-          {/* Drag & Drop zone */}
           <div
             onDragOver={e => { e.preventDefault(); setDraggingOver(true) }}
             onDragLeave={() => setDraggingOver(false)}
             onDrop={handleDrop}
             className={cn(
               'relative rounded-xl border-2 border-dashed transition-all duration-200 overflow-hidden',
-              draggingOver
-                ? 'border-primary bg-primary/5 scale-[1.01]'
-                : 'border-border bg-background/40',
+              draggingOver ? 'border-primary bg-primary/5 scale-[1.01]' : 'border-border bg-background/40',
               visualItems.length === 0 ? 'min-h-[160px] flex items-center justify-center' : ''
             )}
           >
@@ -293,136 +398,70 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
                   <div key={item.id} className="relative rounded-lg overflow-hidden border border-border bg-accent/50 aspect-video group">
                     <Image src={item.url} alt={`Slide ${index + 1}`} fill className="object-cover" />
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2.5">
-                      <button
-                        type="button"
-                        onClick={() => removeVisual(index)}
-                        className="self-end p-1.5 bg-red-500/20 text-red-300 rounded hover:bg-red-500/40 transition-colors"
-                      >
+                      <button type="button" onClick={() => removeVisual(index)} className="self-end p-1.5 bg-red-500/20 text-red-300 rounded hover:bg-red-500/40 transition-colors">
                         <Trash className="h-3.5 w-3.5" />
                       </button>
                       <FormField control={form.control} name={`visualPitchItems.${index}.caption`} render={({ field }) => (
-                        <FormControl>
-                          <Input
-                            className="bg-zinc-950/80 border-none text-xs h-8 placeholder:text-zinc-500"
-                            placeholder="Add caption…"
-                            {...field}
-                          />
-                        </FormControl>
+                        <FormControl><Input className="bg-zinc-950/80 border-none text-xs h-8 placeholder:text-zinc-500" placeholder="Add caption…" {...field} /></FormControl>
                       )} />
-                    </div>
-                    <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-60 transition-opacity">
-                      <GripVertical className="h-4 w-4 text-white" />
                     </div>
                   </div>
                 ))}
               </div>
             )}
-
-            {draggingOver && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="rounded-xl bg-indigo-600/90 px-6 py-4 text-sm font-semibold text-white shadow-2xl">
-                  Drop to upload
-                </div>
-              </div>
-            )}
-            {uploadingDrop && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/70 pointer-events-none">
-                <div className="rounded-xl bg-card border border-border px-6 py-4 text-sm text-foreground">
-                  Uploading…
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Awards & Experience */}
-        <div className="rounded-xl border border-border bg-card p-6 space-y-5">
-          <div className="flex items-center justify-between border-b border-border pb-3">
-            <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Awards & Experience</h3>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => appendAch({ season: '', eventName: '', award: '', description: '' })}
-              className="h-8 text-xs gap-1.5"
-            >
-              <Plus className="h-3.5 w-3.5" /> Add Achievement
-            </Button>
-          </div>
-          
-          <div className="space-y-4">
-            {achItems.map((field, index) => (
-              <div key={field.id} className="relative grid grid-cols-1 md:grid-cols-[120px,1fr,1fr,auto] gap-3 items-end border border-border/50 rounded-lg p-4 bg-accent/5">
-                <FormField control={form.control} name={`achievements.${index}.season`} render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Season</FormLabel>
-                    <FormControl><Input placeholder="2024-25" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name={`achievements.${index}.eventName`} render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Event Name</FormLabel>
-                    <FormControl><Input placeholder="Qualifying Tournament" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name={`achievements.${index}.award`} render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Award (Optional)</FormLabel>
-                    <FormControl><Input placeholder="Inspire Award" {...field} /></FormControl>
-                  </FormItem>
-                )} />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 text-muted-foreground hover:text-destructive transition-colors"
-                  onClick={() => removeAch(index)}
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
-                <FormField control={form.control} name={`achievements.${index}.description`} render={({ field }) => (
-                  <FormItem className="col-span-1 md:col-span-3">
-                    <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Description / Context</FormLabel>
-                    <FormControl><Input placeholder="Briefly describe the significance…" {...field} /></FormControl>
-                  </FormItem>
-                )} />
-              </div>
-            ))}
-            {achItems.length === 0 && (
-              <div className="text-center py-8 border border-dashed border-border rounded-lg bg-accent/5">
-                <p className="text-sm text-muted-foreground italic">No achievements listed yet. Add your first award or event experience!</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Narrative / Mission */}
+        {/* Team Structure */}
         <div className="rounded-xl border border-border bg-card p-6 space-y-5">
           <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
-            Narrative
+            {isIncubator ? "Leadership & Planning" : "Team Structure & Capabilities"}
           </h3>
-          <FormField control={form.control} name="missionStatement" render={({ field }) => (
+          {!isIncubator && (
+            <FormField control={form.control} name="manufacturingCapabilities" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Manufacturing Capabilities</FormLabel>
+                <FormControl><Input placeholder="e.g. 3D Printing, CNC, Lathe…" {...field} value={field.value ?? ''} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+          <FormField control={form.control} name="subteamBreakdown" render={({ field }) => (
             <FormItem>
-              <FormLabel>Mission Statement</FormLabel>
-              <FormControl><Textarea className="min-h-[100px]" placeholder="Our objective is…" {...field} /></FormControl>
+              <FormLabel>{isIncubator ? "Proposed Roles" : "Subteam Breakdown"}</FormLabel>
+              <FormControl><Textarea maxLength={1000} placeholder={isIncubator ? "How will you organize your initial members?" : "Describe your team structure..."} {...field} /></FormControl>
               <FormMessage />
             </FormItem>
           )} />
-          <FormField control={form.control} name="technicalSummary" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Technical Summary</FormLabel>
-              <FormControl><Textarea className="min-h-[100px]" placeholder="An overview of your technical strategy…" {...field} /></FormControl>
-            </FormItem>
-          )} />
-          <FormField control={form.control} name="outreachSummary" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Outreach Summary</FormLabel>
-              <FormControl><Textarea className="min-h-[100px]" placeholder="Your team's community impact…" {...field} /></FormControl>
-            </FormItem>
-          )} />
         </div>
+
+        {/* Narrative / Mission — for existing teams */}
+        {!isIncubator && (
+          <div className="rounded-xl border border-border bg-card p-6 space-y-5">
+            <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
+              Narrative
+            </h3>
+            <FormField control={form.control} name="missionStatement" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Mission Statement</FormLabel>
+                <FormControl><Textarea className="min-h-[100px]" placeholder="Our objective is…" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="technicalSummary" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Technical Summary</FormLabel>
+                <FormControl><Textarea className="min-h-[100px]" placeholder="An overview of your technical strategy…" {...field} /></FormControl>
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="outreachSummary" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Outreach Summary</FormLabel>
+                <FormControl><Textarea className="min-h-[100px]" placeholder="Your team's community impact…" {...field} /></FormControl>
+              </FormItem>
+            )} />
+          </div>
+        )}
       </form>
     </Form>
   )

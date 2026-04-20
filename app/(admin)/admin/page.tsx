@@ -116,7 +116,7 @@ export default async function AdminDashboardPage() {
               <CardTitle>Moderation Queue</CardTitle>
               <Link
                 href="/moderation"
-                className={cn(buttonVariants({ size: 'sm', variant: 'secondary' }))}
+                className={cn(buttonVariants({ size: 'sm', variant: 'default' }))}
               >
                 Open queue
               </Link>
@@ -166,7 +166,7 @@ export default async function AdminDashboardPage() {
               <CardTitle>Coaches Awaiting Verification</CardTitle>
               <Link
                 href="/coaches"
-                className={cn(buttonVariants({ size: 'sm', variant: 'secondary' }))}
+                className={cn(buttonVariants({ size: 'sm', variant: 'default' }))}
               >
                 Manage coaches
               </Link>

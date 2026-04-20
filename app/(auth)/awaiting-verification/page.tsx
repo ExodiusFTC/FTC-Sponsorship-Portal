@@ -26,27 +26,19 @@ export default async function AwaitingVerificationPage() {
     .eq('owner_id', user.id)
     .maybeSingle()
 
-  // If already verified AND has a team, push them forward
-  if (profile?.coach_verified && team) redirect('/dashboard')
-
-  const isVerifiedWithoutTeam = profile?.coach_verified && !team
+  // If already verified, push them forward to the dashboard
+  if (profile?.coach_verified) redirect('/dashboard')
 
   return (
     <div className="container mx-auto max-w-md py-20">
       <Card className="text-center">
         <CardHeader>
-          <div className={cn(
-            "mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full text-3xl",
-            isVerifiedWithoutTeam ? "bg-emerald-100/10" : "bg-amber-100/10"
-          )}>
-            {isVerifiedWithoutTeam ? '✓' : '⏱︎'}
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100/10 text-3xl">
+            ⏱︎
           </div>
-          <CardTitle>{isVerifiedWithoutTeam ? 'Account Verified!' : 'Application under review'}</CardTitle>
-          <CardDescription className="text-base">
-            {isVerifiedWithoutTeam 
-              ? "Your account is verified. We are just finishing setting up your team portfolio. This should only take a moment."
-              : "We received your credentials. A platform admin will verify your account — typically within one business day. You'll be able to build pitches once approved."
-            }
+          <CardTitle>Application under review</CardTitle>
+          <CardDescription className="text-base text-muted-foreground">
+            We received your credentials. A platform admin will verify your account — typically within one business day. You&apos;ll be able to build pitches once approved.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -58,7 +50,7 @@ export default async function AwaitingVerificationPage() {
             .
           </p>
           <div className="flex flex-col gap-2">
-            {!profile?.coach_credentials_url && (
+            {!profile?.coach_verified && !profile?.coach_credentials_url && (
               <Link
                 href="/upload-credentials"
                 className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}

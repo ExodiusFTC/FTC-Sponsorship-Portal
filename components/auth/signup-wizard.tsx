@@ -14,7 +14,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Plus, Trash2, ChevronDown, ChevronRight, ChevronLeft, UploadCloud, ArrowRight } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronRight, ChevronLeft, UploadCloud, ArrowRight, AlertCircle } from 'lucide-react'
+import { StateSelector } from '@/components/ui/state-selector'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -138,7 +139,9 @@ export function SignupWizard() {
     if (step === 3) fieldsToValidate = ['photoIdFile', 'ageConfirmed', 'coppaAcknowledged', 'tosAccepted']
     if (step === 4) fieldsToValidate = ['teamData.status', 'teamData.ftcTeamNumber', 'teamData.teamName', 'teamData.organization', 'teamData.city', 'teamData.state', 'teamData.taxStatus']
     
+    // Log errors to help debug why validation might be failing
     const isValid = await form.trigger(fieldsToValidate)
+    
     if (isValid) {
       if (step === 3 && !file) {
         form.setError('photoIdFile', { message: 'Photo ID is required' })
@@ -146,6 +149,9 @@ export function SignupWizard() {
       }
       setStep(prev => Math.min(prev + 1, totalSteps))
       window.scrollTo(0, 0)
+    } else {
+      console.log('Validation failed for fields:', fieldsToValidate)
+      console.log('Current errors:', form.formState.errors)
     }
   }
 
@@ -360,7 +366,13 @@ export function SignupWizard() {
                             <FormItem className="col-span-1"><FormLabel className="text-foreground/80">City</FormLabel><FormControl><Input className="bg-background border-border text-foreground placeholder:text-muted-foreground" {...field} /></FormControl><FormMessage /></FormItem>
                           )} />
                           <FormField control={form.control} name="state" render={({ field }) => (
-                            <FormItem className="col-span-1"><FormLabel className="text-foreground/80">State</FormLabel><FormControl><Input className="bg-background border-border text-foreground placeholder:text-muted-foreground" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem className="col-span-1">
+                              <FormLabel className="text-foreground/80">State</FormLabel>
+                              <FormControl>
+                                <StateSelector value={field.value} onChange={field.onChange} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
                           )} />
                           <FormField control={form.control} name="zipCode" render={({ field }) => (
                             <FormItem className="col-span-1"><FormLabel className="text-foreground/80">Zip Code</FormLabel><FormControl><Input className="bg-background border-border text-foreground placeholder:text-muted-foreground" {...field} /></FormControl><FormMessage /></FormItem>
@@ -429,9 +441,14 @@ export function SignupWizard() {
                       </div>
                     )}
 
-                    {/* STEP 4: Team Basics */}
                     {step === 4 && (
                       <div className="space-y-6">
+                        {form.formState.errors.teamData?.root && (
+                          <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>{form.formState.errors.teamData.root.message}</AlertDescription>
+                          </Alert>
+                        )}
                         <FormField control={form.control} name="teamData.status" render={({ field }) => (
                           <FormItem className="space-y-3">
                             <FormLabel className="text-foreground/80">Team Status</FormLabel>
@@ -482,7 +499,13 @@ export function SignupWizard() {
                             <FormItem><FormLabel className="text-foreground/80">Team City</FormLabel><FormControl><Input className="bg-background border-border text-foreground placeholder:text-muted-foreground" placeholder="e.g. Austin" {...field} /></FormControl><FormMessage /></FormItem>
                           )} />
                           <FormField control={form.control} name="teamData.state" render={({ field }) => (
-                            <FormItem><FormLabel className="text-foreground/80">Team State</FormLabel><FormControl><Input className="bg-background border-border text-foreground placeholder:text-muted-foreground" placeholder="e.g. TX" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem>
+                              <FormLabel className="text-foreground/80">Team State</FormLabel>
+                              <FormControl>
+                                <StateSelector value={field.value} onChange={field.onChange} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
                           )} />
                         </div>
 
@@ -516,6 +539,15 @@ export function SignupWizard() {
                         <FormField control={form.control} name="teamData.missionStatement" render={({ field }) => (
                           <FormItem><FormLabel className="text-foreground/80">Mission Statement</FormLabel><FormControl><Textarea placeholder="What is your team's overarching goal? (Min 50 chars)" className="min-h-[100px] resize-none bg-background border-border text-foreground placeholder:text-muted-foreground" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                          <FormField control={form.control} name="teamData.technicalSummary" render={({ field }) => (
+                            <FormItem><FormLabel className="text-foreground/80">Technical Summary (Optional)</FormLabel><FormControl><Textarea placeholder="Describe your robot and engineering process." className="min-h-[100px] resize-none bg-background border-border text-foreground placeholder:text-muted-foreground" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                          )} />
+                          <FormField control={form.control} name="teamData.outreachSummary" render={({ field }) => (
+                            <FormItem><FormLabel className="text-foreground/80">Outreach Summary (Optional)</FormLabel><FormControl><Textarea placeholder="How do you impact your community?" className="min-h-[100px] resize-none bg-background border-border text-foreground placeholder:text-muted-foreground" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+                          )} />
+                        </div>
                         
                         <div className="pt-4 border-t border-border">
                           <div className="flex justify-between items-center mb-4 mt-2">

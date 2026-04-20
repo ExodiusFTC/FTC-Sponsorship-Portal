@@ -85,6 +85,8 @@ export async function createTeam(data: TeamOnboardingInput) {
     mission_statement: payloadData.missionStatement.trim(),
     tax_status: payloadData.taxStatus,
     community_interest_text: payloadData.communityInterestText?.trim() || null,
+    student_interest_count: payloadData.studentInterestCount ?? 0,
+    sustainability_plan: payloadData.sustainabilityPlan?.trim() || null,
     seed_funding_goals_cents: payloadData.seedFundingGoalsCents ?? 0,
     technical_summary: payloadData.technicalSummary?.trim() || null,
     outreach_summary: payloadData.outreachSummary?.trim() || null,
@@ -232,6 +234,10 @@ export async function updateTeam(id: string, data: Partial<TeamOnboardingInput>)
   if (data.tagline !== undefined) updatePayload.tagline = data.tagline?.trim() || null
   if (typeof data.missionStatement === 'string') updatePayload.mission_statement = data.missionStatement.trim()
   if (data.taxStatus) updatePayload.tax_status = data.taxStatus
+  if (data.communityInterestText !== undefined) updatePayload.community_interest_text = data.communityInterestText?.trim() || null
+  if (data.studentInterestCount !== undefined) updatePayload.student_interest_count = data.studentInterestCount
+  if (data.sustainabilityPlan !== undefined) updatePayload.sustainability_plan = data.sustainabilityPlan?.trim() || null
+  if (data.seedFundingGoalsCents !== undefined) updatePayload.seed_funding_goals_cents = data.seedFundingGoalsCents
   if (data.technicalSummary !== undefined) updatePayload.technical_summary = data.technicalSummary?.trim() || null
   if (data.outreachSummary !== undefined) updatePayload.outreach_summary = data.outreachSummary?.trim() || null
   if (data.drivetrain !== undefined) updatePayload.drivetrain = data.drivetrain?.trim() || null

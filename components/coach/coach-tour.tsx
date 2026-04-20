@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { Joyride as JoyrideComponent, STATUS } from 'react-joyride'
 const Joyride = JoyrideComponent as any
 import { useTheme } from 'next-themes'
-import type { Step } from 'react-joyride'
 
 const TOUR_STEPS: any[] = [
   {
@@ -20,7 +19,7 @@ const TOUR_STEPS: any[] = [
   },
   {
     target: '.tour-portfolio',
-    content: "Your Portfolio is your team's canonical resume. Update your mission statement, media, and achievements once, and reuse it for every pitch.",
+    content: "Your Portfolio is your team's primary resume. Update your mission statement, media, and achievements once, and reuse it for every pitch.",
     placement: 'right',
   },
   {
@@ -55,30 +54,40 @@ const TOUR_STEPS: any[] = [
   },
 ]
 
-export function CoachTour() {
+export function CoachTour({ profile }: { profile: any }) {
   const [run, setRun] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const { resolvedTheme } = useTheme()
 
+  const tourKey = `matchmaker_tour_${profile?.id || 'guest'}`
+
+  // 1. Handle mounting separately to avoid hydration/render mismatches
   useEffect(() => {
     setIsMounted(true)
-    const hasSeenTour = localStorage.getItem('matchmaker_coach_tour_completed')
-    if (!hasSeenTour) {
-      // Small delay to ensure the DOM elements (like sidebar) have fully rendered
-      const timer = setTimeout(() => {
-        setRun(true)
-      }, 1000)
-      return () => clearTimeout(timer)
-    }
   }, [])
 
+  // 2. Handle tour logic separately with stable dependencies
+  useEffect(() => {
+    if (!isMounted) return
+
+    const hasSeenTour = localStorage.getItem(tourKey)
+    if (!hasSeenTour) {
+      const timer = setTimeout(() => {
+        setRun(true)
+      }, 1500)
+      return () => clearTimeout(timer)
+    } else {
+      setRun(false)
+    }
+  }, [isMounted, tourKey])
+
   const handleJoyrideCallback = (data: any) => {
-    const { status } = data
+    const { status, type } = data
     const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED]
 
-    if (finishedStatuses.includes(status)) {
+    if (finishedStatuses.includes(status) || type === 'tour:end') {
       setRun(false)
-      localStorage.setItem('matchmaker_coach_tour_completed', 'true')
+      localStorage.setItem(tourKey, 'true')
     }
   }
 
@@ -94,37 +103,47 @@ export function CoachTour() {
       scrollToFirstStep
       showProgress
       showSkipButton
+      locale={{ skip: 'Skip Tour' }}
       callback={handleJoyrideCallback}
       styles={{
         options: {
-          arrowColor: isDark ? '#18181b' : '#ffffff', // zinc-950 or white
+          arrowColor: isDark ? '#18181b' : '#ffffff',
           backgroundColor: isDark ? '#18181b' : '#ffffff',
-          overlayColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.4)',
-          primaryColor: '#4f46e5', // indigo-600
-          textColor: isDark ? '#e4e4e7' : '#27272a', // zinc-200 or zinc-800
+          overlayColor: isDark ? 'rgba(0, 0, 0, 0.85)' : 'rgba(0, 0, 0, 0.5)',
+          primaryColor: '#6366f1',
+          textColor: isDark ? '#f4f4f5' : '#18181b',
           zIndex: 1000,
         },
         tooltip: {
-          borderRadius: '8px',
-          border: isDark ? '1px solid #27272a' : '1px solid #e4e4e7', // zinc-800 or zinc-200
+          borderRadius: '12px',
+          padding: '20px',
+          border: isDark ? '1px solid #27272a' : '1px solid #e4e4e7',
+          boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+        },
+        tooltipContent: {
+          padding: '10px 0',
+          fontSize: '15px',
+          lineHeight: '1.6',
         },
         buttonClose: {
           color: isDark ? '#a1a1aa' : '#71717a',
         },
         buttonNext: {
-          backgroundColor: '#4f46e5',
-          borderRadius: '6px',
-          fontSize: '13px',
+          backgroundColor: '#6366f1',
+          borderRadius: '8px',
+          fontSize: '14px',
           fontWeight: 600,
-          padding: '8px 16px',
+          padding: '10px 20px',
         },
         buttonBack: {
           color: isDark ? '#a1a1aa' : '#71717a',
-          fontSize: '13px',
+          fontSize: '14px',
+          marginRight: '12px',
         },
         buttonSkip: {
           color: isDark ? '#a1a1aa' : '#71717a',
-          fontSize: '13px',
+          fontSize: '14px',
+          fontWeight: 500,
         }
       } as any}
     />

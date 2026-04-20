@@ -8,13 +8,24 @@ export function InitialLoader() {
   const [isLoading, setIsLoading] = useState(true)
   const loaderTexts = useMemo(() => ["FTC", "Sponsorships", "Simplified"], [])
   useEffect(() => {
+    // Lock scroll on both body and html element for maximum compatibility
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+
     // 3.5 seconds total duration for a snappier feel
     const timer = setTimeout(() => {
       setIsLoading(false)
+      // Unlock scroll
+      document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
       window.dispatchEvent(new CustomEvent('initial-loader-complete'))
     }, 3500)
 
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
+    }
   }, [])
 
   return (

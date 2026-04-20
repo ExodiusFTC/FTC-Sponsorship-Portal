@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { DashboardShell } from '@/components/coach/dashboard-shell'
+import Link from 'next/link'
 
 export default async function DashboardPage({
   searchParams,
@@ -13,8 +15,9 @@ export default async function DashboardPage({
 
   if (!user) return null
 
+  // 1. Initial Data Fetch
   const [
-    { data: team },
+    { data: initialTeam },
     { data: profile },
     { data: sponsors },
     { count: unreadCount },
@@ -22,13 +25,14 @@ export default async function DashboardPage({
     { data: submissions }
   ] = await Promise.all([
     supabase.from('teams').select('*').eq('owner_id', user.id).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
-    supabase.from('profiles').select('full_name, role, email').eq('id', user.id).single(),
-    supabase.from('sponsors').select('id, company_name, industry, funding_cap_cents, funding_used_cents, website').eq('status', 'active'),
+    supabase.from('profiles').select('*').eq('id', user.id).single(),
+    supabase.from('sponsors').select('id, company_name, industry, funding_cap_cents, funding_used_cents, website, logo_url').eq('status', 'active'),
     supabase.from('notifications').select('*', { count: 'planned', head: true }).eq('recipient_id', user.id).is('read_at', null),
     supabase.from('notifications').select('*').eq('recipient_id', user.id).order('created_at', { ascending: false }).limit(50),
     (supabase as any).from('v_submission_summary').select('*').eq('owner_id', user.id).order('updated_at', { ascending: false }),
   ])
 
+  // 2. Role & Verification Guards
   if (profile?.role === 'sponsor') {
     redirect('/sponsor/dashboard')
   }
@@ -37,22 +41,108 @@ export default async function DashboardPage({
     redirect('/awaiting-verification')
   }
 
-  if (!team) {
-    // If verified but no team, we need to show the onboarding or an error.
-    // For now, redirect to awaiting-verification but with a flag or handled state.
-    // Actually, let's just render a "Team Setup" state here if we want to be safe.
-    redirect('/awaiting-verification')
+  let currentTeam = initialTeam
+
+  // 3. Auto-Provisioning Logic
+  if (!currentTeam && profile?.coach_verified) {
+    const payloadData = (profile as any).pending_team_data || {}
+    
+    // Constraint Safeguard: Existing teams MUST have a team number.
+    // If missing, we force status to 'incubator' to satisfy the DB constraint.
+    const ftcTeamNumber = payloadData.ftcTeamNumber ?? null
+    const status = (payloadData.status === 'existing' && !ftcTeamNumber) ? 'incubator' : (payloadData.status || 'incubator')
+
+    const rawBudgetItems = (payloadData.budgetItems as Array<any> | undefined) || []
+    const normalizedBudgetItems = rawBudgetItems.map((item) => ({
+      label: item.label?.trim() || '',
+      qty: item.qty || 1,
+      unit_cost_cents: item.unitCostCents || 0,
+      total_cents: item.totalCents || 0,
+    }))
+    const totalAsk = normalizedBudgetItems.reduce((sum, item) => sum + item.total_cents, 0)
+
+    const adminClient = createAdminClient()
+    const { data: newTeam, error: createError } = await adminClient
+      .from('teams')
+      .insert({
+        owner_id: user.id,
+        status: status,
+        ftc_team_number: ftcTeamNumber,
+        team_name: (payloadData.teamName || profile.full_name || 'My Team').trim(),
+        organization: payloadData.organization?.trim() || null,
+        city: payloadData.city?.trim() || '',
+        state: payloadData.state?.trim() || '',
+        mission_statement: payloadData.missionStatement?.trim() || 'Mission pending.',
+        tax_status: payloadData.taxStatus || 'None',
+        budget_items: normalizedBudgetItems,
+        financial_ask_cents: totalAsk,
+        technical_summary: payloadData.technicalSummary?.trim() || null,
+        outreach_summary: payloadData.outreachSummary?.trim() || null,
+      } as any)
+      .select('*')
+      .single()
+
+    if (!createError && newTeam) {
+      await adminClient.from('profiles').update({ pending_team_data: null }).eq('id', user.id)
+      redirect('/dashboard')
+    } else {
+      console.error('[Dashboard] Auto-provisioning critical failure:', createError)
+      
+      // ABSOLUTE FALLBACK: If even the "smart" insert fails, create a barebones incubator record
+      // to ensure the user is NEVER stuck on the loading screen.
+      const { data: fallbackTeam } = await adminClient
+        .from('teams')
+        .insert({
+          owner_id: user.id,
+          status: 'incubator',
+          team_name: (profile.full_name || 'My Team').trim(),
+          tax_status: 'None',
+        } as any)
+        .select('*')
+        .single()
+
+      if (fallbackTeam) {
+        redirect('/dashboard')
+      }
+    }
   }
 
+  // 4. Final Safety Check
+  if (!currentTeam) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-6 bg-background px-6 text-center">
+        <div className="flex flex-col items-center gap-2">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-lg font-medium">Setting up your workspace...</p>
+        </div>
+        
+        <div className="max-w-md space-y-4 rounded-xl border border-border bg-card p-6 shadow-sm">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            We&apos;re finalizing your team portfolio. This usually takes less than 10 seconds.
+          </p>
+          <div className="flex flex-col gap-2">
+            <Link 
+              href="/dashboard"
+              className="flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+            >
+              Try Again
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 5. Success: Render Dashboard
   const { data: achievements } = await supabase
     .from('team_achievements')
     .select('*')
-    .eq('team_id', team.id)
+    .eq('team_id', currentTeam.id)
     .order('season', { ascending: false })
 
   return (
     <DashboardShell
-      team={team as any}
+      team={currentTeam as any}
       profile={profile as any}
       sponsors={sponsors as any ?? []}
       notifications={notifications as any ?? []}
