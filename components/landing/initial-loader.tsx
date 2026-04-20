@@ -46,7 +46,7 @@ export function InitialLoader() {
               cooldownTime={0.7}
               loop={false}
               className="w-full"
-              textClassName="text-white dark:text-white font-bold tracking-tighter"
+              textClassName="text-foreground font-bold tracking-tighter"
             />
           </div>
         </motion.div>

@@ -142,7 +142,6 @@ export function GooeyText({
           style={{ opacity: '0%', willChange: 'filter, opacity' }}
           className={cn(
             "absolute inline-block text-center text-6xl md:text-[60pt] font-bold",
-            "text-white dark:text-zinc-50",
             textClassName
           )}
         />
@@ -151,7 +150,6 @@ export function GooeyText({
           style={{ opacity: '100%', willChange: 'filter, opacity' }}
           className={cn(
             "absolute inline-block text-center text-6xl md:text-[60pt] font-bold",
-            "text-white dark:text-zinc-50",
             textClassName
           )}
         />
