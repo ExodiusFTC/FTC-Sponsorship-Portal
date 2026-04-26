@@ -193,6 +193,45 @@ export async function deleteSponsor(id: string): Promise<{ success?: true; error
   return { success: true }
 }
 
+/**
+ * Search sponsors by company name, industry, or notes using the pg full-text
+ * search index.  Falls back to an alphabetical listing when no query is given.
+ * Uses the GIN-indexed `search_vector` column for efficient lookups.
+ */
+export async function searchSponsors(query?: string) {
+  let adminClient
+  try {
+    const auth = await requireAdmin()
+    adminClient = auth.adminClient
+  } catch (e: any) {
+    return { error: e.message as string }
+  }
+
+  const ip = await getClientIp()
+  const limit = await validateRateLimit(`admin_search_sponsors_${ip}`)
+  if ('error' in limit) return limit
+
+  const trimmed = query?.trim() ?? ''
+
+  if (trimmed) {
+    const { data, error } = await adminClient
+      .from('sponsors')
+      .select('*')
+      .textSearch('search_vector', trimmed, { type: 'websearch', config: 'english' })
+
+    if (error) return { error: error.message }
+    return { data: data ?? [] }
+  }
+
+  const { data, error } = await adminClient
+    .from('sponsors')
+    .select('*')
+    .order('company_name', { ascending: true })
+
+  if (error) return { error: error.message }
+  return { data: data ?? [] }
+}
+
 /** Lightweight toggle — only updates status, no full schema validation required. */
 export async function adminToggleSponsorStatus(id: string, newStatus: 'active' | 'inactive') {
   let user, adminClient

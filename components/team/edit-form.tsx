@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { StateSelector } from '@/components/ui/state-selector'
 import type { Team } from '@/lib/supabase/types'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { ImageCropperDialog } from '@/components/ui/image-cropper-dialog'
 
 export function TeamEditForm({ team }: { team: Team }) {
   const [error, setError] = useState<string | null>(null)
@@ -28,6 +30,8 @@ export function TeamEditForm({ team }: { team: Team }) {
   const [logoError, setLogoError] = useState<string | null>(null)
   const [logoUploading, setLogoUploading] = useState(false)
   const [logoUrl, setLogoUrl] = useState(team.logo_url)
+  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null)
+  const [logoCropperOpen, setLogoCropperOpen] = useState(false)
 
   const form = useForm<TeamOnboardingInput>({
     resolver: zodResolver(teamOnboardingSchema) as any,
@@ -76,13 +80,20 @@ export function TeamEditForm({ team }: { team: Team }) {
     return total
   }
 
-  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleLogoFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    setPendingLogoFile(file)
+    setLogoCropperOpen(true)
+    e.target.value = ''
+  }
+
+  async function handleLogoCropConfirm(blob: Blob) {
     setLogoUploading(true)
     setLogoError(null)
+    const croppedFile = new File([blob], 'logo.webp', { type: 'image/webp' })
     const fd = new FormData()
-    fd.append('file', file)
+    fd.append('file', croppedFile)
     const result = await uploadTeamLogo(team.id, fd)
     setLogoUploading(false)
     if ('error' in result && result.error) {
@@ -121,13 +132,21 @@ export function TeamEditForm({ team }: { team: Team }) {
               id="logo"
               type="file"
               accept=".jpg,.jpeg,.png,.webp"
-              onChange={handleLogoUpload}
+              onChange={handleLogoFileSelect}
               disabled={logoUploading}
             />
             {logoUploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
           </div>
         </CardContent>
       </Card>
+
+      <ImageCropperDialog
+        open={logoCropperOpen}
+        onOpenChange={setLogoCropperOpen}
+        file={pendingLogoFile}
+        aspect={1}
+        onConfirm={handleLogoCropConfirm}
+      />
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -225,7 +244,13 @@ export function TeamEditForm({ team }: { team: Team }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Mission Statement</FormLabel>
-                    <FormControl><Textarea className="min-h-[100px]" {...field} /></FormControl>
+                    <FormControl>
+                      <RichTextEditor
+                        value={field.value ?? ''}
+                        onChange={field.onChange}
+                        placeholder="Our objective is…"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -236,7 +261,13 @@ export function TeamEditForm({ team }: { team: Team }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Engineering & Technical Portfolio</FormLabel>
-                    <FormControl><Textarea className="min-h-[100px]" {...field} /></FormControl>
+                    <FormControl>
+                      <RichTextEditor
+                        value={field.value ?? ''}
+                        onChange={field.onChange}
+                        placeholder="An overview of your technical strategy…"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -247,7 +278,13 @@ export function TeamEditForm({ team }: { team: Team }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Community Outreach</FormLabel>
-                    <FormControl><Textarea className="min-h-[100px]" {...field} /></FormControl>
+                    <FormControl>
+                      <RichTextEditor
+                        value={field.value ?? ''}
+                        onChange={field.onChange}
+                        placeholder="Your team's community impact…"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import DOMPurify from 'isomorphic-dompurify'
 
 // Legacy exports kept for any import sites; values no longer enforce DB enums
 export const DRIVETRAIN_OPTIONS = ['mecanum', 'swerve', 'tank', 'other'] as const
@@ -11,6 +12,36 @@ const emptyToUndefined = (value: unknown) => {
   if (typeof value !== 'string') return value
   const trimmed = value.trim()
   return trimmed.length > 0 ? trimmed : undefined
+}
+
+function richTextField(min: number | null, max: number, minMsg: string | null, maxMsg: string) {
+  return z
+    .string()
+    .trim()
+    .transform((val) => DOMPurify.sanitize(val))
+    .superRefine((val, ctx) => {
+      const text = val.replace(/<[^>]*>?/gm, '').trim()
+      if (min !== null && text.length < min) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.too_small,
+          minimum: min,
+          type: 'string',
+          inclusive: true,
+          message: minMsg!,
+          origin: 'string',
+        })
+      }
+      if (text.length > max) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.too_big,
+          maximum: max,
+          type: 'string',
+          inclusive: true,
+          message: maxMsg,
+          origin: 'string',
+        })
+      }
+    })
 }
 
 export const teamOnboardingSchema = z.object({
@@ -34,19 +65,19 @@ export const teamOnboardingSchema = z.object({
     .min(2, 'State is required')
     .max(40, 'State must be 40 characters or fewer')
     .regex(/^[A-Za-z][A-Za-z .'-]*$/, 'State can only contain letters, spaces, periods, apostrophes, and hyphens'),
-  missionStatement: z
-    .string()
-    .trim()
-    .min(50, 'Mission statement should be at least 50 characters')
-    .max(1500, 'Mission statement must be 1500 characters or fewer'),
+  missionStatement: richTextField(
+    50, 1500,
+    'Mission statement should be at least 50 characters',
+    'Mission statement must be 1500 characters or fewer'
+  ),
   taxStatus: z.enum(['501c3', 'School', 'None']),
   communityInterestText: z.string().trim().max(2000, 'Must be 2000 characters or fewer').optional(),
   studentInterestCount: z.number().int().nonnegative().optional(),
   sustainabilityPlan: z.string().trim().max(2000, 'Must be 2000 characters or fewer').optional(),
   seedFundingGoalsCents: z.number().int().nonnegative().optional(),
 
-  technicalSummary: z.string().trim().max(2000, 'Must be 2000 characters or fewer').optional(),
-  outreachSummary: z.string().trim().max(2000, 'Must be 2000 characters or fewer').optional(),
+  technicalSummary: richTextField(null, 2000, null, 'Must be 2000 characters or fewer').optional(),
+  outreachSummary: richTextField(null, 2000, null, 'Must be 2000 characters or fewer').optional(),
   // Free-form text fields — DB columns changed to plain TEXT in migration 0024
   drivetrain: z.string().trim().max(120).optional(),
   buildSystem: z.string().trim().max(120).optional(),

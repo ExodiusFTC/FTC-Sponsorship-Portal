@@ -6,7 +6,7 @@ import { signupSchema } from '@/lib/schemas/auth'
 import { redirect } from 'next/navigation'
 import { env } from '@/lib/env'
 import { sendCredentialUploadAlert, sendCoachSignupWelcomeEmail, sendWelcomeInAppNotification } from '@/lib/notify'
-import { getClientIp, validateRateLimit } from '@/lib/actions-utils'
+import { getClientIp, validateAuthLimit } from '@/lib/actions-utils'
 
 import { sponsorSignupSchema, type SponsorSignupInput } from '@/lib/schemas/sponsor-signup'
 import { sendSponsorApplicationConfirmation, sendSponsorApplicationAlert, createInAppNotification } from '@/lib/notify'
@@ -19,7 +19,7 @@ export async function signUpSponsor(data: SponsorSignupInput) {
 
   const payload = result.data
   const ip = await getClientIp()
-  const limit = await validateRateLimit(`sponsor_signup_${payload.email}_${ip}`)
+  const limit = await validateAuthLimit(`sponsor_signup_${payload.email}_${ip}`)
   if ('error' in limit) return limit
 
   const supabase = await createClient()
@@ -168,7 +168,7 @@ export async function signUp(formData: FormData) {
 
   const payload = result.data
   const ip = await getClientIp()
-  const limit = await validateRateLimit(`signup_${payload.email}_${ip}`)
+  const limit = await validateAuthLimit(`signup_${payload.email}_${ip}`)
   if ('error' in limit) return limit
 
   const supabase = await createClient()
@@ -251,7 +251,7 @@ export async function signIn(data: LoginInput) {
 
   const { email, password } = result.data
   const ip = await getClientIp()
-  const limit = await validateRateLimit(`signin_${email}_${ip}`)
+  const limit = await validateAuthLimit(`signin_${email}_${ip}`)
   if ('error' in limit) return limit
 
   const supabase = await createClient()

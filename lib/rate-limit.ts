@@ -27,8 +27,8 @@ export const globalLimiter = redis
   : null;
 
 /**
- * Action rate limiter: 5 requests per 1 minute.
- * Intended for use inside sensitive server actions (e.g., signup, login, submitPitch).
+ * Action rate limiter: 15 requests per 1 minute.
+ * Intended for use inside sensitive server actions (e.g., submitPitch).
  */
 export const actionLimiter = redis
   ? new Ratelimit({
@@ -36,6 +36,19 @@ export const actionLimiter = redis
       limiter: Ratelimit.slidingWindow(15, '1 m'),
       analytics: true,
       prefix: 'ftc_action',
+    })
+  : null;
+
+/**
+ * Auth rate limiter: 5 attempts per 15 minutes.
+ * Stricter window applied specifically to sign-in and sign-up to resist credential stuffing.
+ */
+export const authLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, '15 m'),
+      analytics: true,
+      prefix: 'ftc_auth',
     })
   : null;
 
@@ -50,6 +63,20 @@ export type RateLimitResult =
 export async function checkActionLimit(identifier: string = 'anonymous'): Promise<RateLimitResult> {
   if (!actionLimiter) return { ok: true };
   const res = await actionLimiter.limit(identifier);
+  if (res.success) {
+    return { ok: true };
+  }
+  const retryAfterSeconds = Math.ceil((res.reset - Date.now()) / 1000);
+  return { ok: false, retryAfterSeconds: Math.max(0, retryAfterSeconds), limit: res.limit };
+}
+
+/**
+ * Stricter check for authentication endpoints (sign-in, sign-up).
+ * Keys off email+IP to resist both single-origin and distributed stuffing.
+ */
+export async function checkAuthLimit(identifier: string): Promise<RateLimitResult> {
+  if (!authLimiter) return { ok: true };
+  const res = await authLimiter.limit(identifier);
   if (res.success) {
     return { ok: true };
   }

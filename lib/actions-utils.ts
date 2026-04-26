@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { checkActionLimit } from '@/lib/rate-limit'
+import { checkActionLimit, checkAuthLimit } from '@/lib/rate-limit'
 import { headers } from 'next/headers'
 
 export async function getClientIp() {
@@ -52,10 +52,22 @@ export async function requireSponsor() {
 export async function validateRateLimit(key: string) {
   const limit = await checkActionLimit(key)
   if (!limit.ok) {
-    return { 
-      error: 'rate_limited' as const, 
-      retryAfterSeconds: limit.retryAfterSeconds, 
-      limit: limit.limit 
+    return {
+      error: 'rate_limited' as const,
+      retryAfterSeconds: limit.retryAfterSeconds,
+      limit: limit.limit
+    }
+  }
+  return { ok: true }
+}
+
+export async function validateAuthLimit(key: string) {
+  const limit = await checkAuthLimit(key)
+  if (!limit.ok) {
+    return {
+      error: 'rate_limited' as const,
+      retryAfterSeconds: limit.retryAfterSeconds,
+      limit: limit.limit,
     }
   }
   return { ok: true }

@@ -15,11 +15,15 @@ import Image from 'next/image'
 import type { Team, TeamAchievement } from '@/lib/supabase/types'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { ImageCropperDialog, getCroppedBlob, computeCenterCrop } from '@/components/ui/image-cropper-dialog'
 
 export function PortfolioTab({ team, achievements }: { team: Team, achievements: TeamAchievement[] }) {
   const [isPending, startTransition] = useTransition()
   const [draggingOver, setDraggingOver] = useState(false)
   const [uploadingDrop, setUploadingDrop] = useState(false)
+  const [pendingPitchFile, setPendingPitchFile] = useState<File | null>(null)
+  const [pitchCropperOpen, setPitchCropperOpen] = useState(false)
 
   const isIncubator = team.status === 'incubator'
 
@@ -106,24 +110,48 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
     return urlData.publicUrl
   }
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setPendingPitchFile(file)
+    setPitchCropperOpen(true)
+    e.target.value = ''
+  }
+
+  const handlePitchCropConfirm = async (blob: Blob) => {
     toast.loading('Uploading…', { id: 'upload' })
-    await uploadFile(file)
+    const croppedFile = new File([blob], `pitch-${Date.now()}.webp`, { type: 'image/webp' })
+    await uploadFile(croppedFile)
     toast.success('Uploaded!', { id: 'upload' })
   }
 
   const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault()
     setDraggingOver(false)
-    const files = Array.from(e.dataTransfer.files)
+    const files = Array.from(e.dataTransfer.files).filter((f: any) => 
+      ['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(f.type)
+    )
     if (files.length === 0) return
     setUploadingDrop(true)
     toast.loading(`Uploading ${files.length} image${files.length > 1 ? 's' : ''}…`, { id: 'drop-upload' })
-    await Promise.all(files.map(uploadFile))
+    await Promise.all(files.map(async (file: any) => {
+      const url1 = URL.createObjectURL(file)
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new window.Image()
+        el.onload = () => resolve(el)
+        el.onerror = reject
+        el.src = url1
+      })
+      const cropArea = computeCenterCrop(img.naturalWidth, img.naturalHeight, 16 / 9)
+      URL.revokeObjectURL(url1)
+      const url2 = URL.createObjectURL(file)
+      const blob = await getCroppedBlob(url2, cropArea)
+      URL.revokeObjectURL(url2)
+      await uploadFile(new File([blob], `pitch-${Date.now()}.webp`, { type: 'image/webp' }))
+    }))
     toast.success('All images uploaded!', { id: 'drop-upload' })
     setUploadingDrop(false)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -249,7 +277,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
                   <FormLabel>The "Why": Motivation</FormLabel>
                   <FormDescription>Explain why you want to start a team in your specific community.</FormDescription>
                   <FormControl>
-                    <Textarea className="min-h-[120px]" placeholder="Our motivation is to bring STEM access to..." {...field} value={field.value ?? ''} />
+                    <RichTextEditor value={field.value ?? ''} onChange={field.onChange} placeholder="Our motivation is to bring STEM access to…" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -550,20 +578,20 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
             <FormField control={form.control} name="missionStatement" render={({ field }) => (
               <FormItem>
                 <FormLabel>Mission Statement</FormLabel>
-                <FormControl><Textarea className="min-h-[100px]" placeholder="Our objective is…" {...field} value={field.value ?? ''} /></FormControl>
+                <FormControl><RichTextEditor value={field.value ?? ''} onChange={field.onChange} placeholder="Our objective is…" /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="technicalSummary" render={({ field }) => (
               <FormItem>
                 <FormLabel>Technical Summary</FormLabel>
-                <FormControl><Textarea className="min-h-[100px]" placeholder="An overview of your technical strategy…" {...field} value={field.value ?? ''} /></FormControl>
+                <FormControl><RichTextEditor value={field.value ?? ''} onChange={field.onChange} placeholder="An overview of your technical strategy…" /></FormControl>
               </FormItem>
             )} />
             <FormField control={form.control} name="outreachSummary" render={({ field }) => (
               <FormItem>
                 <FormLabel>Outreach Summary</FormLabel>
-                <FormControl><Textarea className="min-h-[100px]" placeholder="Your team's community impact…" {...field} value={field.value ?? ''} /></FormControl>
+                <FormControl><RichTextEditor value={field.value ?? ''} onChange={field.onChange} placeholder="Your team's community impact…" /></FormControl>
               </FormItem>
             )} />
           </div>
@@ -673,6 +701,13 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
             {isPending ? 'Saving…' : 'Save Changes'}
           </Button>
         </div>
+        <ImageCropperDialog
+          open={pitchCropperOpen}
+          onOpenChange={setPitchCropperOpen}
+          file={pendingPitchFile}
+          aspect={16 / 9}
+          onConfirm={handlePitchCropConfirm}
+        />
       </form>
     </Form>
   )

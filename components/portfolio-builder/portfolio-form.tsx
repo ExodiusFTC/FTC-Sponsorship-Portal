@@ -13,6 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { RateLimitNotice } from '@/components/ui/rate-limit-notice'
+import { SaveIndicator } from '@/components/ui/save-indicator'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { ChevronDown } from 'lucide-react'
 import {
   DropdownMenu,
@@ -124,13 +126,7 @@ export function PortfolioForm({ initialSubmission, initialValues, sponsors = [],
               Draft your sponsor-specific submission.
             </CardDescription>
           </div>
-          {!readOnly && (
-            <p className="text-sm text-muted-foreground">
-              {autosaveState === 'saving' && 'Saving draft...'}
-              {autosaveState === 'saved' && 'Draft saved'}
-              {autosaveState === 'error' && <span className="text-destructive">Autosave failed</span>}
-            </p>
-          )}
+          {!readOnly && <SaveIndicator state={autosaveState} />}
         </div>
       </CardHeader>
       <CardContent>
@@ -190,11 +186,11 @@ export function PortfolioForm({ initialSubmission, initialValues, sponsors = [],
                   <FormItem>
                     <FormLabel>Custom Pitch Alignment</FormLabel>
                     <FormControl>
-                      <Textarea
+                      <RichTextEditor
+                        value={field.value ?? ''}
+                        onChange={field.onChange}
                         placeholder="Explain why your team aligns with this company..."
-                        className="min-h-[100px]"
                         disabled={readOnly}
-                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -209,11 +205,11 @@ export function PortfolioForm({ initialSubmission, initialValues, sponsors = [],
                   <FormItem>
                     <FormLabel>Specific Needs Statement</FormLabel>
                     <FormControl>
-                      <Textarea
+                      <RichTextEditor
+                        value={field.value ?? ''}
+                        onChange={field.onChange}
                         placeholder="Detail your specific financial or material needs..."
-                        className="min-h-[100px]"
                         disabled={readOnly}
-                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
