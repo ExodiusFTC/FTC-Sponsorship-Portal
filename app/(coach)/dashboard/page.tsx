@@ -26,7 +26,7 @@ export default async function DashboardPage({
   ] = await Promise.all([
     supabase.from('teams').select('*').eq('owner_id', user.id).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('profiles').select('*').eq('id', user.id).single(),
-    supabase.from('sponsors').select('id, company_name, industry, funding_cap_cents, funding_used_cents, website, logo_url').eq('status', 'active'),
+    supabase.from('sponsors').select('id, company_name, industry, funding_cap_cents, funding_used_cents, website, logo_url, status').eq('status', 'active'),
     supabase.from('notifications').select('*', { count: 'planned', head: true }).eq('recipient_id', user.id).is('read_at', null),
     supabase.from('notifications').select('*').eq('recipient_id', user.id).order('created_at', { ascending: false }).limit(50),
     supabase
@@ -56,6 +56,8 @@ export default async function DashboardPage({
         return { data: data || [] }
       }),
   ])
+
+  console.log('[Dashboard] Server Sponsors:', sponsors)
 
   // 2. Role & Verification Guards
   if (profile?.role === 'sponsor') {

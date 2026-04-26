@@ -67,21 +67,21 @@ async function resetAccounts() {
   const accounts = [
     {
       email: 'admin@test.local',
-      password: 'AdminPass123!',
+      password: 'SponsorPass123!',
       fullName: 'Dev Admin',
       role: 'admin',
       verified: true,
     },
     {
       email: 'coach@test.local',
-      password: 'CoachPass123!',
+      password: 'SponsorPass123!',
       fullName: 'Dev Coach',
       role: 'coach',
       verified: true,
     },
     {
       email: 'unverified@test.local',
-      password: 'CoachPass123!',
+      password: 'SponsorPass123!',
       fullName: 'New Coach',
       role: 'coach',
       verified: false,

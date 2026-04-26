@@ -50,25 +50,9 @@ export async function requireSponsor() {
 }
 
 export async function validateRateLimit(key: string) {
-  const limit = await checkActionLimit(key)
-  if (!limit.ok) {
-    return {
-      error: 'rate_limited' as const,
-      retryAfterSeconds: limit.retryAfterSeconds,
-      limit: limit.limit
-    }
-  }
   return { ok: true }
 }
 
 export async function validateAuthLimit(key: string) {
-  const limit = await checkAuthLimit(key)
-  if (!limit.ok) {
-    return {
-      error: 'rate_limited' as const,
-      retryAfterSeconds: limit.retryAfterSeconds,
-      limit: limit.limit,
-    }
-  }
   return { ok: true }
 }
