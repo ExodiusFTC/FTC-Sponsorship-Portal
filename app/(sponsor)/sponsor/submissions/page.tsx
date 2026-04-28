@@ -80,11 +80,11 @@ function SubmissionRow({ submission }: { submission: any }) {
         <CardContent className="p-4 flex items-center justify-between gap-6">
           <div className="flex items-center gap-4 min-w-0">
             <div className="h-10 w-10 rounded-lg bg-accent flex items-center justify-center font-bold text-sm">
-              {submission.teams.ftc_team_number || '??'}
+              {submission.teams?.ftc_team_number || '??'}
             </div>
             <div className="min-w-0">
-              <div className="font-semibold truncate">{submission.teams.team_name}</div>
-              <div className="text-xs text-muted-foreground">{submission.teams.city}, {submission.teams.state}</div>
+              <div className="font-semibold truncate">{submission.teams?.team_name || 'Unknown Team'}</div>
+              <div className="text-xs text-muted-foreground">{submission.teams?.city || 'Unknown'}, {submission.teams?.state || 'Unknown'}</div>
             </div>
           </div>
 

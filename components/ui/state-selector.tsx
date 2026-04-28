@@ -85,7 +85,7 @@ export function StateSelector({ value, onChange, placeholder = "Select state..."
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         render={
-          <div
+          <button type="button"
             role="combobox"
             aria-expanded={open}
             className={cn(

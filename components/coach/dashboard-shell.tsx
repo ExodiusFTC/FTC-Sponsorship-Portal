@@ -116,7 +116,7 @@ export function DashboardShell({
           )}
           {tab === 'portfolio' && <PortfolioTab team={team} achievements={achievements} />}
           {tab === 'find-sponsors' && <FindSponsorsTab sponsors={sponsors} submissions={submissions} />}
-          {tab === 'submissions' && <SubmissionsTab submissions={submissions} />}
+          {tab === 'submissions' && <SubmissionsTab submissions={submissions} switchTab={setTab} />}
           {tab === 'drafts' && <DraftsTab submissions={submissions} />}
           {tab === 'inbox' && <InboxTab notifications={notifications} switchTab={setTab} />}
           {tab === 'insights' && <InsightsTab submissions={submissions} sponsors={sponsors} team={team} />}
@@ -551,7 +551,7 @@ const SUBMISSION_FILTERS: { id: SubmissionFilter; label: string }[] = [
   { id: 'draft', label: 'Drafts' },
 ]
 
-function SubmissionsTab({ submissions }: { submissions: SubmissionSummary[] }) {
+function SubmissionsTab({ submissions, switchTab }: { submissions: SubmissionSummary[], switchTab: (t: string) => void }) {
   const [filter, setFilter] = useState<SubmissionFilter>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -564,8 +564,9 @@ function SubmissionsTab({ submissions }: { submissions: SubmissionSummary[] }) {
 
   return (
     <div className="space-y-4 max-w-4xl mx-auto">
-      {/* Filter tabs */}
-      <div className="flex gap-1.5 flex-wrap">
+      {/* Filter tabs and Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex gap-1.5 flex-wrap">
         {SUBMISSION_FILTERS.map(f => {
           const count = f.id === 'all'
             ? submissions.length
@@ -587,6 +588,10 @@ function SubmissionsTab({ submissions }: { submissions: SubmissionSummary[] }) {
             </button>
           )
         })}
+        </div>
+        <Button onClick={() => switchTab('find-sponsors')} className="gap-2 shrink-0 bg-primary text-primary-foreground hover:bg-primary/90">
+          <Plus className="h-4 w-4" /> New Pitch
+        </Button>
       </div>
 
       {/* List */}
