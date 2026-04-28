@@ -26,6 +26,7 @@ import { toast } from 'sonner'
 
 type SponsorSubmission = {
   id: string
+  status: string
   custom_pitch_alignment?: string | null
   specific_needs_statement?: string | null
   sponsors?: { company_name?: string | null } | null
@@ -59,7 +60,7 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState('')
-  const [fundingAmount, setFundingAmount] = useState((submissionData.requested_amount_cents || teamData.financial_ask_cents) / 100)
+  const [fundingAmount, setFundingAmount] = useState((submissionData.requested_amount_cents || teamData?.financial_ask_cents || 0) / 100)
   const [showConfirm, setShowConfirm] = useState<'approved' | 'declined' | 'changes_requested' | null>(null)
   const sponsorCompany = submissionData?.sponsors?.company_name || 'your company'
 
@@ -72,7 +73,7 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
         status === 'approved' ? Math.round(fundingAmount * 100) : undefined
       )
 
-      if ('ok' in result && result.ok) {
+      if ('success' in result && result.success) {
         toast.success(`Submission ${status} successfully.`)
         router.push('/sponsor/dashboard')
       } else {
@@ -98,19 +99,19 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
           <section className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl">
-                {teamData.ftc_team_number || '??'}
+                {teamData?.ftc_team_number || '??'}
               </div>
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">{teamData.team_name}</h1>
+                <h1 className="text-3xl font-bold tracking-tight">{teamData?.team_name || 'Unknown Team'}</h1>
                 <div className="flex flex-wrap items-center gap-3 mt-1 text-muted-foreground">
                   <div className="flex items-center gap-1.5">
                     <MapPin className="h-3.5 w-3.5" />
-                    {teamData.city}, {teamData.state}
+                    {teamData?.city || 'Unknown'}, {teamData?.state || 'Unknown'}
                   </div>
                   <span>•</span>
                   <div className="flex items-center gap-1.5">
                     <Building2 className="h-3.5 w-3.5" />
-                    {teamData.organization || 'Independent'}
+                    {teamData?.organization || 'Independent'}
                   </div>
                 </div>
               </div>
@@ -152,12 +153,12 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
             <div className="grid gap-6 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Mission Statement</Label>
-                <p className="text-sm leading-relaxed">{teamData.mission_statement || 'No mission statement provided.'}</p>
+                <p className="text-sm leading-relaxed">{teamData?.mission_statement || 'No mission statement provided.'}</p>
               </div>
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Technical Capabilities</Label>
                 <div className="flex flex-wrap gap-2">
-                  {teamData.manufacturing_capabilities?.map((cap: string) => (
+                  {teamData?.manufacturing_capabilities?.map((cap: string) => (
                     <span key={cap} className="px-2 py-1 bg-secondary text-secondary-foreground rounded text-[10px] font-medium uppercase tracking-wider">
                       {cap}
                     </span>
@@ -169,7 +170,7 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
             <div className="space-y-3">
               <Label className="text-muted-foreground">Recent Achievements</Label>
               <div className="grid gap-3">
-                {teamData.team_achievements?.map((ach) => (
+                {teamData?.team_achievements?.map((ach) => (
                   <div key={ach.id} className="p-3 rounded-lg border border-border bg-card/50 flex items-start gap-3">
                     <Award className="h-4 w-4 text-amber-500 mt-1 shrink-0" />
                     <div>
@@ -186,73 +187,84 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
         {/* Right Column: Actions */}
         <div className="space-y-6">
           <div className="sticky top-8 space-y-6">
-            <Card className="border-border/50 bg-card/50 backdrop-blur-xl shadow-2xl">
-              <CardHeader>
-                <CardTitle className="text-lg">Decision Console</CardTitle>
-                <CardDescription>Review and respond to this request.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="feedback">Internal/External Feedback</Label>
-                    <Textarea 
-                      id="feedback"
-                      placeholder="Add a message for the team or internal notes..."
-                      value={feedback}
-                      onChange={(e) => setFeedback(e.target.value)}
-                      className="min-h-[120px] bg-background/50"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="amount">Funding Offer ($)</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
-                      <Input 
-                        id="amount"
-                        type="number"
-                        value={fundingAmount}
-                        onChange={(e) => setFundingAmount(parseFloat(e.target.value))}
-                        className="pl-7 bg-background/50"
+            {['approved', 'declined', 'changes_requested'].includes(submissionData.status) ? (
+              <Card className="border-border/50 bg-card/50 backdrop-blur-xl shadow-2xl">
+                <CardHeader>
+                  <CardTitle className="text-lg">Decision Recorded</CardTitle>
+                  <CardDescription>
+                    This submission has already been marked as <strong>{submissionData.status.replace(/_/g, ' ')}</strong>.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            ) : (
+              <Card className="border-border/50 bg-card/50 backdrop-blur-xl shadow-2xl">
+                <CardHeader>
+                  <CardTitle className="text-lg">Decision Console</CardTitle>
+                  <CardDescription>Review and respond to this request.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="feedback">Internal/External Feedback</Label>
+                      <Textarea 
+                        id="feedback"
+                        placeholder="Add a message for the team or internal notes..."
+                        value={feedback}
+                        onChange={(e) => setFeedback(e.target.value)}
+                        className="min-h-[120px] bg-background/50"
                       />
                     </div>
-                    <p className="text-[10px] text-muted-foreground">Team is asking for ${((submissionData.requested_amount_cents || teamData.financial_ask_cents) / 100).toLocaleString()}</p>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 gap-2 pt-4 border-t border-border">
-                  <Button 
-                    variant="default" 
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-                    disabled={isPending}
-                    onClick={() => setShowConfirm('approved')}
-                  >
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Approve Sponsorship
-                  </Button>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button 
-                      variant="outline" 
-                      className="border-amber-500/20 text-amber-500 hover:bg-amber-500/10"
-                      disabled={isPending}
-                      onClick={() => setShowConfirm('changes_requested')}
-                    >
-                      <History className="mr-2 h-4 w-4" />
-                      More Info
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
-                      disabled={isPending}
-                      onClick={() => setShowConfirm('declined')}
-                    >
-                      <XCircle className="mr-2 h-4 w-4" />
-                      Decline
-                    </Button>
+                    <div className="space-y-2">
+                      <Label htmlFor="amount">Funding Offer ($)</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
+                        <Input 
+                          id="amount"
+                          type="number"
+                          value={fundingAmount}
+                          onChange={(e) => setFundingAmount(parseFloat(e.target.value))}
+                          className="pl-7 bg-background/50"
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">Team is asking for ${((submissionData.requested_amount_cents || teamData?.financial_ask_cents || 0) / 100).toLocaleString()}</p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+
+                  <div className="grid grid-cols-1 gap-2 pt-4 border-t border-border">
+                    <Button 
+                      variant="default" 
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                      disabled={isPending}
+                      onClick={() => setShowConfirm('approved')}
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Approve Sponsorship
+                    </Button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="border-amber-500/20 text-amber-500 hover:bg-amber-500/10"
+                        disabled={isPending}
+                        onClick={() => setShowConfirm('changes_requested')}
+                      >
+                        <History className="mr-2 h-4 w-4" />
+                        More Info
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
+                        disabled={isPending}
+                        onClick={() => setShowConfirm('declined')}
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Decline
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Confirmation Dialog (Simple Inline Overlay) */}
             <AnimatePresence>
@@ -286,7 +298,7 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
 
             <div className="text-center">
               <a
-                href={teamData.website || '#'}
+                href={teamData?.website || '#'}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"

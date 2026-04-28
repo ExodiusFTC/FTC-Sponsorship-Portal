@@ -199,13 +199,14 @@ export function Sidebar() {
   const coachUnreadCount = inboxData?.count ?? 0
 
   useEffect(() => {
+    let isMounted = true
     const supabase = createClient()
     // Must be declared here so the cleanup closure can always reach it,
     // even though it's assigned asynchronously inside the promise chain.
     let channel: ReturnType<typeof supabase.channel> | null = null
 
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return
+      if (!user || !isMounted) return
       setUserEmail(user.email ?? '')
       supabase
         .from('profiles')
@@ -213,6 +214,7 @@ export function Sidebar() {
         .eq('id', user.id)
         .single()
         .then(({ data }) => {
+          if (!isMounted) return
           setRole((data?.role as Role) ?? null)
           setUserName(data?.full_name ?? user.email ?? 'User')
 
@@ -233,6 +235,7 @@ export function Sidebar() {
 
     // This cleanup runs on unmount AND before every re-run (e.g. Strict Mode).
     return () => {
+      isMounted = false
       if (channel) supabase.removeChannel(channel)
     }
   }, [mutateInbox])
