@@ -1107,3 +1107,10 @@ export const Constants = {
     },
   },
 } as const
+
+export type Team = Database['public']['Tables']['teams']['Row']
+export type Notification = Database['public']['Tables']['notifications']['Row']
+export type Submission = Database['public']['Tables']['submissions']['Row']
+export type Sponsor = Database['public']['Tables']['sponsors']['Row']
+export type TeamAchievement = Database['public']['Tables']['team_achievements']['Row']
+export type SubmissionSummary = Database['public']['Views']['v_submission_summary']['Row']
