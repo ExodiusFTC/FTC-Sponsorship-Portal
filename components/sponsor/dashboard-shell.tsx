@@ -262,16 +262,16 @@ function SubmissionCard({ submission, index }: { submission: Submission; index: 
         <CardContent className="p-5 flex items-center justify-between gap-6">
           <div className="flex items-center gap-4 min-w-0">
             <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-inner">
-              {submission.teams.ftc_team_number || '??'}
+              {submission.teams?.ftc_team_number || '??'}
             </div>
             <div className="min-w-0">
               <h3 className="font-semibold text-lg truncate group-hover:text-primary transition-colors">
-                {submission.teams.team_name}
+                {submission.teams?.team_name || 'Unknown Team'}
               </h3>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>{submission.teams.organization || 'Independent'}</span>
+                <span>{submission.teams?.organization || 'Independent'}</span>
                 <span>•</span>
-                <span>{submission.teams.city}, {submission.teams.state}</span>
+                <span>{submission.teams?.city || 'Unknown'}, {submission.teams?.state || 'Unknown'}</span>
               </div>
             </div>
           </div>

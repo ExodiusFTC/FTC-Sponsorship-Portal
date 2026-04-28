@@ -44,7 +44,7 @@ const coachNavItems: NavDef[] = [
 
 const adminNavItems: NavDef[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/admin', kbd: 'Shift+D' },
-  { icon: Inbox, label: 'Inbox', href: '/moderation', showBadge: true, kbd: 'Shift+M' },
+  { icon: Inbox, label: 'Inbox', href: '/moderation', showBadge: true, kbd: 'Shift+Q' },
   { icon: Building2, label: 'Sponsors', href: '/sponsors', kbd: 'Shift+S' },
   { icon: Users, label: 'Teams', href: '/coaches', kbd: 'Shift+T' },
   { icon: BarChart2, label: 'Analytics', href: '/analytics', kbd: 'Shift+A' },
@@ -159,41 +159,19 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-function UserRow({ name, email, role, onSignOut }: { name: string; email: string; role: Role; onSignOut: () => void }) {
+function UserRow({ name, email, role }: { name: string; email: string; role: Role }) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors hover:bg-accent/50 outline-none">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-[11px] font-semibold text-foreground ring-1 ring-border">
-            {getInitials(name)}
-          </div>
-          <div className="flex-1 min-w-0 text-left">
-            <div className="truncate text-xs font-medium text-foreground">{name}</div>
-            <div className="truncate text-[10px] text-muted-foreground">
-              {role === 'admin' ? 'Admin' : role === 'coach' ? 'Coach' : role === 'sponsor' ? 'Sponsor' : 'Member'}
-            </div>
-          </div>
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[210px] p-1.5 shadow-xl backdrop-blur">
-        <DropdownMenuLabel className="px-2 py-1.5">
-          <div className="truncate text-xs font-medium text-foreground">{name}</div>
-          <div className="truncate text-[10px] font-normal text-muted-foreground">{email}</div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator className="my-1" />
-        <DropdownMenuItem asChild>
-          <Link href="/settings" className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground cursor-pointer hover:bg-accent hover:text-foreground">
-            <Settings className="h-3.5 w-3.5" strokeWidth={1.5} />
-            Settings
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={onSignOut} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground cursor-pointer hover:bg-accent hover:text-foreground">
-          <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
-          Sign out
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 outline-none">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-[11px] font-semibold text-foreground ring-1 ring-border">
+        {getInitials(name)}
+      </div>
+      <div className="flex-1 min-w-0 text-left">
+        <div className="truncate text-xs font-medium text-foreground">{name}</div>
+        <div className="truncate text-[10px] text-muted-foreground">
+          {role === 'admin' ? 'Admin' : role === 'coach' ? 'Coach' : role === 'sponsor' ? 'Sponsor' : 'Member'}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -222,11 +200,12 @@ export function Sidebar() {
 
   useEffect(() => {
     const supabase = createClient()
-    let userId: string | null = null
+    // Must be declared here so the cleanup closure can always reach it,
+    // even though it's assigned asynchronously inside the promise chain.
+    let channel: ReturnType<typeof supabase.channel> | null = null
 
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
-      userId = user.id
       setUserEmail(user.email ?? '')
       supabase
         .from('profiles')
@@ -237,21 +216,25 @@ export function Sidebar() {
           setRole((data?.role as Role) ?? null)
           setUserName(data?.full_name ?? user.email ?? 'User')
 
-          // Realtime: revalidate unread count on new notification INSERT
           if (data?.role === 'coach') {
-            const ch = supabase
-              .channel(`notif-badge:${user.id}`)
-              .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'notifications',
-                filter: `recipient_id=eq.${user.id}`,
-              }, () => mutateInbox())
-              .subscribe()
-            return () => { supabase.removeChannel(ch) }
+            // Build the channel first, subscribe second — never chain them,
+            // because subscribe() seals the channel against further .on() calls.
+            channel = supabase.channel(`notif-badge:${user.id}`)
+            channel.on('postgres_changes', {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'notifications',
+              filter: `recipient_id=eq.${user.id}`,
+            }, () => mutateInbox())
+            channel.subscribe()
           }
         })
     })
+
+    // This cleanup runs on unmount AND before every re-run (e.g. Strict Mode).
+    return () => {
+      if (channel) supabase.removeChannel(channel)
+    }
   }, [mutateInbox])
 
   async function handleSignOut() {
@@ -318,8 +301,11 @@ export function Sidebar() {
 
         <div className="flex items-center gap-1">
           <div className="flex-1 min-w-0">
-            <UserRow name={userName} email={userEmail} role={role} onSignOut={handleSignOut} />
+            <UserRow name={userName} email={userEmail} role={role} />
           </div>
+          <button onClick={handleSignOut} className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors" title="Sign out">
+            <LogOut className="h-4 w-4" />
+          </button>
           <Theme variant="button" size="sm" themes={['light', 'dark']} />
         </div>
       </div>

@@ -29,6 +29,10 @@ export function GlobalShortcuts() {
             e.preventDefault()
             setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
             break
+          case 'Q':
+            e.preventDefault()
+            router.push('/moderation')
+            break
           case 'O':
             e.preventDefault()
             router.push('/dashboard')
