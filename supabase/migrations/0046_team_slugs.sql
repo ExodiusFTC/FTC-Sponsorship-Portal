@@ -24,7 +24,8 @@ CREATE INDEX IF NOT EXISTS idx_teams_public ON teams(public) WHERE public = true
 
 -- RLS: public portfolios are readable by anyone (anon + authenticated).
 -- The existing select policy covers authenticated; add anon explicitly.
-CREATE POLICY IF NOT EXISTS "Public portfolios are readable by anyone"
+DROP POLICY IF EXISTS "Public portfolios are readable by anyone" ON teams;
+CREATE POLICY "Public portfolios are readable by anyone"
   ON teams FOR SELECT
   TO anon
   USING (public = true AND deleted_at IS NULL);
