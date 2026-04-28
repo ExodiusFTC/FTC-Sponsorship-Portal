@@ -66,8 +66,8 @@ export const teamOnboardingSchema = z.object({
     .max(40, 'State must be 40 characters or fewer')
     .regex(/^[A-Za-z][A-Za-z .'-]*$/, 'State can only contain letters, spaces, periods, apostrophes, and hyphens'),
   missionStatement: richTextField(
-    50, 1500,
-    'Mission statement should be at least 50 characters',
+    1, 1500,
+    'Mission statement is required',
     'Mission statement must be 1500 characters or fewer'
   ),
   taxStatus: z.enum(['501c3', 'School', 'None']),
@@ -145,17 +145,17 @@ export const teamOnboardingSchema = z.object({
     })
   }
   if (data.status === 'incubator') {
-    if (!data.communityInterestText || data.communityInterestText.length < 50) {
+    if (!data.communityInterestText || data.communityInterestText.trim().length < 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Please describe the community interest in at least 50 characters',
+        message: 'Please describe the community interest',
         path: ['communityInterestText'],
       })
     }
-    if (!data.sustainabilityPlan || data.sustainabilityPlan.length < 50) {
+    if (!data.sustainabilityPlan || data.sustainabilityPlan.trim().length < 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Please provide a sustainability plan (min 50 chars)',
+        message: 'Please provide a sustainability plan',
         path: ['sustainabilityPlan'],
       })
     }

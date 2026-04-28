@@ -8,6 +8,7 @@ import { HowItWorks } from '@/components/landing/how-it-works'
 import { FAQ } from '@/components/landing/faq'
 import { LandingFooter } from '@/components/landing/footer'
 import { SponsorsShowcase } from '@/components/landing/sponsors-showcase'
+import { InitialLoader } from '@/components/landing/initial-loader'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -32,6 +33,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased transition-colors duration-300">
+      <InitialLoader />
       <TopNav />
       <main>
         <Hero />

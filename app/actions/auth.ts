@@ -1,5 +1,6 @@
 'use server'
 
+import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { signupSchema } from '@/lib/schemas/auth'
@@ -248,6 +249,36 @@ export async function signUp(formData: FormData) {
 }
 
 import { loginSchema, type LoginInput } from '@/lib/schemas/auth'
+
+export async function forgotPassword(email: string) {
+  const parsed = z.string().email().safeParse(email.trim().toLowerCase())
+  if (!parsed.success) return { error: 'Please enter a valid email address.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, {
+    redirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/reset-password`,
+  })
+
+  if (error) return { error: 'Unable to send reset email. Please try again.' }
+  return { success: true }
+}
+
+export async function resetPassword(password: string) {
+  const parsed = z
+    .string()
+    .min(12, 'Password must be at least 12 characters')
+    .regex(/[A-Z]/, 'Must include an uppercase letter')
+    .regex(/[a-z]/, 'Must include a lowercase letter')
+    .regex(/[0-9]/, 'Must include a number')
+    .safeParse(password)
+
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.updateUser({ password: parsed.data })
+  if (error) return { error: 'Unable to update password. The reset link may have expired.' }
+  return { success: true }
+}
 
 export async function signIn(data: LoginInput) {
   const result = loginSchema.safeParse(data)

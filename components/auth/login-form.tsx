@@ -14,8 +14,11 @@ import Link from 'next/link'
 import { RateLimitNotice } from '@/components/ui/rate-limit-notice'
 import { ArrowRight, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useSearchParams } from 'next/navigation'
 
 export function LoginForm() {
+  const searchParams = useSearchParams()
+  const resetSuccess = searchParams.get('reset') === 'success'
   const [error, setError] = useState<string | null>(null)
   const [rateLimitData, setRateLimitData] = useState<{ retryAfterSeconds: number; limit: number } | null>(null)
   const [isPending, setIsPending] = useState(false)
@@ -178,6 +181,11 @@ export function LoginForm() {
           <CardContent className="pt-8">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {resetSuccess && (
+                  <Alert className="bg-emerald-500/10 border-emerald-500/20 text-emerald-600">
+                    <AlertDescription>Password updated successfully. Log in with your new password.</AlertDescription>
+                  </Alert>
+                )}
                 {error && (
                   <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive">
                     <AlertDescription>{error}</AlertDescription>

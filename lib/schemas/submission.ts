@@ -34,13 +34,13 @@ function richTextField(min: number, max: number, minMsg: string, maxMsg: string)
 export const submissionSchema = z.object({
   sponsorId: z.string().uuid('Sponsor is required'),
   customPitchAlignment: richTextField(
-    50,
+    1,
     1500,
-    'Please explain why your team aligns with this company (min 50 chars).',
+    'Please explain why your team aligns with this company.',
     'Pitch alignment must be 1500 characters or fewer'
   ),
   specificNeedsStatement: richTextField(
-    50,
+    1,
     1500,
     'Please detail your specific financial or material needs.',
     'Specific needs must be 1500 characters or fewer'

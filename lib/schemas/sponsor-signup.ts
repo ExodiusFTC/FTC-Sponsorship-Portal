@@ -22,7 +22,7 @@ export const sponsorSignupSchema = z.object({
 
   // Step 3: Sponsorship Goals
   proposedCapCents: z.number().int().min(10000, 'Minimum proposed cap is $100.00'),
-  sponsorshipReason: z.string().trim().min(50, 'Please provide more detail (min 50 chars)').max(2000),
+  sponsorshipReason: z.string().trim().min(1, 'Please share your motivation for supporting FTC teams').max(2000),
   fundingFrequency: z.enum(['One-time', 'Quarterly', 'Annual']),
 
   // Step 4: Industry Focus & Impact
