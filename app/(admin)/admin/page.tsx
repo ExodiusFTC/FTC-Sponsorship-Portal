@@ -38,115 +38,59 @@ export default async function AdminDashboardPage() {
       .not('coach_credentials_url', 'is', null)
       .order('created_at', { ascending: true })
       .limit(5),
-    supabase
-      .from('submissions')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', startOfToday),
-    supabase
-      .from('submissions')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'approved')
-      .gte('updated_at', sevenDaysAgo),
-    supabase
-      .from('submissions')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'declined')
-      .gte('updated_at', sevenDaysAgo),
+    supabase.from('submissions').select('id', { count: 'exact', head: true }).gte('created_at', startOfToday),
+    supabase.from('submissions').select('id', { count: 'exact', head: true }).eq('status', 'approved').gte('updated_at', sevenDaysAgo),
+    supabase.from('submissions').select('id', { count: 'exact', head: true }).eq('status', 'declined').gte('updated_at', sevenDaysAgo),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from('v_submission_summary')
-      .select('*')
-      .order('updated_at', { ascending: false })
-      .limit(8),
-    supabase
-      .from('v_sponsor_capacity')
-      .select('id, company_name, utilization_pct, funding_cap_cents, funding_used_cents')
-      .eq('status', 'active')
-      .gte('utilization_pct', 80)
-      .order('utilization_pct', { ascending: false })
-      .limit(5),
+    (supabase as any).from('v_submission_summary').select('*').order('updated_at', { ascending: false }).limit(8),
+    supabase.from('v_sponsor_capacity').select('id, company_name, utilization_pct, funding_cap_cents, funding_used_cents').eq('status', 'active').gte('utilization_pct', 80).order('utilization_pct', { ascending: false }).limit(5),
   ])
 
   const needsAttention = (pendingCount ?? 0) + (pendingCoachesCount ?? 0) + (sponsorsNearCap?.length ?? 0)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+    <div className="flex flex-col gap-8">
       <PageHeader
         title="Admin Dashboard"
         subtitle="Operational overview — queue health, pending actions, and today's activity."
       />
 
-      {/* Attention row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-        <ActionCard
-          icon={<AlertCircle className="h-4 w-4" strokeWidth={1.5} />}
-          label="Needs Attention"
-          value={String(needsAttention)}
-          sub={needsAttention > 0 ? 'Items waiting on admin' : 'All clear'}
-          highlight={needsAttention > 0}
-        />
-        <ActionCard
-          icon={<Inbox className="h-4 w-4" strokeWidth={1.5} />}
-          label="Pending Review"
-          value={String(pendingCount ?? 0)}
-          sub="Submissions awaiting moderation"
-          href="/moderation"
-        />
-        <ActionCard
-          icon={<Users className="h-4 w-4" strokeWidth={1.5} />}
-          label="Coach Verifications"
-          value={String(pendingCoachesCount ?? 0)}
-          sub="Credentials uploaded"
-          href="/coaches"
-        />
-        <ActionCard
-          icon={<Clock className="h-4 w-4" strokeWidth={1.5} />}
-          label="Submitted Today"
-          value={String(submissionsTodayCount ?? 0)}
-          sub="New submissions in last 24h"
-        />
+      {/* KPI row */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <ActionCard icon={<AlertCircle className="h-4 w-4" strokeWidth={1.5} />} label="Needs Attention" value={String(needsAttention)} sub={needsAttention > 0 ? 'Items waiting on admin' : 'All clear'} highlight={needsAttention > 0} />
+        <ActionCard icon={<Inbox className="h-4 w-4" strokeWidth={1.5} />} label="Pending Review" value={String(pendingCount ?? 0)} sub="Submissions awaiting moderation" href="/moderation" />
+        <ActionCard icon={<Users className="h-4 w-4" strokeWidth={1.5} />} label="Coach Verifications" value={String(pendingCoachesCount ?? 0)} sub="Credentials uploaded" href="/coaches" />
+        <ActionCard icon={<Clock className="h-4 w-4" strokeWidth={1.5} />} label="Submitted Today" value={String(submissionsTodayCount ?? 0)} sub="New submissions in last 24h" />
       </div>
 
-      {/* Two-column ops view */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-        {/* Pending moderation queue */}
+      {/* Two-column ops */}
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="flex items-center justify-between">
               <CardTitle>Moderation Queue</CardTitle>
-              <Link
-                href="/moderation"
-                className={cn(buttonVariants({ size: 'sm', variant: 'default' }))}
-              >
-                Open queue
-              </Link>
+              <Link href="/moderation" className={cn(buttonVariants({ size: 'sm' }))}>Open queue</Link>
             </div>
           </CardHeader>
           <CardContent>
             {pendingSubmissions && pendingSubmissions.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div className="flex flex-col gap-2">
                 {pendingSubmissions.map((s) => {
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   const team = (s.teams as any)
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   const sponsor = (s.sponsors as any)
                   return (
-                    <div key={s.id} style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      border: '1px solid var(--border-color)', borderRadius: '6px', padding: '10px 12px',
-                    }}>
-                      <div style={{ minWidth: 0 }}>
-                        <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {team?.team_name ?? 'Unknown team'} → {sponsor?.company_name ?? 'Unknown sponsor'}
+                    <div key={s.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {team?.team_name ?? 'Unknown'} → {sponsor?.company_name ?? 'Unknown'}
                         </p>
-                        <p style={{ fontSize: '12px', color: 'var(--text-muted)' }} suppressHydrationWarning>
-                          Submitted {new Date(s.updated_at).toLocaleDateString()}
+                        <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+                          {new Date(s.updated_at).toLocaleDateString()}
                         </p>
                       </div>
-                      <Link
-                        href="/moderation"
-                        className={cn(buttonVariants({ size: 'sm', variant: 'ghost' }))}
-                      >
+                      <Link href="/moderation" className={cn(buttonVariants({ size: 'sm', variant: 'ghost' }))}>
                         Review <ArrowUpRight className="ml-1 h-3 w-3" strokeWidth={1.5} />
                       </Link>
                     </div>
@@ -159,32 +103,23 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Coaches awaiting verification */}
         <Card>
           <CardHeader>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="flex items-center justify-between">
               <CardTitle>Coaches Awaiting Verification</CardTitle>
-              <Link
-                href="/coaches"
-                className={cn(buttonVariants({ size: 'sm', variant: 'default' }))}
-              >
-                Manage coaches
-              </Link>
+              <Link href="/coaches" className={cn(buttonVariants({ size: 'sm' }))}>Manage coaches</Link>
             </div>
           </CardHeader>
           <CardContent>
             {pendingCoaches && pendingCoaches.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div className="flex flex-col gap-2">
                 {pendingCoaches.map((c) => (
-                  <div key={c.id} style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    border: '1px solid var(--border-color)', borderRadius: '6px', padding: '10px 12px',
-                  }}>
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>{c.full_name}</p>
-                      <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{c.email}</p>
+                  <div key={c.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground">{c.full_name}</p>
+                      <p className="text-xs text-muted-foreground">{c.email}</p>
                     </div>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }} suppressHydrationWarning>
+                    <span className="shrink-0 text-xs text-muted-foreground" suppressHydrationWarning>
                       {new Date(c.created_at).toLocaleDateString()}
                     </span>
                   </div>
@@ -197,51 +132,34 @@ export default async function AdminDashboardPage() {
         </Card>
       </div>
 
-      {/* Week-at-a-glance + sponsors near capacity */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      {/* Week-at-a-glance + sponsors near cap */}
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle>This Week</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>This Week</CardTitle></CardHeader>
           <CardContent>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <WeekStat
-                icon={<CheckCircle2 className="h-4 w-4 text-emerald-400" strokeWidth={1.5} />}
-                label="Approved"
-                value={approvedWeekCount ?? 0}
-              />
-              <WeekStat
-                icon={<AlertCircle className="h-4 w-4 text-rose-400" strokeWidth={1.5} />}
-                label="Declined"
-                value={declinedWeekCount ?? 0}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <WeekStat icon={<CheckCircle2 className="h-4 w-4 text-emerald-400" strokeWidth={1.5} />} label="Approved" value={approvedWeekCount ?? 0} />
+              <WeekStat icon={<AlertCircle className="h-4 w-4 text-rose-400" strokeWidth={1.5} />} label="Declined" value={declinedWeekCount ?? 0} />
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '12px' }}>
-              Rolling 7-day window. See Analytics for deeper trends.
-            </p>
+            <p className="mt-3 text-xs text-muted-foreground">Rolling 7-day window. See Analytics for deeper trends.</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Sponsors Near Capacity</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Sponsors Near Capacity</CardTitle></CardHeader>
           <CardContent>
             {sponsorsNearCap && sponsorsNearCap.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div className="flex flex-col gap-3">
                 {sponsorsNearCap.map((s) => {
                   const pct = Math.min(Number(s.utilization_pct ?? 0), 100)
                   return (
                     <div key={s.id}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
-                        <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{s.company_name}</span>
-                        <span style={{ color: pct >= 95 ? 'var(--accent-error)' : 'var(--badge-warning-text)' }}>{pct}%</span>
+                      <div className="mb-1 flex justify-between text-sm">
+                        <span className="font-medium text-foreground">{s.company_name}</span>
+                        <span className={pct >= 95 ? 'text-destructive' : 'text-amber-500'}>{pct}%</span>
                       </div>
-                      <div style={{ width: '100%', background: 'var(--bg-elevated)', borderRadius: '3px', height: '4px' }}>
-                        <div style={{
-                          width: `${pct}%`, height: '4px', borderRadius: '3px',
-                          background: pct >= 95 ? 'var(--accent-error)' : 'var(--badge-warning-text)',
-                        }} />
+                      <div className="h-1 w-full rounded-full bg-muted">
+                        <div className={cn('h-1 rounded-full transition-all', pct >= 95 ? 'bg-destructive' : 'bg-amber-500')} style={{ width: `${pct}%` }} />
                       </div>
                     </div>
                   )
@@ -254,35 +172,27 @@ export default async function AdminDashboardPage() {
         </Card>
       </div>
 
-      {/* Recent activity feed */}
+      {/* Recent activity */}
       <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>Recent Activity</CardTitle></CardHeader>
         <CardContent>
           {recentActivity && recentActivity.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="divide-y divide-border">
               {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {(recentActivity as any[]).map((a, idx) => (
-                <div key={a.id} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 0',
-                  borderBottom: idx < recentActivity.length - 1 ? '1px solid var(--border-color)' : 'none',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {(recentActivity as any[]).map((a) => (
+                <div key={a.id} className="flex items-center justify-between py-2.5">
+                  <div className="flex items-center gap-3">
                     <StatusDot status={a.status} />
                     <div>
-                      <p style={{ fontSize: '14px', color: 'var(--text-primary)' }}>
-                        <span style={{ fontWeight: 500 }}>{a.team_name}</span>
+                      <p className="text-sm text-foreground">
+                        <span className="font-medium">{a.team_name}</span>
                         {' → '}
-                        <span style={{ color: 'var(--text-secondary)' }}>{a.company_name}</span>
+                        <span className="text-muted-foreground">{a.company_name}</span>
                       </p>
-                      <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                        {humanizeStatus(a.status)}
-                      </p>
+                      <p className="text-xs text-muted-foreground">{humanizeStatus(a.status)}</p>
                     </div>
                   </div>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }} suppressHydrationWarning>
+                  <span className="shrink-0 text-xs text-muted-foreground" suppressHydrationWarning>
                     {new Date(a.updated_at).toLocaleString()}
                   </span>
                 </div>
@@ -295,7 +205,7 @@ export default async function AdminDashboardPage() {
       </Card>
 
       {/* Quick links */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+      <div className="grid gap-4 sm:grid-cols-3">
         <QuickLink href="/sponsors/new" icon={<Building2 className="h-4 w-4" strokeWidth={1.5} />} label="Add Sponsor" sub="Register a new funding partner" />
         <QuickLink href="/applications" icon={<Inbox className="h-4 w-4" strokeWidth={1.5} />} label="Sponsor Applications" sub="Incoming interest from companies" />
         <QuickLink href="/analytics" icon={<ArrowUpRight className="h-4 w-4" strokeWidth={1.5} />} label="Open Analytics" sub="Platform-wide trends and charts" />
@@ -304,83 +214,63 @@ export default async function AdminDashboardPage() {
   )
 }
 
-function ActionCard({
-  icon, label, value, sub, highlight, href,
-}: { icon: React.ReactNode; label: string; value: string; sub?: string; highlight?: boolean; href?: string }) {
+function ActionCard({ icon, label, value, sub, highlight, href }: {
+  icon: React.ReactNode; label: string; value: string; sub?: string; highlight?: boolean; href?: string
+}) {
   const inner = (
-    <Card style={{ height: '100%' }}>
-      <CardContent style={{ paddingTop: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}>
+    <Card className="h-full">
+      <CardContent className="pt-5">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
           {icon}
-          <p style={{ fontSize: '12px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.02em' }}>{label}</p>
+          <p className="text-[11px] font-mono uppercase tracking-widest">{label}</p>
         </div>
-        <p style={{
-          fontSize: '28px', fontWeight: 600, letterSpacing: '-0.5px',
-          color: highlight ? 'var(--badge-warning-text)' : 'var(--text-primary)',
-          marginTop: '4px',
-        }} suppressHydrationWarning>
+        <p className={cn('mt-1 text-3xl font-semibold tabular-nums tracking-tight', highlight ? 'text-amber-500' : 'text-foreground')} suppressHydrationWarning>
           {value}
         </p>
-        {sub && <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{sub}</p>}
+        {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
       </CardContent>
     </Card>
   )
-  return href ? <Link href={href} style={{ textDecoration: 'none' }}>{inner}</Link> : inner
+  return href ? <Link href={href} className="block no-underline">{inner}</Link> : inner
 }
 
 function WeekStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '12px' }}>
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         {icon}
-        <span style={{ textTransform: 'uppercase', letterSpacing: '0.02em' }}>{label}</span>
+        <span className="font-mono uppercase tracking-widest">{label}</span>
       </div>
-      <p style={{ fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '4px' }} suppressHydrationWarning>
-        {value}
-      </p>
+      <p className="mt-1 text-2xl font-semibold text-foreground" suppressHydrationWarning>{value}</p>
     </div>
   )
 }
 
 function QuickLink({ href, icon, label, sub }: { href: string; icon: React.ReactNode; label: string; sub: string }) {
   return (
-    <Link
-      href={href}
-      style={{
-        display: 'block', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px',
-        textDecoration: 'none', transition: 'background 0.15s',
-      }}
-      className="hover:bg-zinc-900/40"
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
+    <Link href={href} className="block rounded-xl border border-border p-4 no-underline transition-colors hover:bg-accent/50">
+      <div className="flex items-center gap-2 text-foreground">
         {icon}
-        <span style={{ fontSize: '14px', fontWeight: 500 }}>{label}</span>
+        <span className="text-sm font-medium">{label}</span>
       </div>
-      <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{sub}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
     </Link>
   )
 }
 
 function EmptyState({ text }: { text: string }) {
-  return (
-    <p style={{ fontSize: '14px', color: 'var(--text-muted)', textAlign: 'center', padding: '24px 0' }}>{text}</p>
-  )
+  return <p className="py-6 text-center text-sm text-muted-foreground">{text}</p>
 }
 
 function StatusDot({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    approved: '#34d399',
-    pending: '#fbbf24',
-    declined: '#f87171',
-    changes_requested: '#fb923c',
-    draft: '#9ca3af',
+    approved: 'bg-emerald-400',
+    pending: 'bg-amber-400',
+    declined: 'bg-rose-400',
+    changes_requested: 'bg-orange-400',
+    draft: 'bg-muted-foreground/40',
   }
-  return (
-    <span style={{
-      width: '8px', height: '8px', borderRadius: '50%',
-      background: colors[status] ?? '#9ca3af', flexShrink: 0,
-    }} />
-  )
+  return <span className={cn('h-2 w-2 shrink-0 rounded-full', colors[status] ?? 'bg-muted-foreground/40')} />
 }
 
 function humanizeStatus(status: string) {

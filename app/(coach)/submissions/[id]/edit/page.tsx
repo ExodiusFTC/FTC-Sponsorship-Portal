@@ -35,12 +35,14 @@ export default async function EditSubmissionPage({ params }: { params: Promise<{
   // We should only show feedback if it exists (assuming we add feedback to submissions table, wait, submissions doesn't have feedback in 0008, only status).
   // Wait, let's just render the form.
 
-  const { data: allSponsors } = await supabase
-    .from('sponsors')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: allSponsors } = await (supabase as any)
+    .from('v_sponsors_public')
     .select('id, company_name, status, funding_cap_cents, funding_used_cents')
     .eq('status', 'active')
 
-  const sponsors = allSponsors?.filter((s) => s.funding_cap_cents > s.funding_used_cents || s.id === submission.sponsor_id) ?? []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sponsors = allSponsors?.filter((s: any) => s.funding_cap_cents > s.funding_used_cents || s.id === submission.sponsor_id) ?? []
 
   return (
     <div className="container mx-auto py-8 space-y-6">

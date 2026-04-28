@@ -82,8 +82,22 @@ export const teamOnboardingSchema = z.object({
   drivetrain: z.string().trim().max(120).optional(),
   buildSystem: z.string().trim().max(120).optional(),
   programming: z.string().trim().max(120).optional(),
-  mediaUrls: z.array(z.string().trim().url('Media URLs must be valid URLs')).max(12, 'Please provide at most 12 media URLs').default([]),
-  youtubeUrl: z.preprocess((value) => emptyToUndefined(value), z.string().url().optional().nullable()),
+  mediaUrls: z.array(
+    z.string().trim().url('Media URLs must be valid URLs').refine((u) => {
+      try {
+        const h = new URL(u).hostname.toLowerCase()
+        return h.includes('supabase.co') || h.includes('supabase.com')
+      } catch { return false }
+    }, { message: 'Media URLs must point to Supabase storage' })
+  ).max(12, 'Please provide at most 12 media URLs').default([]),
+  youtubeUrl: z.preprocess((value) => emptyToUndefined(value),
+    z.string().url().refine((u) => {
+      try {
+        const h = new URL(u).hostname.toLowerCase()
+        return h === 'youtu.be' || h === 'www.youtube.com' || h === 'youtube.com' || h.endsWith('.youtube.com')
+      } catch { return false }
+    }, { message: 'YouTube URL must be on youtube.com or youtu.be' }).optional().nullable()
+  ),
   budgetItems: z.array(
     z.object({
       label: z.string().trim().min(1, 'Label required').max(120, 'Label is too long'),
@@ -97,7 +111,14 @@ export const teamOnboardingSchema = z.object({
   controlSystem: z.string().trim().max(200).optional(),
   // Comma-separated free-form text; converted to text[] by the action
   sensors: z.string().trim().max(400).optional(),
-  githubLink: z.preprocess((value) => emptyToUndefined(value), z.string().url().optional()),
+  githubLink: z.preprocess((value) => emptyToUndefined(value),
+    z.string().url().refine((u) => {
+      try {
+        const h = new URL(u).hostname.toLowerCase()
+        return h === 'github.com' || h === 'gist.github.com'
+      } catch { return false }
+    }, { message: 'GitHub link must be on github.com or gist.github.com' }).optional()
+  ),
   autonomousDescription: z.string().trim().max(750).optional(),
   proudestMechanismName: z.string().trim().max(200).optional(),
   proudestMechanismProblem: z.string().trim().max(1000).optional(),

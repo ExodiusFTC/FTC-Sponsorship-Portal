@@ -23,13 +23,15 @@ export default async function NewSubmissionPage({ searchParams }: { searchParams
     redirect('/awaiting-verification')
   }
 
-  const { data: allSponsors } = await supabase
-    .from('sponsors')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: allSponsors } = await (supabase as any)
+    .from('v_sponsors_public')
     .select('id, company_name, status, funding_cap_cents, funding_used_cents')
     .eq('status', 'active')
 
   // Filter sponsors with remaining capacity
-  const sponsors = allSponsors?.filter((s) => s.funding_cap_cents > s.funding_used_cents) ?? []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sponsors = allSponsors?.filter((s: any) => s.funding_cap_cents > s.funding_used_cents) ?? []
 
   const preselectedSponsorId = params.sponsor
   

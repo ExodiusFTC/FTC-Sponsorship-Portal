@@ -18,20 +18,6 @@ export default async function SponsorViewPage({ params }: Props) {
   const { token } = await params
   const supabase = createAdminClient()
 
-  const ip = (await import('next/headers')).headers().then(h => h.get('x-forwarded-for') ?? 'anonymous')
-  const { checkActionLimit } = await import('@/lib/rate-limit')
-  const limit = await checkActionLimit(`sponsor_view_${await ip}`)
-  if (!limit.ok) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="bg-card p-8 rounded-xl border text-center space-y-2">
-          <h1 className="text-xl font-bold text-foreground">Too many requests</h1>
-          <p className="text-muted-foreground">Please try again in a few minutes.</p>
-        </div>
-      </div>
-    )
-  }
-
   const tokenHash = createHash('sha256').update(token).digest('hex')
 
   const { data: accessToken } = await supabase
@@ -131,7 +117,7 @@ export default async function SponsorViewPage({ params }: Props) {
               <p className="text-foreground leading-relaxed">{String(team.outreach_summary)}</p>
             </div>
           )}
-          {team.youtube_url && String(team.youtube_url).startsWith('https://') && (
+          {team.youtube_url && (() => { try { const h = new URL(String(team.youtube_url)).hostname.toLowerCase(); return h === 'youtu.be' || h.endsWith('youtube.com') } catch { return false } })() && (
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Video</p>
               <a href={String(team.youtube_url)} target="_blank" rel="noreferrer" className="text-primary underline text-sm">

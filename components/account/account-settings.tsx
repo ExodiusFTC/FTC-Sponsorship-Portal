@@ -2,42 +2,45 @@
 
 import { useState, useTransition } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { updateProfile, updatePassword, deleteAccount } from '@/app/actions/account'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
+import { updateProfile, updatePassword, changeEmail, deleteAccount, requestDataExport } from '@/app/actions/account'
+import { CheckCircle2, AlertCircle, Download, Trash2 } from 'lucide-react'
 
-function Section({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
+function SectionCard({
+  title,
+  sub,
+  children,
+}: {
+  title: string
+  sub?: string
+  children: React.ReactNode
+}) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle style={{ fontSize: '16px' }}>{title}</CardTitle>
-        {sub && <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '2px' }}>{sub}</p>}
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">{title}</CardTitle>
+        {sub && <p className="text-sm text-muted-foreground">{sub}</p>}
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function StatusMessage({ type, text }: { type: 'success' | 'error'; text: string }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>{label}</label>
-      {children}
+    <div className={cn('flex items-start gap-2 rounded-md px-3 py-2.5 text-sm',
+      type === 'success' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-destructive/10 text-destructive'
+    )}>
+      {type === 'success'
+        ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.5} />
+        : <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.5} />}
+      <span>{text}</span>
     </div>
   )
 }
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '8px 12px', fontSize: '14px',
-  border: '1px solid var(--border-color)', borderRadius: '6px',
-  background: 'var(--bg-elevated)', color: 'var(--text-primary)', outline: 'none',
-}
-
-const btnStyle = (variant: 'primary' | 'danger' | 'secondary'): React.CSSProperties => ({
-  padding: '8px 16px', fontSize: '14px', fontWeight: 500, borderRadius: '6px',
-  cursor: 'pointer', transition: 'opacity 0.15s',
-  background: variant === 'primary' ? 'var(--text-primary)' : variant === 'danger' ? '#dc2626' : 'var(--bg-elevated)',
-  color: variant === 'primary' ? 'var(--bg-surface)' : variant === 'danger' ? '#fff' : 'var(--text-secondary)',
-  border: variant === 'secondary' ? '1px solid var(--border-color)' : 'none',
-})
 
 export function AccountSettings({
   currentName,
@@ -48,128 +51,254 @@ export function AccountSettings({
   email: string
   role: string
 }) {
+  // Profile
   const [fullName, setFullName] = useState(currentName)
-  const [nameStatus, setNameStatus] = useState('')
-  const [nameError, setNameError] = useState('')
+  const [nameMsg, setNameMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  const [newPassword, setNewPassword] = useState('')
-  const [pwStatus, setPwStatus] = useState('')
-  const [pwError, setPwError] = useState('')
+  // Password
+  const [currentPw, setCurrentPw] = useState('')
+  const [newPw, setNewPw] = useState('')
+  const [pwMsg, setPwMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  const [confirmDelete, setConfirmDelete] = useState('')
-  const [deletePassword, setDeletePassword] = useState('')
-  const [deleteError, setDeleteError] = useState('')
+  // Email change
+  const [newEmail, setNewEmail] = useState('')
+  const [emailPw, setEmailPw] = useState('')
+  const [emailMsg, setEmailMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // Data export
+  const [exportMsg, setExportMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // Delete account
+  const [confirmEmail, setConfirmEmail] = useState('')
+  const [deletePw, setDeletePw] = useState('')
+  const [deleteMsg, setDeleteMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const [isPending, startTransition] = useTransition()
 
   function handleProfileSave() {
-    setNameStatus(''); setNameError('')
+    setNameMsg(null)
     startTransition(async () => {
       const res = await updateProfile({ fullName })
-      if (res?.error) setNameError(res.error)
-      else setNameStatus('Name updated successfully.')
+      if (res?.error) setNameMsg({ type: 'error', text: res.error })
+      else setNameMsg({ type: 'success', text: 'Display name updated.' })
     })
   }
 
   function handlePasswordSave() {
-    setPwStatus(''); setPwError('')
+    setPwMsg(null)
     startTransition(async () => {
-      const res = await updatePassword({ password: newPassword })
-      if (res?.error) setPwError(res.error)
-      else { setPwStatus('Password updated.'); setNewPassword('') }
+      const res = await updatePassword({ newPassword: newPw, currentPassword: currentPw })
+      if (res?.error) setPwMsg({ type: 'error', text: res.error })
+      else {
+        setPwMsg({ type: 'success', text: 'Password updated successfully.' })
+        setCurrentPw('')
+        setNewPw('')
+      }
+    })
+  }
+
+  function handleEmailChange() {
+    setEmailMsg(null)
+    startTransition(async () => {
+      const res = await changeEmail({ newEmail, currentPassword: emailPw })
+      if (res?.error) setEmailMsg({ type: 'error', text: res.error })
+      else {
+        setEmailMsg({ type: 'success', text: ('message' in res ? res.message : undefined) ?? 'Confirmation email sent.' })
+        setNewEmail('')
+        setEmailPw('')
+      }
+    })
+  }
+
+  function handleExport() {
+    setExportMsg(null)
+    startTransition(async () => {
+      const res = await requestDataExport()
+      if (res?.error) setExportMsg({ type: 'error', text: res.error })
+      else setExportMsg({ type: 'success', text: res.message ?? 'Export queued.' })
     })
   }
 
   function handleDelete() {
-    if (confirmDelete !== email) {
-      setDeleteError('Type your email exactly to confirm deletion.')
-      return
-    }
-    if (!deletePassword) {
-      setDeleteError('Enter your current password to confirm deletion.')
-      return
-    }
-    setDeleteError('')
+    setDeleteMsg(null)
     startTransition(async () => {
-      const res = await deleteAccount({ confirmEmail: confirmDelete, currentPassword: deletePassword })
-      if (res?.error) setDeleteError(res.error)
+      const res = await deleteAccount({ confirmEmail, currentPassword: deletePw })
+      if (res?.error) setDeleteMsg({ type: 'error', text: res.error })
     })
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '600px' }}>
-      {/* Profile */}
-      <Section title="Profile" sub="Your public display name.">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <Field label="Full name">
-            <input style={inputStyle} value={fullName} onChange={e => setFullName(e.target.value)} />
-          </Field>
-          <Field label="Email address">
-            <input style={{ ...inputStyle, opacity: 0.5, cursor: 'not-allowed' }} value={email} disabled />
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Email changes require contacting support.</p>
-          </Field>
-          <Field label="Role">
-            <input style={{ ...inputStyle, opacity: 0.5, cursor: 'not-allowed' }} value={role} disabled />
-          </Field>
-          {nameStatus && <p style={{ fontSize: '13px', color: '#34d399' }}>{nameStatus}</p>}
-          {nameError && <p style={{ fontSize: '13px', color: '#f87171' }}>{nameError}</p>}
-          <button style={btnStyle('primary')} onClick={handleProfileSave} disabled={isPending}>
-            Save profile
-          </button>
-        </div>
-      </Section>
+    <div className="flex max-w-2xl flex-col gap-6">
 
-      {/* Password */}
-      <Section title="Change Password" sub="Use a strong password of at least 12 characters with uppercase, lowercase, and a number.">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <Field label="New password">
-            <input
-              style={inputStyle} type="password"
-              value={newPassword} onChange={e => setNewPassword(e.target.value)}
+      {/* Profile */}
+      <SectionCard title="Profile" sub="Your public display name shown to sponsors and teammates.">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="fullName">Full name</Label>
+            <Input
+              id="fullName"
+              value={fullName}
+              maxLength={100}
+              onChange={e => setFullName(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Email address</Label>
+            <Input value={email} disabled className="opacity-50 cursor-not-allowed" />
+            <p className="text-xs text-muted-foreground">Change your email in the section below.</p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Role</Label>
+            <Input value={role} disabled className="opacity-50 cursor-not-allowed capitalize" />
+          </div>
+          {nameMsg && <StatusMessage type={nameMsg.type} text={nameMsg.text} />}
+          <Button onClick={handleProfileSave} disabled={isPending} loading={isPending} className="self-start">
+            Save profile
+          </Button>
+        </div>
+      </SectionCard>
+
+      {/* Change email */}
+      <SectionCard title="Change Email" sub="You'll receive a confirmation link at your new address before the change takes effect.">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="newEmail">New email address</Label>
+            <Input
+              id="newEmail"
+              type="email"
+              value={newEmail}
+              onChange={e => setNewEmail(e.target.value)}
+              placeholder="new@example.com"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="emailPw">Current password</Label>
+            <Input
+              id="emailPw"
+              type="password"
+              value={emailPw}
+              onChange={e => setEmailPw(e.target.value)}
+              placeholder="Confirm with your current password"
+            />
+          </div>
+          {emailMsg && <StatusMessage type={emailMsg.type} text={emailMsg.text} />}
+          <Button
+            onClick={handleEmailChange}
+            disabled={isPending || !newEmail || !emailPw}
+            loading={isPending}
+            className="self-start"
+          >
+            Send confirmation
+          </Button>
+        </div>
+      </SectionCard>
+
+      {/* Change password */}
+      <SectionCard
+        title="Change Password"
+        sub="Minimum 12 characters with uppercase, lowercase, and a number."
+      >
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="currentPw">Current password</Label>
+            <Input
+              id="currentPw"
+              type="password"
+              value={currentPw}
+              onChange={e => setCurrentPw(e.target.value)}
+              placeholder="Enter current password"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="newPw">New password</Label>
+            <Input
+              id="newPw"
+              type="password"
+              value={newPw}
+              onChange={e => setNewPw(e.target.value)}
               placeholder="Enter new password"
             />
-          </Field>
-          {pwStatus && <p style={{ fontSize: '13px', color: '#34d399' }}>{pwStatus}</p>}
-          {pwError && <p style={{ fontSize: '13px', color: '#f87171' }}>{pwError}</p>}
-          <button style={btnStyle('primary')} onClick={handlePasswordSave} disabled={isPending || newPassword.length < 12}>
+          </div>
+          {pwMsg && <StatusMessage type={pwMsg.type} text={pwMsg.text} />}
+          <Button
+            onClick={handlePasswordSave}
+            disabled={isPending || !currentPw || newPw.length < 12}
+            loading={isPending}
+            className="self-start"
+          >
             Update password
-          </button>
+          </Button>
         </div>
-      </Section>
+      </SectionCard>
+
+      {/* Data export */}
+      <SectionCard
+        title="Export Your Data"
+        sub="Download a copy of your profile, teams, submissions, and notifications."
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">
+            Your export will be prepared and emailed to{' '}
+            <span className="font-medium text-foreground">{email}</span> within 24 hours.
+          </p>
+          {exportMsg && <StatusMessage type={exportMsg.type} text={exportMsg.text} />}
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={isPending}
+            loading={isPending}
+            className="self-start gap-2"
+          >
+            <Download className="h-4 w-4" strokeWidth={1.5} />
+            Request data export
+          </Button>
+        </div>
+      </SectionCard>
 
       {/* Delete account */}
-      <Section title="Delete Account" sub="This is permanent. All your data will be removed and cannot be recovered.">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-            To confirm, type your email address: <strong style={{ color: 'var(--text-primary)' }}>{email}</strong>
+      <SectionCard
+        title="Delete Account"
+        sub="Permanently removes your account and all associated data. This cannot be undone."
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">
+            To confirm, type your email address:{' '}
+            <span className="font-medium text-foreground">{email}</span>
           </p>
-          <Field label="Confirm email">
-            <input
-              style={{ ...inputStyle, borderColor: confirmDelete && confirmDelete !== email ? '#f87171' : 'var(--border-color)' }}
-              value={confirmDelete}
-              onChange={e => setConfirmDelete(e.target.value)}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="confirmEmail">Confirm email</Label>
+            <Input
+              id="confirmEmail"
+              value={confirmEmail}
+              onChange={e => setConfirmEmail(e.target.value)}
               placeholder={email}
+              className={cn(confirmEmail && confirmEmail !== email && 'border-destructive focus-visible:ring-destructive/40')}
             />
-          </Field>
-          <Field label="Current password">
-            <input
-              style={inputStyle}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="deletePw">Current password</Label>
+            <Input
+              id="deletePw"
               type="password"
-              value={deletePassword}
-              onChange={e => setDeletePassword(e.target.value)}
+              value={deletePw}
+              onChange={e => setDeletePw(e.target.value)}
               placeholder="Enter your current password"
             />
-          </Field>
-          {deleteError && <p style={{ fontSize: '13px', color: '#f87171' }}>{deleteError}</p>}
-          <button
-            style={btnStyle('danger')}
+          </div>
+          {deleteMsg && <StatusMessage type={deleteMsg.type} text={deleteMsg.text} />}
+          <Button
+            variant="destructive"
             onClick={handleDelete}
-            disabled={isPending || confirmDelete !== email || !deletePassword}
+            disabled={isPending || confirmEmail !== email || !deletePw}
+            loading={isPending}
+            className="self-start gap-2"
           >
+            <Trash2 className="h-4 w-4" strokeWidth={1.5} />
             Permanently delete account
-          </button>
+          </Button>
         </div>
-      </Section>
+      </SectionCard>
+
     </div>
   )
 }

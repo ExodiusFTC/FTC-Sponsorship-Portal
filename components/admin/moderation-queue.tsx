@@ -1,0 +1,518 @@
+'use client'
+
+import { useState, useTransition, useCallback } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { ModerationActions } from '@/components/admin/moderation-actions'
+import { approveSubmission, declineSubmission, requestEdit } from '@/app/actions/moderation'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { CheckCircle2, AlertCircle, CheckSquare, Square, ChevronDown, ChevronUp } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+interface Submission {
+  id: string
+  updated_at: string
+  requested_amount_cents: number | null
+  custom_pitch_alignment: string | null
+  specific_needs_statement: string | null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  teams: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  sponsors: any
+}
+
+interface BulkResult {
+  id: string
+  ok: boolean
+  error?: string
+}
+
+function FieldBlock({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h4 className="mb-1.5 text-[11px] font-mono uppercase tracking-widest text-muted-foreground">{label}</h4>
+      {children}
+    </div>
+  )
+}
+
+function PreviewPane({ submission }: { submission: Submission }) {
+  const team = submission.teams
+  const sponsor = submission.sponsors
+  const financialAsk = submission.requested_amount_cents || team?.financial_ask_cents || 0
+  const budgetItems: { qty: number; label: string; total_cents: number }[] = team?.budget_items ?? []
+  const lineItemSum = budgetItems.reduce((s, i) => s + (i.total_cents ?? 0), 0)
+  const isOverAsk = financialAsk > lineItemSum && lineItemSum > 0
+
+  return (
+    <div className="space-y-4 text-sm">
+      {/* Identity row */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+          Sponsor: <span className="text-foreground">{sponsor?.company_name}</span>
+        </span>
+        <span className="text-muted-foreground/40">·</span>
+        <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+          Ask:{' '}
+          <span className={cn('text-foreground', isOverAsk && 'text-amber-500')}>
+            ${(financialAsk / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </span>
+        </span>
+        {isOverAsk && (
+          <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+            ⚠ Exceeds line items (${(lineItemSum / 100).toFixed(2)})
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 border-b border-border pb-4">
+        <FieldBlock label="Custom Pitch Alignment">
+          <p className="whitespace-pre-wrap rounded-md bg-muted/50 px-3 py-2.5 text-muted-foreground leading-relaxed">
+            {submission.custom_pitch_alignment || '—'}
+          </p>
+        </FieldBlock>
+        <FieldBlock label="Specific Needs Statement">
+          <p className="whitespace-pre-wrap rounded-md bg-muted/50 px-3 py-2.5 text-muted-foreground leading-relaxed">
+            {submission.specific_needs_statement || '—'}
+          </p>
+        </FieldBlock>
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-foreground">Master Portfolio Data</p>
+        <FieldBlock label="Mission Statement">
+          <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{team?.mission_statement || '—'}</p>
+        </FieldBlock>
+        <FieldBlock label="Technical Summary">
+          <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{team?.technical_summary || '—'}</p>
+        </FieldBlock>
+        <FieldBlock label="Outreach Summary">
+          <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{team?.outreach_summary || '—'}</p>
+        </FieldBlock>
+        {budgetItems.length > 0 && (
+          <FieldBlock label="Budget Items">
+            <div className="rounded-md border border-border bg-muted/30 px-3 py-2">
+              {budgetItems.map((item, idx) => (
+                <div key={idx} className={cn('flex justify-between py-1', idx < budgetItems.length - 1 && 'border-b border-border')}>
+                  <span className="text-muted-foreground">{item.qty}× {item.label}</span>
+                  <span className="font-mono text-xs font-medium text-foreground">${(item.total_cents / 100).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          </FieldBlock>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function SubmissionCard({
+  submission,
+  selected,
+  onToggle,
+  onApproveClick,
+}: {
+  submission: Submission
+  selected: boolean
+  onToggle: () => void
+  onApproveClick: () => void
+}) {
+  const [expanded, setExpanded] = useState(true)
+  const team = submission.teams
+  const sponsor = submission.sponsors
+  const financialAsk = submission.requested_amount_cents || team?.financial_ask_cents || 0
+
+  return (
+    <Card className={cn('transition-colors', selected && 'ring-2 ring-primary')}>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-3">
+          {/* Checkbox + title */}
+          <button
+            type="button"
+            onClick={onToggle}
+            className="mt-0.5 shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+            aria-label={selected ? 'Deselect submission' : 'Select submission'}
+          >
+            {selected
+              ? <CheckSquare className="h-4 w-4 text-primary" strokeWidth={1.5} />
+              : <Square className="h-4 w-4" strokeWidth={1.5} />}
+          </button>
+
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-base">
+              Submission to {sponsor?.company_name}
+            </CardTitle>
+            <p className="mt-0.5 text-sm font-medium text-foreground">
+              From: {team?.team_name}{' '}
+              {team?.status === 'existing' && team?.ftc_team_number ? (
+                <span className="ml-1 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                  #{team.ftc_team_number}
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">(Incubator)</span>
+              )}
+            </p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
+                Ask: ${(financialAsk / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </span>
+              <span className="text-[11px] text-muted-foreground" suppressHydrationWarning>
+                {new Date(submission.updated_at).toLocaleDateString()}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setExpanded(e => !e)}
+            className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label={expanded ? 'Collapse' : 'Expand'}
+          >
+            {expanded
+              ? <ChevronUp className="h-4 w-4" strokeWidth={1.5} />
+              : <ChevronDown className="h-4 w-4" strokeWidth={1.5} />}
+          </button>
+        </div>
+      </CardHeader>
+
+      {expanded && (
+        <CardContent className="pt-0">
+          <PreviewPane submission={submission} />
+        </CardContent>
+      )}
+
+      <ModerationActions submissionId={submission.id} onApproveClick={onApproveClick} />
+    </Card>
+  )
+}
+
+interface BulkFeedbackDialogProps {
+  open: boolean
+  onClose: () => void
+  count: number
+  action: 'decline' | 'request_edit'
+  onConfirm: (feedback: string) => void
+  isPending: boolean
+}
+
+function BulkFeedbackDialog({ open, onClose, count, action, onConfirm, isPending }: BulkFeedbackDialogProps) {
+  const [feedback, setFeedback] = useState('')
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) { setFeedback(''); onClose() } }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {action === 'decline' ? `Decline ${count} submission${count > 1 ? 's' : ''}` : `Request edits on ${count} submission${count > 1 ? 's' : ''}`}
+          </DialogTitle>
+          <DialogDescription>
+            This feedback will be sent to {count === 1 ? 'the coach' : 'each coach'} with their submission.
+          </DialogDescription>
+        </DialogHeader>
+        <Textarea
+          value={feedback}
+          onChange={e => setFeedback(e.target.value)}
+          placeholder={action === 'decline' ? 'Does not meet sponsorship criteria at this time.' : 'Please clarify the budget line items and provide more detail.'}
+          className="min-h-[100px]"
+          maxLength={2000}
+        />
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { setFeedback(''); onClose() }} disabled={isPending}>
+            Cancel
+          </Button>
+          <Button
+            variant={action === 'decline' ? 'destructive' : 'default'}
+            disabled={!feedback.trim() || isPending}
+            loading={isPending}
+            onClick={() => onConfirm(feedback)}
+          >
+            {action === 'decline' ? 'Decline all' : 'Send request'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+interface ApprovePreviewDrawerProps {
+  open: boolean
+  onClose: () => void
+  submission: Submission | null
+  onConfirm: (submissionId: string) => void
+  isPending: boolean
+}
+
+function ApprovePreviewDrawer({ open, onClose, submission, onConfirm, isPending }: ApprovePreviewDrawerProps) {
+  if (!submission) return null
+  const team = submission.teams
+  const sponsor = submission.sponsors
+  const financialAsk = submission.requested_amount_cents || team?.financial_ask_cents || 0
+  const budgetItems: { qty: number; label: string; total_cents: number }[] = team?.budget_items ?? []
+  const lineItemSum = budgetItems.reduce((s, i) => s + (i.total_cents ?? 0), 0)
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Approve & Dispatch Preview</DialogTitle>
+          <DialogDescription>
+            Review what will happen before confirming. This action is irreversible.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+          {/* What the sponsor receives */}
+          <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
+            <p className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">Sponsor email</p>
+            <p className="text-sm font-medium text-foreground">To: {sponsor?.company_name}</p>
+            <p className="text-xs text-muted-foreground">
+              Subject: Verified FTC Robotics Sponsorship Proposal:{' '}
+              <span className="text-foreground">{team?.ftc_team_number ? `Team #${team.ftc_team_number}` : 'Incubator'} · {team?.state}</span>
+            </p>
+            <div className="rounded-md bg-background border border-border px-3 py-2 space-y-1 text-sm">
+              <p><span className="text-muted-foreground">Team:</span> {team?.team_name}</p>
+              <p><span className="text-muted-foreground">Total ask:</span>{' '}
+                <span className="font-mono font-medium">${(financialAsk / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+              </p>
+              <p className="text-xs italic text-muted-foreground/70">+ Secure viewer link (14-day expiry)</p>
+            </div>
+          </div>
+
+          {/* Budget impact */}
+          <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-1">
+            <p className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">Sponsor funding impact</p>
+            <p className="text-sm text-muted-foreground">
+              Deducted:{' '}
+              <span className="font-mono font-medium text-foreground">
+                ${(financialAsk / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </span>
+              {lineItemSum > 0 && financialAsk !== lineItemSum && (
+                <span className="ml-1 text-amber-500 text-xs">
+                  (line items: ${(lineItemSum / 100).toFixed(2)})
+                </span>
+              )}
+            </p>
+          </div>
+
+          {/* Coach notification */}
+          <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-2">
+            <p className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">Coach notification</p>
+            <p className="rounded-md bg-background border border-border px-3 py-2 text-sm text-muted-foreground">
+              Your submission to{' '}
+              <span className="font-medium text-foreground">{sponsor?.company_name}</span>{' '}
+              has been approved and dispatched. You will be notified when the sponsor responds.
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isPending}>Cancel</Button>
+          <Button onClick={() => onConfirm(submission.id)} loading={isPending} disabled={isPending}>
+            Confirm — Approve & Dispatch
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export function ModerationQueue({ initialSubmissions }: { initialSubmissions: Submission[] }) {
+  const [submissions, setSubmissions] = useState(initialSubmissions)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkAction, setBulkAction] = useState<'decline' | 'request_edit' | null>(null)
+  const [bulkResults, setBulkResults] = useState<BulkResult[] | null>(null)
+  const [approvePreview, setApprovePreview] = useState<Submission | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const toggleAll = useCallback(() => {
+    setSelected(prev =>
+      prev.size === submissions.length ? new Set() : new Set(submissions.map(s => s.id))
+    )
+  }, [submissions])
+
+  function removeSubmissions(ids: string[]) {
+    setSubmissions(prev => prev.filter(s => !ids.includes(s.id)))
+    setSelected(prev => {
+      const next = new Set(prev)
+      ids.forEach(id => next.delete(id))
+      return next
+    })
+  }
+
+  function handleBulkApprove() {
+    const ids = Array.from(selected)
+    if (ids.length === 0) return
+    setBulkResults(null)
+    startTransition(async () => {
+      const results: BulkResult[] = []
+      for (const id of ids) {
+        const res = await approveSubmission(id)
+        results.push({ id, ok: !res?.error, error: res?.error })
+      }
+      setBulkResults(results)
+      const succeeded = results.filter(r => r.ok).map(r => r.id)
+      removeSubmissions(succeeded)
+    })
+  }
+
+  function handleBulkFeedback(feedback: string) {
+    const ids = Array.from(selected)
+    if (ids.length === 0 || !bulkAction) return
+    setBulkResults(null)
+    startTransition(async () => {
+      const results: BulkResult[] = []
+      for (const id of ids) {
+        const res = bulkAction === 'decline'
+          ? await declineSubmission(id, feedback)
+          : await requestEdit(id, feedback)
+        results.push({ id, ok: !res?.error, error: res?.error })
+      }
+      setBulkResults(results)
+      const succeeded = results.filter(r => r.ok).map(r => r.id)
+      removeSubmissions(succeeded)
+      setBulkAction(null)
+    })
+  }
+
+  function handleSingleApproveConfirm(submissionId: string) {
+    startTransition(async () => {
+      const res = await approveSubmission(submissionId)
+      if (!res?.error) {
+        removeSubmissions([submissionId])
+      }
+      setApprovePreview(null)
+    })
+  }
+
+  const allSelected = selected.size > 0 && selected.size === submissions.length
+  const someSelected = selected.size > 0
+
+  if (submissions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-16 text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted text-2xl">
+          🎉
+        </div>
+        <h3 className="text-lg font-medium text-foreground">Queue is Empty</h3>
+        <p className="mt-1 text-sm text-muted-foreground">All submitted portfolios have been reviewed.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Bulk action bar */}
+      <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5">
+        <button
+          type="button"
+          onClick={toggleAll}
+          className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          {allSelected
+            ? <CheckSquare className="h-4 w-4 text-primary" strokeWidth={1.5} />
+            : <Square className="h-4 w-4" strokeWidth={1.5} />}
+          <span>{allSelected ? 'Deselect all' : 'Select all'}</span>
+        </button>
+
+        <span className="text-muted-foreground/40">·</span>
+        <span className="text-sm text-muted-foreground">{submissions.length} pending</span>
+
+        {someSelected && (
+          <>
+            <span className="ml-auto text-xs text-muted-foreground">{selected.size} selected</span>
+            <Button
+              size="sm"
+              onClick={handleBulkApprove}
+              disabled={isPending}
+              loading={isPending}
+            >
+              Approve {selected.size}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => setBulkAction('request_edit')}
+            >
+              Request edits
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={isPending}
+              onClick={() => setBulkAction('decline')}
+            >
+              Decline {selected.size}
+            </Button>
+          </>
+        )}
+      </div>
+
+      {/* Bulk results summary */}
+      {bulkResults && (
+        <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm space-y-1">
+          {bulkResults.filter(r => r.ok).length > 0 && (
+            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="h-4 w-4" strokeWidth={1.5} />
+              {bulkResults.filter(r => r.ok).length} succeeded
+            </div>
+          )}
+          {bulkResults.filter(r => !r.ok).map(r => (
+            <div key={r.id} className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-4 w-4" strokeWidth={1.5} />
+              {r.id.slice(0, 8)}…: {r.error}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Submission cards */}
+      <div className="flex flex-col gap-5">
+        {submissions.map(s => (
+          <SubmissionCard
+            key={s.id}
+            submission={s}
+            selected={selected.has(s.id)}
+            onToggle={() => toggleSelect(s.id)}
+            onApproveClick={() => setApprovePreview(s)}
+          />
+        ))}
+      </div>
+
+      {/* Bulk feedback dialog */}
+      <BulkFeedbackDialog
+        open={bulkAction !== null}
+        onClose={() => setBulkAction(null)}
+        count={selected.size}
+        action={bulkAction ?? 'decline'}
+        onConfirm={handleBulkFeedback}
+        isPending={isPending}
+      />
+
+      {/* Single-approve preview drawer */}
+      <ApprovePreviewDrawer
+        open={approvePreview !== null}
+        onClose={() => setApprovePreview(null)}
+        submission={approvePreview}
+        onConfirm={handleSingleApproveConfirm}
+        isPending={isPending}
+      />
+    </div>
+  )
+}

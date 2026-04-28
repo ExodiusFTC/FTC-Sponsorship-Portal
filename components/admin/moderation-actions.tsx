@@ -17,7 +17,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle2 } from 'lucide-react'
 import { requestEdit, declineSubmission, approveSubmission } from '@/app/actions/moderation'
 
-export function ModerationActions({ submissionId }: { submissionId: string }) {
+export function ModerationActions({ submissionId, onApproveClick }: { submissionId: string; onApproveClick?: () => void }) {
   const [editOpen, setEditOpen] = useState(false)
   const [declineOpen, setDeclineOpen] = useState(false)
   const [feedback, setFeedback] = useState('')
@@ -59,6 +59,10 @@ export function ModerationActions({ submissionId }: { submissionId: string }) {
   }
 
   const handleApprove = () => {
+    if (onApproveClick) {
+      onApproveClick()
+      return
+    }
     setError(null)
     startTransition(async () => {
       const result = await approveSubmission(submissionId)

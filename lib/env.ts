@@ -23,6 +23,23 @@ const envSchema = z.object({
   SENTRY_DSN: z.string().url().optional(),
   // Cron
   CRON_SECRET: z.string().min(1),
+}).superRefine((env, ctx) => {
+  if (process.env.NODE_ENV === 'production') {
+    if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Upstash Redis must be configured in production',
+        path: ['UPSTASH_REDIS_REST_URL'],
+      })
+    }
+    if (!env.RESEND_WEBHOOK_SECRET) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'RESEND_WEBHOOK_SECRET is required in production',
+        path: ['RESEND_WEBHOOK_SECRET'],
+      })
+    }
+  }
 })
 
 // In development, missing vars warn instead of crashing.

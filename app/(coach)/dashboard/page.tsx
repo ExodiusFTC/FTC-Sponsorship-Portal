@@ -4,12 +4,7 @@ import { redirect } from 'next/navigation'
 import { DashboardShell } from '@/components/coach/dashboard-shell'
 import Link from 'next/link'
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ tab?: string }>
-}) {
-  const { tab: initialTab } = await searchParams
+export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -26,7 +21,8 @@ export default async function DashboardPage({
   ] = await Promise.all([
     supabase.from('teams').select('*').eq('owner_id', user.id).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('profiles').select('*').eq('id', user.id).single(),
-    supabase.from('sponsors').select('id, company_name, industry, funding_cap_cents, funding_used_cents, website, logo_url, status').eq('status', 'active'),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any).from('v_sponsors_public').select('id, company_name, industry, funding_cap_cents, funding_used_cents, website, logo_url, status').eq('status', 'active'),
     supabase.from('notifications').select('*', { count: 'planned', head: true }).eq('recipient_id', user.id).is('read_at', null),
     supabase.from('notifications').select('*').eq('recipient_id', user.id).order('created_at', { ascending: false }).limit(50),
     supabase
@@ -176,7 +172,6 @@ export default async function DashboardPage({
       unreadCount={unreadCount ?? 0}
       submissions={submissions as any ?? []}
       achievements={(achievements || []) as any}
-      initialTab={initialTab}
     />
   )
 }

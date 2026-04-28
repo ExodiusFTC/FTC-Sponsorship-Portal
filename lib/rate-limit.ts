@@ -60,8 +60,17 @@ export type RateLimitResult =
  * Utility function to check limits inside server actions.
  * If Upstash isn't configured (e.g., local dev without keys), it bypasses the limit.
  */
+function failClosedOrPass(label: string): RateLimitResult {
+  if (process.env.NODE_ENV === 'production') {
+    console.error(`[rate-limit] ${label} unavailable — rejecting (fail-closed)`);
+    return { ok: false, retryAfterSeconds: 60, limit: 0 };
+  }
+  console.warn(`[rate-limit] ${label} unavailable — passing through (dev only)`);
+  return { ok: true };
+}
+
 export async function checkActionLimit(identifier: string = 'anonymous'): Promise<RateLimitResult> {
-  if (!actionLimiter) return { ok: true };
+  if (!actionLimiter) return failClosedOrPass('actionLimiter');
   const res = await actionLimiter.limit(identifier);
   if (res.success) {
     return { ok: true };
@@ -75,7 +84,7 @@ export async function checkActionLimit(identifier: string = 'anonymous'): Promis
  * Keys off email+IP to resist both single-origin and distributed stuffing.
  */
 export async function checkAuthLimit(identifier: string): Promise<RateLimitResult> {
-  if (!authLimiter) return { ok: true };
+  if (!authLimiter) return failClosedOrPass('authLimiter');
   const res = await authLimiter.limit(identifier);
   if (res.success) {
     return { ok: true };

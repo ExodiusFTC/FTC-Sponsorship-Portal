@@ -126,12 +126,11 @@ export async function recordSponsorDecision(
   const parsed = recordDecisionSchema.safeParse({ token, decision, amountCents })
   if (!parsed.success) return { ok: false, error: 'Invalid data provided' }
 
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`record_sponsor_decision_${ip}`)
-  if ('error' in limit) return { ok: false, error: 'Too many requests. Please try again later.' }
-
   const adminClient = createAdminClient()
   const tokenHash = createHash('sha256').update(token).digest('hex')
+
+  const limit = await validateRateLimit(`record_sponsor_decision_${tokenHash}`)
+  if ('error' in limit) return { ok: false, error: 'Too many requests. Please try again later.' }
 
   const { data: context } = await adminClient
     .from('submission_access_tokens')

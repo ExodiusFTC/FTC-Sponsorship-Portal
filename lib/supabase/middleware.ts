@@ -36,7 +36,8 @@ export async function updateSession(request: NextRequest) {
   const isAuthPage =
     pathname.startsWith('/login') ||
     pathname.startsWith('/signup') ||
-    pathname.startsWith('/verify-email')
+    pathname.startsWith('/verify-email') ||
+    pathname.startsWith('/mfa')
 
   const isPublicRoute =
     pathname === '/' ||
@@ -45,18 +46,39 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/sponsor-view/') ||
     pathname.startsWith('/auth/')
 
+  // API routes for admin must reject unauthenticated callers at the edge
+  // (the route handlers re-check, but the edge layer should not let them in).
+  const isAdminApi = pathname.startsWith('/api/admin')
+  if (isAdminApi && !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   if (!user && !isAuthPage && !isPublicRoute) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (user && isAuthPage) {
+  if (user && isAuthPage && !pathname.startsWith('/mfa')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Optional: Check if coach needs to upload credentials
-  // This is better handled in a layout or a higher-level component to avoid DB hit on every request
-  // But for strict COPPA we might want it here.
-  // For now, I'll keep it simple and handle it in the app layout/page.
+  // Admin routes require aal2 (TOTP verified). If the session is only aal1,
+  // redirect to the MFA challenge page which will redirect back after success.
+  const isAdminRoute =
+    (pathname.startsWith('/admin') || pathname.startsWith('/moderation') ||
+     pathname.startsWith('/coaches') || pathname.startsWith('/sponsors') ||
+     pathname.startsWith('/analytics') || pathname.startsWith('/settings')) &&
+    !pathname.startsWith('/sponsors/apply')
+
+  if (user && isAdminRoute && !pathname.startsWith('/admin/security')) {
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+    if (aal?.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
+      const next = encodeURIComponent(pathname)
+      return NextResponse.redirect(new URL(`/mfa?next=${next}`, request.url))
+    }
+  }
+
+  // Don't let intermediaries cache authenticated HTML responses.
+  supabaseResponse.headers.set('Cache-Control', 'private, no-store, max-age=0')
 
   return supabaseResponse
 }

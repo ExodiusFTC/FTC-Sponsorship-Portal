@@ -1,5 +1,6 @@
 import { Sidebar } from './sidebar'
 import { Suspense } from 'react'
+import { CommandPaletteProvider } from './command-palette-provider'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,6 +13,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </main>
+      <CommandPaletteProvider />
     </div>
   )
 }

@@ -194,9 +194,15 @@ export async function signUp(formData: FormData) {
 
   const userId = authData.user.id
 
-  // Upload file using admin client
-  const fileExt = file.name.split('.').pop()
-  const filePath = `${userId}/credentials.${fileExt}`
+  // Derive extension from validated MIME type — never trust the client filename.
+  const extByMime: Record<string, string> = {
+    'application/pdf': 'pdf',
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+  }
+  const canonicalExt = extByMime[file.type]
+  if (!canonicalExt) return { error: 'Invalid file type.' }
+  const filePath = `${userId}/credentials_${Date.now()}.${canonicalExt}`
 
   const { error: uploadError } = await adminClient.storage
     .from('coach-credentials')

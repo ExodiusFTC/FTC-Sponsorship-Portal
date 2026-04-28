@@ -3,7 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { submissionSchema, type SubmissionInput } from '@/lib/schemas/submission'
 import { redirect } from 'next/navigation'
-import { getClientIp, validateRateLimit, requireAuth } from '@/lib/actions-utils'
+import { getClientIp, validateRateLimit, requireAuth, requireVerifiedCoach } from '@/lib/actions-utils'
 
 const EDITABLE_SUBMISSION_STATUSES = ['draft', 'declined', 'changes_requested'] as const
 
@@ -44,6 +44,12 @@ export async function saveSubmission(
   if (status === 'pending') {
     const result = submissionSchema.safeParse(data)
     if (!result.success) return { error: 'Please complete all required fields before submitting' }
+    // Submitting to sponsors requires verified-coach status.
+    try {
+      await requireVerifiedCoach()
+    } catch (e: any) {
+      return { error: e.message, code: e.code }
+    }
   }
 
   const ctx = await getCoachTeamId()

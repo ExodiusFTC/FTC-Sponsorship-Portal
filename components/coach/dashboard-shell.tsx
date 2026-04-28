@@ -1,16 +1,15 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import {
   Search, Plus, ArrowUpRight, Sparkles, Building2, AlertCircle,
   Trash2, ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { CopyInput } from '@/components/ui/copy-input'
 import { FadeUp } from '@/components/motion/fade-up'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -36,6 +35,7 @@ const TABS = [
   { id: 'portfolio', label: 'Portfolio' },
   { id: 'find-sponsors', label: 'Find Sponsors' },
   { id: 'submissions', label: 'Submissions' },
+  { id: 'drafts', label: 'Drafts' },
   { id: 'inbox', label: 'Inbox' },
   { id: 'insights', label: 'Insights' },
   { id: 'ledger', label: 'Ledger' },
@@ -50,7 +50,6 @@ export function DashboardShell({
   unreadCount,
   submissions,
   achievements,
-  initialTab,
 }: {
   team: Team
   profile: any
@@ -59,102 +58,20 @@ export function DashboardShell({
   unreadCount: number
   submissions: SubmissionSummary[]
   achievements: TeamAchievement[]
-  initialTab?: string
 }) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const reduce = useReducedMotion()
 
-  const validTabs = useState(() => TABS.map(t => t.id))[0]
-  const defaultTab = validTabs.includes(initialTab || '') ? initialTab! : 'overview'
-
-  const [tab, setTabState] = useState(defaultTab)
-
-  // Listen for tab changes from external components (like Sidebar)
-  useEffect(() => {
-    const handleTabChange = (e: any) => {
-      const newTab = e.detail?.tab
-      if (newTab && TABS.some(t => t.id === newTab)) {
-        setTabState(newTab)
-      }
-    }
-    window.addEventListener('dashboard-tab-change', handleTabChange)
-    return () => window.removeEventListener('dashboard-tab-change', handleTabChange)
-  }, [])
-
-  // Also listen for browser back/forward buttons
-  useEffect(() => {
-    const handlePopState = () => {
-      const params = new URLSearchParams(window.location.search)
-      const t = params.get('tab') || 'overview'
-      if (TABS.some(t_ => t_.id === t)) {
-        setTabState(t)
-      }
-    }
-    window.addEventListener('popstate', handlePopState)
-
-    // Keyboard shortcuts for navigation
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if typing in an input or textarea
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement ||
-        (e.target as HTMLElement)?.isContentEditable
-      ) {
-        return
-      }
-
-      if (e.shiftKey) {
-        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-          e.preventDefault()
-          const currentIndex = TABS.findIndex(t => t.id === tab)
-          let nextIndex = currentIndex
-
-          if (e.key === 'ArrowUp') {
-            nextIndex = (currentIndex - 1 + TABS.length) % TABS.length
-          } else {
-            nextIndex = (currentIndex + 1) % TABS.length
-          }
-
-          setTab(TABS[nextIndex].id)
-          return
-        }
-
-        // Letter-based shortcuts
-        const keyMap: Record<string, string> = {
-          'O': 'overview',
-          'P': 'portfolio',
-          'S': 'find-sponsors',
-          'H': 'submissions',
-          'N': 'inbox',
-          'I': 'insights',
-          'L': 'ledger',
-          ',': 'settings',
-        }
-
-        const targetTab = keyMap[e.key.toUpperCase()]
-        if (targetTab) {
-          e.preventDefault()
-          setTab(targetTab)
-        }
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState)
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [tab])
+  const rawTab = searchParams.get('tab') ?? 'overview'
+  const tab = TABS.some(t => t.id === rawTab) ? rawTab : 'overview'
 
   const setTab = (newTab: string) => {
-    if (newTab === tab) return
-    setTabState(newTab)
-    const url = newTab === 'overview' ? '/dashboard' : `/dashboard?tab=${newTab}`
-    // Use replaceState to update URL without triggering a Next.js server-side refresh
-    window.history.replaceState({ ...window.history.state, as: url, url }, '', url)
-
-    // Notify external components (like Sidebar) to update their selection state
-    window.dispatchEvent(new CustomEvent('dashboard-tab-change', { detail: { tab: newTab } }))
+    const sp = new URLSearchParams(searchParams)
+    if (newTab === 'overview') sp.delete('tab')
+    else sp.set('tab', newTab)
+    router.replace(`${pathname}${sp.size ? `?${sp}` : ''}`, { scroll: false })
   }
 
   const activePitches = submissions.filter(s => s.status === 'pending' || s.status === 'dispatched' || s.status === 'approved').length
@@ -200,6 +117,7 @@ export function DashboardShell({
           {tab === 'portfolio' && <PortfolioTab team={team} achievements={achievements} />}
           {tab === 'find-sponsors' && <FindSponsorsTab sponsors={sponsors} submissions={submissions} />}
           {tab === 'submissions' && <SubmissionsTab submissions={submissions} />}
+          {tab === 'drafts' && <DraftsTab submissions={submissions} />}
           {tab === 'inbox' && <InboxTab notifications={notifications} switchTab={setTab} />}
           {tab === 'insights' && <InsightsTab submissions={submissions} sponsors={sponsors} team={team} />}
           {tab === 'ledger' && <LedgerTab team={team} />}
@@ -410,39 +328,6 @@ function OverviewTab({
         <KpiCard label="Portfolio ask" value={`$${(portfolioAsk / 100).toLocaleString('en-US')}`} hint="Season target" />
       </FadeUp>
 
-      {/* Trackable URLs panel — centered */}
-      <FadeUp delay={0.05} className="max-w-[800px] mx-auto w-full">
-        <div className="rounded-xl border border-border bg-card">
-          <div className="flex items-center justify-between border-b border-border px-5 py-3">
-            <div>
-              <div className="text-sm font-medium text-foreground">Your trackable submission URLs</div>
-              <div className="text-xs text-muted-foreground mt-0.5">Signed links sent to sponsors. Share with care.</div>
-            </div>
-            <span className="rounded-md border border-border bg-accent px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
-              {submissions.length} total
-            </span>
-          </div>
-          <div className="divide-y divide-border">
-            {submissions.slice(0, 5).map(s => (
-              <div key={s.id} className="grid grid-cols-[1fr,auto] items-center gap-4 px-5 py-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-border bg-accent">
-                    <Building2 className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-foreground">{s.company_name}</div>
-                    <div className="mt-0.5"><StatusChip status={s.status} /></div>
-                  </div>
-                </div>
-                <CopyInput value={`https://matchmaker.app/s/${s.id}`} className="w-[280px] max-w-full" />
-              </div>
-            ))}
-            {submissions.length === 0 && (
-              <div className="p-8 text-center text-zinc-500 text-sm">No submissions yet.</div>
-            )}
-          </div>
-        </div>
-      </FadeUp>
     </div>
   )
 }
@@ -968,6 +853,49 @@ function LedgerTab({ team }: { team: Team }) {
             </tr>
           </tfoot>
         </table>
+      </div>
+    </div>
+  )
+}
+
+function DraftsTab({ submissions }: { submissions: SubmissionSummary[] }) {
+  const drafts = submissions.filter(s => s.status === 'draft')
+
+  if (drafts.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-12 text-center max-w-2xl mx-auto">
+        <div className="mb-3 text-4xl">📝</div>
+        <h3 className="text-lg font-medium text-foreground">No drafts yet</h3>
+        <p className="mt-1 text-sm text-muted-foreground">Start a new pitch to Sponsors to create a draft.</p>
+        <Link href="/dashboard?tab=find-sponsors" className={cn('mt-4', buttonVariants())}>
+          Find Sponsors
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3 max-w-2xl">
+      <p className="text-sm text-muted-foreground">
+        {drafts.length} draft{drafts.length !== 1 ? 's' : ''}. Continue editing whenever you're ready.
+      </p>
+      <div className="rounded-xl border border-border bg-card/60 divide-y divide-border">
+        {drafts.map(draft => (
+          <div key={draft.id} className="flex items-center justify-between px-5 py-4 hover:bg-muted/40 transition-colors">
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-foreground truncate">{draft.company_name}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Saved {new Date(draft.updated_at).toLocaleDateString()}
+              </p>
+            </div>
+            <Link
+              href={`/submissions/${draft.id}/edit`}
+              className={cn('shrink-0 ml-4', buttonVariants({ size: 'sm' }))}
+            >
+              Continue editing
+            </Link>
+          </div>
+        ))}
       </div>
     </div>
   )

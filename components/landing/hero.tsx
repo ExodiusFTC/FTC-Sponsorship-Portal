@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { motion, useReducedMotion } from 'framer-motion'
@@ -10,36 +9,16 @@ import {
   HERO_DESCRIPTION
 } from '@/lib/site-config'
 
-// Lazy-load the heavy canvas globe — no SSR
+// Lazy-load the heavy canvas globe — no SSR; show nothing while loading
 const RotatingEarth = dynamic(
   () => import('@/components/ui/wireframe-dotted-globe'),
-  { ssr: false }
+  { ssr: false, loading: () => <div className="h-full w-full" /> }
 )
 
 export function Hero() {
   const reduce = useReducedMotion()
-  const [shouldShowGlobe, setShouldShowGlobe] = useState(false)
   const init = reduce ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
   const show = { opacity: 1, y: 0 }
-
-  useEffect(() => {
-    const handleComplete = () => {
-      setShouldShowGlobe(true)
-    }
-
-    window.addEventListener('initial-loader-complete', handleComplete)
-    
-    // Fallback: If for some reason the loader is already gone or didn't mount
-    // (e.g. direct navigation to a sub-route and back), we don't want to hide the globe forever.
-    const fallback = setTimeout(() => {
-      setShouldShowGlobe(true)
-    }, 5000)
-
-    return () => {
-      window.removeEventListener('initial-loader-complete', handleComplete)
-      clearTimeout(fallback)
-    }
-  }, [])
 
   return (
     <section className="relative pt-28 pb-20 lg:pt-32 lg:pb-28 min-h-[min(800px,85vh)] flex items-center overflow-hidden">
@@ -124,7 +103,7 @@ export function Hero() {
           {/* ── Right: 3D Globe ─────────────────────────────────────────── */}
           <motion.div
             initial={reduce ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
-            animate={shouldShowGlobe ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
             className="relative h-[400px] sm:h-[480px] lg:h-[560px] xl:h-[620px] w-full"
           >

@@ -18,8 +18,8 @@ import {
   ChevronDown,
   ChevronsUpDown,
   LogOut,
-  Sun,
-  Moon,
+  Search,
+  ShieldCheck,
   type LucideIcon,
 } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
@@ -48,6 +48,8 @@ const adminNavItems: NavDef[] = [
   { icon: Building2, label: 'Sponsors', href: '/sponsors', kbd: 'Shift+S' },
   { icon: Users, label: 'Teams', href: '/coaches', kbd: 'Shift+T' },
   { icon: BarChart2, label: 'Analytics', href: '/analytics', kbd: 'Shift+A' },
+  { icon: BookOpen, label: 'Audit Log', href: '/admin/audit', kbd: 'Shift+U' },
+  { icon: ShieldCheck, label: 'Security', href: '/admin/security', kbd: 'Shift+2' },
   { icon: Settings, label: 'Settings', href: '/settings', kbd: 'Shift+,' },
 ]
 
@@ -61,23 +63,6 @@ const sponsorNavItems: NavDef[] = [
 
 function NavItem({ item, isActive, badge }: { item: NavDef; isActive: boolean; badge?: number }) {
   const Icon = item.icon
-  const pathname = usePathname()
-  const handleClick = (e: React.MouseEvent) => {
-    // If we are already on the dashboard and clicking a dashboard tab link
-    if (pathname === '/dashboard' && item.href.startsWith('/dashboard')) {
-      const url = new URL(item.href, window.location.origin)
-      const tab = url.searchParams.get('tab') || 'overview'
-      
-      // Prevent full Next.js navigation
-      e.preventDefault()
-      
-      // Update URL manually
-      window.history.replaceState({ ...window.history.state, as: item.href, url: item.href }, '', item.href)
-      
-      // Notify DashboardShell to switch tab instantly
-      window.dispatchEvent(new CustomEvent('dashboard-tab-change', { detail: { tab } }))
-    }
-  }
 
   const content = (
     <>
@@ -111,17 +96,8 @@ function NavItem({ item, isActive, badge }: { item: NavDef; isActive: boolean; b
     `tour-${item.label.toLowerCase().replace(/\\s+/g, '-')}`
   )
 
-  // Use button for instant dashboard tab switching to avoid Next.js router overhead
-  if (pathname === '/dashboard' && item.href.startsWith('/dashboard')) {
-    return (
-      <button type="button" onClick={handleClick} className={className}>
-        {content}
-      </button>
-    )
-  }
-
   return (
-    <Link href={item.href} onClick={handleClick} className={className}>
+    <Link href={item.href} className={className}>
       {content}
     </Link>
   )
@@ -228,21 +204,6 @@ export function Sidebar() {
   const [role, setRole] = useState<Role>(null)
   const [userName, setUserName] = useState('User')
   const [userEmail, setUserEmail] = useState('')
-  const [localActiveTab, setLocalActiveTab] = useState<string | null>(null)
-
-  // Sync local active tab with URL search params on mount and when they change
-  useEffect(() => {
-    setLocalActiveTab(searchParams.get('tab'))
-  }, [searchParams])
-
-  // Listen for fast-path tab changes
-  useEffect(() => {
-    const handleTabChange = (e: any) => {
-      setLocalActiveTab(e.detail.tab === 'overview' ? null : e.detail.tab)
-    }
-    window.addEventListener('dashboard-tab-change', handleTabChange)
-    return () => window.removeEventListener('dashboard-tab-change', handleTabChange)
-  }, [])
 
   // Global keyboard shortcuts
   const { data: queueData } = useSWR<{ count: number }>(
@@ -252,7 +213,7 @@ export function Sidebar() {
   )
   const queueCount = queueData?.count ?? 0
 
-  const { data: inboxData } = useSWR<{ count: number }>(
+  const { data: inboxData, mutate: mutateInbox } = useSWR<{ count: number }>(
     role === 'coach' ? '/api/coach/notifications/unread' : null,
     (url: string) => fetch(url).then((r) => r.json()),
     { refreshInterval: 60000, revalidateOnFocus: false }
@@ -261,8 +222,11 @@ export function Sidebar() {
 
   useEffect(() => {
     const supabase = createClient()
+    let userId: string | null = null
+
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
+      userId = user.id
       setUserEmail(user.email ?? '')
       supabase
         .from('profiles')
@@ -272,9 +236,23 @@ export function Sidebar() {
         .then(({ data }) => {
           setRole((data?.role as Role) ?? null)
           setUserName(data?.full_name ?? user.email ?? 'User')
+
+          // Realtime: revalidate unread count on new notification INSERT
+          if (data?.role === 'coach') {
+            const ch = supabase
+              .channel(`notif-badge:${user.id}`)
+              .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'notifications',
+                filter: `recipient_id=eq.${user.id}`,
+              }, () => mutateInbox())
+              .subscribe()
+            return () => { supabase.removeChannel(ch) }
+          }
         })
     })
-  }, [])
+  }, [mutateInbox])
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -305,17 +283,13 @@ export function Sidebar() {
           </div>
           <nav className="flex flex-col gap-0.5">
             {navItems.map((item) => {
-              const activeTab = searchParams ? (searchParams.get('tab') ?? '') : ''
-              // For coach dashboard items, check against our localActiveTab state
-              const isActive = item.href === '/dashboard'
-                ? pathname === '/dashboard' && !localActiveTab
-                : (pathname === '/dashboard' && localActiveTab)
-                    ? item.href === `/dashboard?tab=${localActiveTab}`
-                    : pathname + (activeTab ? `?tab=${activeTab}` : '') === item.href
-
-              // for admin items
+              const activeTab = searchParams?.get('tab') ?? ''
+              const currentHref = pathname + (activeTab ? `?tab=${activeTab}` : '')
+              const isCoachActive = item.href === '/dashboard'
+                ? pathname === '/dashboard' && !activeTab
+                : currentHref === item.href
               const isAdminActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
-              const finalIsActive = role === 'admin' ? isAdminActive : isActive
+              const finalIsActive = role === 'admin' ? isAdminActive : isCoachActive
 
               return (
                 <NavItem
@@ -331,6 +305,17 @@ export function Sidebar() {
       </div>
 
       <div className="border-t border-border pt-2 space-y-1">
+        {/* Cmd+K hint */}
+        <button
+          type="button"
+          onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
+          className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+        >
+          <Search className="h-3.5 w-3.5" strokeWidth={1.5} />
+          <span className="flex-1 text-left">Search actions</span>
+          <kbd className="font-mono text-[10px] opacity-60">⌘K</kbd>
+        </button>
+
         <div className="flex items-center gap-1">
           <div className="flex-1 min-w-0">
             <UserRow name={userName} email={userEmail} role={role} onSignOut={handleSignOut} />

@@ -49,10 +49,40 @@ export async function requireSponsor() {
   return { supabase, user, sponsorId: profile.sponsor_id, adminClient: createAdminClient() }
 }
 
-export async function validateRateLimit(key: string) {
-  return { ok: true }
+export type LimitOutcome =
+  | { ok: true }
+  | { error: string; retryAfterSeconds: number }
+
+export async function validateRateLimit(key: string): Promise<LimitOutcome> {
+  const r = await checkActionLimit(key)
+  if (r.ok) return { ok: true }
+  return {
+    error: `Too many requests. Please try again in ${r.retryAfterSeconds}s.`,
+    retryAfterSeconds: r.retryAfterSeconds,
+  }
 }
 
-export async function validateAuthLimit(key: string) {
-  return { ok: true }
+export async function validateAuthLimit(key: string): Promise<LimitOutcome> {
+  const r = await checkAuthLimit(key)
+  if (r.ok) return { ok: true }
+  return {
+    error: `Too many auth attempts. Please try again in ${r.retryAfterSeconds}s.`,
+    retryAfterSeconds: r.retryAfterSeconds,
+  }
+}
+
+export async function requireVerifiedCoach() {
+  const { supabase, user } = await requireAuth()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, coach_verified')
+    .eq('id', user.id)
+    .single()
+  if (profile?.role !== 'coach') throw new Error('Forbidden')
+  if (!profile.coach_verified) {
+    const e: Error & { code?: string } = new Error('Awaiting credential verification')
+    e.code = 'NEEDS_VERIFICATION'
+    throw e
+  }
+  return { supabase, user }
 }
