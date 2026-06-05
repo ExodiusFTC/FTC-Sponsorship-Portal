@@ -14,6 +14,30 @@ const redis = isUpstashConfigured
   : null;
 
 /**
+ * Keep-alive ping for Upstash Redis.
+ *
+ * Upstash archives free-tier databases after 14 consecutive days with zero
+ * requests. Organic traffic touches Redis via the rate limiters above, but a
+ * quiet stretch (e.g. sponsorship off-season) could exceed that window. The
+ * daily cron calls this to guarantee at least one request per day.
+ *
+ * Writes a single self-expiring key — negligible storage, no growth.
+ * Returns false when Upstash isn't configured (e.g. local dev without keys).
+ */
+export async function touchRedisKeepAlive(): Promise<boolean> {
+  if (!redis) return false;
+  try {
+    await redis.set('ftc:keepalive', new Date().toISOString(), {
+      ex: 60 * 60 * 24 * 30, // 30-day TTL — refreshed daily, self-cleaning
+    });
+    return true;
+  } catch (err) {
+    console.error('[rate-limit] keep-alive ping failed:', err);
+    return false;
+  }
+}
+
+/**
  * Global rate limiter: 100 requests per 10 seconds.
  * Intended for use in `proxy.ts` to protect the whole app.
  */
