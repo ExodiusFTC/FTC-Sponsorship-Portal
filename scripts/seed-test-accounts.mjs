@@ -47,7 +47,46 @@ function section(title) { console.log(`\n── ${title} ──`) }
 
 // ─── Step 1: Wipe all users ───────────────────────────────────────────────────
 async function wipeUsers() {
-  section('Wiping existing users')
+  section('Wiping public tables & existing users')
+
+  // Clean up dependent tables first to avoid foreign key constraint violations
+  try {
+    await admin.from('transactions_ledger').delete().filter('id', 'not.is', null)
+    log('Cleared transactions_ledger')
+  } catch (e) {}
+  try {
+    await admin.from('notifications').delete().filter('id', 'not.is', null)
+    log('Cleared notifications')
+  } catch (e) {}
+  try {
+    await admin.from('submission_access_tokens').delete().filter('id', 'not.is', null)
+    log('Cleared submission_access_tokens')
+  } catch (e) {}
+  try {
+    await admin.from('pitch_sponsor_targets').delete().filter('id', 'not.is', null)
+    log('Cleared pitch_sponsor_targets')
+  } catch (e) {}
+  try {
+    await admin.from('submissions').delete().filter('id', 'not.is', null)
+    log('Cleared submissions')
+  } catch (e) {}
+  try {
+    await admin.from('pitches').delete().filter('id', 'not.is', null)
+    log('Cleared pitches')
+  } catch (e) {}
+  try {
+    await admin.from('team_achievements').delete().filter('id', 'not.is', null)
+    log('Cleared team_achievements')
+  } catch (e) {}
+  try {
+    await admin.from('teams').delete().filter('id', 'not.is', null)
+    log('Cleared teams')
+  } catch (e) {}
+  try {
+    await admin.from('profiles').delete().filter('id', 'not.is', null)
+    log('Cleared profiles')
+  } catch (e) {}
+
   const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 })
   if (error) throw new Error(`listUsers failed: ${error.message}`)
 
@@ -165,6 +204,7 @@ async function main() {
       status: 'existing',
       ftc_team_number: 99999,
       team_name: 'Dev Test Team',
+      slug: 'dev-test-team-99999',
       organization: 'Dev School',
       city: 'Austin',
       state: 'TX',
