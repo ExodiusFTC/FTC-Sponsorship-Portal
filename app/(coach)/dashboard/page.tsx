@@ -21,8 +21,7 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase.from('teams').select('*').eq('owner_id', user.id).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
     supabase.from('profiles').select('*').eq('id', user.id).single(),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any).from('v_sponsors_public').select('id, company_name, industry, funding_cap_cents, funding_used_cents, website, logo_url, status').eq('status', 'active'),
+    supabase.from('v_sponsors_public').select('id, company_name, industry, funding_cap_cents, funding_used_cents, website, logo_url, status').eq('status', 'active'),
     supabase.from('notifications').select('*', { count: 'planned', head: true }).eq('recipient_id', user.id).is('read_at', null),
     supabase.from('notifications').select('*').eq('recipient_id', user.id).order('created_at', { ascending: false }).limit(50),
     supabase
@@ -53,9 +52,11 @@ export default async function DashboardPage() {
       }),
   ])
 
-  console.log('[Dashboard] Server Sponsors:', sponsors)
-
   // 2. Role & Verification Guards
+  if (profile?.role === 'admin') {
+    redirect('/admin')
+  }
+
   if (profile?.role === 'sponsor') {
     redirect('/sponsor/dashboard')
   }

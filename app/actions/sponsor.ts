@@ -302,8 +302,8 @@ export async function approveSponsorApplication(applicationId: string) {
     metadata: { sponsor_id: sponsor.id, contact_email: app.contact_email } as any,
   })
 
-  revalidatePath('/admin/sponsors')
-  revalidatePath('/admin')
+  revalidatePath('/sponsors')
+  revalidatePath('/applications')
   return { success: true, sponsorId: sponsor.id }
 }
 

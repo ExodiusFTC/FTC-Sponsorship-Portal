@@ -24,7 +24,7 @@ export default async function SponsorLayout({ children }: { children: React.Reac
             </p>
             <p className="text-xs text-muted-foreground">
               Need to update your application?{' '}
-              <a className="underline" href="mailto:support@matchmaker.app">Contact support</a>.
+              <a className="underline" href="mailto:support@exodiusftc.com">Contact support</a>.
             </p>
           </div>
         </div>

@@ -21,7 +21,7 @@ export default async function AdminSponsorsPage() {
     .order('created_at', { ascending: false })
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+    <div className="flex flex-col gap-8">
       <PageHeader
         title="Sponsors"
         subtitle="View and manage the corporate sponsor directory and their funding caps."
@@ -32,15 +32,15 @@ export default async function AdminSponsorsPage() {
         }
       />
 
-      <div style={{ border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
+      <div className="rounded-md border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Company</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead style={{ textAlign: 'right' }}>Cap</TableHead>
-              <TableHead style={{ textAlign: 'right' }}>Used / Remaining</TableHead>
+              <TableHead className="text-right">Cap</TableHead>
+              <TableHead className="text-right">Used / Remaining</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -50,36 +50,28 @@ export default async function AdminSponsorsPage() {
                 <TableCell isFirst>
                   <Link
                     href={`/sponsors/${sponsor.id}/edit`}
-                    style={{ color: 'var(--text-primary)', textDecoration: 'none' }}
-                    className="hover:underline font-medium"
+                    className="text-foreground hover:underline font-medium"
                   >
                     {sponsor.company_name}
                   </Link>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{sponsor.industry}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{sponsor.industry}</div>
                 </TableCell>
                 <TableCell>
-                  <span style={{ color: 'var(--text-primary)' }}>{sponsor.contact_name}</span>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{sponsor.contact_email}</div>
+                  <span className="text-foreground">{sponsor.contact_name}</span>
+                  <div className="text-xs text-muted-foreground mt-0.5">{sponsor.contact_email}</div>
                 </TableCell>
                 <TableCell>
-                  <span style={{
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    padding: '2px 8px',
-                    borderRadius: '9999px',
-                    background: sponsor.status === 'active' ? 'var(--badge-success-bg)' : 'var(--badge-pending-bg)',
-                    color: sponsor.status === 'active' ? 'var(--badge-success-text)' : 'var(--badge-pending-text)',
-                  }}>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${sponsor.status === 'active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
                     {sponsor.status}
                   </span>
                 </TableCell>
-                <TableCell style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
+                <TableCell className="text-right font-mono text-xs">
                   ${(sponsor.funding_cap_cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </TableCell>
-                <TableCell style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                <TableCell className="text-right font-mono text-xs text-muted-foreground">
                   ${(sponsor.funding_used_cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   {' / '}
-                  <span style={{ color: 'var(--text-primary)' }}>
+                  <span className="text-foreground">
                     ${((sponsor.funding_cap_cents - sponsor.funding_used_cents) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </TableCell>
@@ -90,7 +82,7 @@ export default async function AdminSponsorsPage() {
             ))}
             {(!sponsors || sponsors.length === 0) && (
               <TableRow>
-                <TableCell colSpan={6} style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)' }}>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   No sponsors found in the database.
                 </TableCell>
               </TableRow>

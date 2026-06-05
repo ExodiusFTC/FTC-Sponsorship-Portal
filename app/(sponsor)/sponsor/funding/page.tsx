@@ -37,7 +37,7 @@ export default async function SponsorFundingPage() {
 
   const used = sponsor.funding_used_cents
   const total = sponsor.funding_cap_cents
-  const percentage = Math.round((used / total) * 100)
+  const percentage = total > 0 ? Math.round((used / total) * 100) : 0
 
   return (
     <div className="space-y-8">

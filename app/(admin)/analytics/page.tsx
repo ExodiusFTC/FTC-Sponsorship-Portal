@@ -122,13 +122,13 @@ export default async function AnalyticsPage() {
                 return (
                   <div key={key} className="flex items-center gap-4">
                     <span className="w-36 flex-shrink-0 text-right text-[11px] text-muted-foreground">{label}</span>
-                    <div className="flex-1 h-2 rounded-full bg-elevated overflow-hidden">
+                    <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                       <div
                         className="h-2 rounded-full transition-all"
-                        style={{ width: `${pct}%`, background: pct > 0 ? 'var(--text-primary)' : 'transparent', opacity: 0.75 }}
+                        style={{ width: `${pct}%`, background: pct > 0 ? 'var(--foreground)' : 'transparent', opacity: 0.75 }}
                       />
                     </div>
-                    <span className="w-20 text-right text-[11px] font-mono text-secondary">
+                    <span className="w-20 text-right text-[11px] font-mono text-muted-foreground">
                       {count} ({pct}%)
                     </span>
                   </div>
@@ -149,7 +149,7 @@ export default async function AnalyticsPage() {
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-elevated/50 border-b border-border">
+              <thead className="bg-muted/50 border-b border-border">
                 <tr>
                   {['Team', 'Sponsor', 'Ask', 'Status'].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
@@ -164,12 +164,12 @@ export default async function AnalyticsPage() {
                     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
                     .slice(0, 12)
                     .map(sub => {
-                      const meta = STATUS_LABELS[sub.status] ?? { label: sub.status, bg: 'var(--bg-elevated)', text: 'var(--text-muted)' }
+                      const meta = STATUS_LABELS[sub.status] ?? { label: sub.status, bg: 'var(--muted)', text: 'var(--muted-foreground)' }
                       return (
-                        <tr key={sub.id} className="hover:bg-hover transition-colors">
+                        <tr key={sub.id} className="hover:bg-muted/50 transition-colors">
                           <td className="px-4 py-3 font-medium text-foreground">{sub.team_name}</td>
-                          <td className="px-4 py-3 text-secondary max-w-[180px] truncate">{sub.company_name}</td>
-                          <td className="px-4 py-3 text-secondary font-mono text-xs" suppressHydrationWarning>
+                          <td className="px-4 py-3 text-muted-foreground max-w-[180px] truncate">{sub.company_name}</td>
+                          <td className="px-4 py-3 text-muted-foreground font-mono text-xs" suppressHydrationWarning>
                             ${(sub.requested_amount_cents / 100).toLocaleString('en-US')}
                           </td>
                           <td className="px-4 py-3">
@@ -216,7 +216,7 @@ function HealthCard({
 }) {
   const accentClass = accent === 'emerald'
     ? 'text-[var(--badge-success-text)] bg-[var(--badge-success-bg)]/20 border-[var(--badge-success-text)]/40'
-    : 'text-[var(--text-primary)] bg-[var(--bg-elevated)] border-[var(--border-default)]'
+    : 'text-foreground bg-muted border-border'
 
   return (
     <div className={`rounded-xl border p-6 flex flex-col gap-2 ${accentClass}`}>

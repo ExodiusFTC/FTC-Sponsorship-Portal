@@ -50,7 +50,8 @@ function PreviewPane({ submission }: { submission: Submission }) {
   const financialAsk = submission.requested_amount_cents || team?.financial_ask_cents || 0
   const budgetItems: { qty: number; label: string; total_cents: number }[] = team?.budget_items ?? []
   const lineItemSum = budgetItems.reduce((s, i) => s + (i.total_cents ?? 0), 0)
-  const isOverAsk = financialAsk > lineItemSum && lineItemSum > 0
+  const currentTeamAsk = team?.financial_ask_cents || 0
+  const isOverAsk = currentTeamAsk > lineItemSum && lineItemSum > 0
 
   return (
     <div className="space-y-4 text-sm">
@@ -256,6 +257,7 @@ function ApprovePreviewDrawer({ open, onClose, submission, onConfirm, isPending 
   const financialAsk = submission.requested_amount_cents || team?.financial_ask_cents || 0
   const budgetItems: { qty: number; label: string; total_cents: number }[] = team?.budget_items ?? []
   const lineItemSum = budgetItems.reduce((s, i) => s + (i.total_cents ?? 0), 0)
+  const currentTeamAsk = team?.financial_ask_cents || 0
 
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
@@ -293,7 +295,7 @@ function ApprovePreviewDrawer({ open, onClose, submission, onConfirm, isPending 
               <span className="font-mono font-medium text-foreground">
                 ${(financialAsk / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </span>
-              {lineItemSum > 0 && financialAsk !== lineItemSum && (
+              {lineItemSum > 0 && currentTeamAsk !== lineItemSum && (
                 <span className="ml-1 text-amber-500 text-xs">
                   (line items: ${(lineItemSum / 100).toFixed(2)})
                 </span>

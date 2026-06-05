@@ -249,7 +249,7 @@ export function Sidebar() {
   const navItems = role === 'admin' ? adminNavItems : role === 'coach' ? coachNavItems : role === 'sponsor' ? sponsorNavItems : []
 
   return (
-    <aside className="fixed left-0 top-0 z-30 flex h-screen w-[240px] flex-col justify-between border-r border-border bg-card p-3">
+    <aside className="fixed left-0 top-0 z-30 flex h-screen w-60 flex-col justify-between border-r border-border bg-card p-3">
       <div className="flex flex-col gap-5">
         <div className="flex items-center justify-between px-1 pt-1">
           <Link href="/" className="flex items-center gap-2">
@@ -275,7 +275,7 @@ export function Sidebar() {
                 ? pathname === '/dashboard' && !activeTab
                 : currentHref === item.href
               const isAdminActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
-              const finalIsActive = role === 'admin' ? isAdminActive : isCoachActive
+              const finalIsActive = (role === 'admin' || role === 'sponsor') ? isAdminActive : isCoachActive
 
               return (
                 <NavItem

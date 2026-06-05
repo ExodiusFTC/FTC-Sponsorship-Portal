@@ -6,6 +6,13 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '5mb',
     },
   },
+  webpack: (config) => {
+    config.ignoreWarnings = [
+      { module: /@prisma\/instrumentation/ },
+      { message: /Critical dependency: the request of a dependency is an expression/ }
+    ];
+    return config;
+  },
 };
 
 export default nextConfig;

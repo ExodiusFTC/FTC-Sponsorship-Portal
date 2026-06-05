@@ -4,15 +4,15 @@ test.describe('Public pages (no auth required)', () => {
   test('landing page shows hero and CTAs', async ({ page }) => {
     await page.goto('/')
     await expect(page.locator('h1')).toBeVisible()
-    await expect(page.getByRole('link', { name: /coaches/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /become a sponsor/i })).toBeVisible()
+    await expect(page.getByRole('link', { name: /open portal/i })).toBeVisible()
+    await expect(page.getByRole('link', { name: /sponsor a team/i })).toBeVisible()
   })
 
   test('landing page links to /signup and /sponsors/apply', async ({ page }) => {
     await page.goto('/')
-    const coachLink = page.getByRole('link', { name: /coaches/i })
+    const coachLink = page.getByRole('link', { name: /open portal/i })
     await expect(coachLink).toHaveAttribute('href', '/signup')
-    const sponsorLink = page.getByRole('link', { name: /become a sponsor/i })
+    const sponsorLink = page.getByRole('link', { name: /sponsor a team/i })
     await expect(sponsorLink).toHaveAttribute('href', '/sponsors/apply')
   })
 
@@ -29,7 +29,7 @@ test.describe('Public pages (no auth required)', () => {
 
   test('sponsor application page renders form', async ({ page }) => {
     await page.goto('/sponsors/apply')
-    await expect(page.getByRole('heading', { name: /become a sponsor/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /sponsor registration/i })).toBeVisible()
     await expect(page.getByLabel(/company name/i)).toBeVisible()
     await expect(page.getByLabel(/contact name/i)).toBeVisible()
     await expect(page.getByLabel(/contact email/i)).toBeVisible()
