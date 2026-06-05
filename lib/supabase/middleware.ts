@@ -37,6 +37,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/login') ||
     pathname.startsWith('/signup') ||
     pathname.startsWith('/verify-email') ||
+    pathname.startsWith('/forgot-password') ||
     pathname.startsWith('/mfa')
 
   const isPublicRoute =
@@ -44,6 +45,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/legal') ||
     pathname.startsWith('/sponsors/apply') ||
     pathname.startsWith('/sponsor-view/') ||
+    pathname.startsWith('/reset-password') ||
     pathname.startsWith('/auth/')
 
   // API routes for admin must reject unauthenticated callers at the edge
