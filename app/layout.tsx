@@ -30,7 +30,7 @@ export default function RootLayout({
       lang="en" 
       className={`${inter.variable} ${jetbrainsMono.variable}`} 
       style={{ 
-        // @ts-ignore
+        // @ts-expect-error CSS custom properties are not in React.CSSProperties
         '--accent-text-dark': ACCENT_DARK_TEXT,
         '--accent-globe-dark': ACCENT_DARK_GLOBE,
         '--accent-text-light': ACCENT_LIGHT_TEXT,

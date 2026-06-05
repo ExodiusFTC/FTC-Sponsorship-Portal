@@ -1,3 +1,5 @@
+import { RichText } from '@/components/ui/rich-text'
+
 interface Props {
   technicalSummary: string | null
   drivetrain: string | null
@@ -26,7 +28,7 @@ export function RobotBlock({ technicalSummary, drivetrain, buildSystem, programm
         <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">The Robot</span>
       </div>
       <div className="md:col-span-8 md:col-start-5 space-y-4">
-        <p className="text-base leading-relaxed text-foreground/80">{technicalSummary}</p>
+        <RichText html={technicalSummary} className="text-base leading-relaxed text-foreground/80" />
         {chips.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {chips.map((c) => <Chip key={c} label={c} />)}

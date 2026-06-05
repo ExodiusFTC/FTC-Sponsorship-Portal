@@ -64,7 +64,7 @@ export default async function DashboardPage() {
     redirect('/awaiting-verification')
   }
 
-  let currentTeam = initialTeam
+  const currentTeam = initialTeam
 
   // 3. Auto-Provisioning Logic
   if (!currentTeam && profile?.coach_verified) {

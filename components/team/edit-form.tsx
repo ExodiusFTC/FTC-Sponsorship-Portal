@@ -48,9 +48,14 @@ export function TeamEditForm({ team }: { team: Team }) {
       seedFundingGoalsCents: team.seed_funding_goals_cents ?? 0,
       technicalSummary: team.technical_summary ?? '',
       outreachSummary: team.outreach_summary ?? '',
-      mediaUrls: team.media_urls || [],
+      mediaUrls: (team.media_urls as string[] | null) || [],
       youtubeUrl: team.youtube_url ?? '',
-      budgetItems: team.budget_items || [],
+      budgetItems: ((team.budget_items as any[] | null) ?? []).map((item: any) => ({
+        label: item.label,
+        qty: item.qty,
+        unitCostCents: item.unit_cost_cents,
+        totalCents: item.total_cents,
+      })),
       financialAskCents: team.financial_ask_cents ?? 0,
     },
   })
@@ -149,7 +154,7 @@ export function TeamEditForm({ team }: { team: Team }) {
       />
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-8">
           <Card>
             <CardHeader>
               <CardTitle>Core Identity</CardTitle>

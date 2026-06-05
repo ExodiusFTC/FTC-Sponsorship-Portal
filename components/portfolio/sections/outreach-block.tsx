@@ -1,3 +1,5 @@
+import { RichText } from '@/components/ui/rich-text'
+
 interface Props {
   outreachSummary: string | null
   studentInterestCount: number | null
@@ -19,7 +21,7 @@ export function OutreachBlock({ outreachSummary, studentInterestCount }: Props) 
         ) : null}
       </div>
       <div className="md:col-span-8 md:col-start-5">
-        <p className="text-base leading-relaxed text-foreground/80">{outreachSummary}</p>
+        <RichText html={outreachSummary} className="text-base leading-relaxed text-foreground/80" />
       </div>
     </section>
   )

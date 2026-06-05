@@ -1,3 +1,5 @@
+import { RichText } from '@/components/ui/rich-text'
+
 interface Props {
   missionStatement: string | null
   communityInterestText: string | null
@@ -12,7 +14,7 @@ export function MissionBlock({ missionStatement, communityInterestText }: Props)
       </div>
       <div className="md:col-span-8 md:col-start-5">
         {missionStatement && (
-          <p className="text-xl font-medium leading-relaxed text-foreground">{missionStatement}</p>
+          <RichText html={missionStatement} className="text-xl font-medium leading-relaxed text-foreground" />
         )}
         {communityInterestText && (
           <p className="mt-4 text-base leading-relaxed text-foreground/70">{communityInterestText}</p>

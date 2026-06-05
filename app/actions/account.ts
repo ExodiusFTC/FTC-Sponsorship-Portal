@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { getClientIp, validateRateLimit, requireAuth } from '@/lib/actions-utils'
+import { env } from '@/lib/env'
 
 const updateProfileSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
@@ -192,13 +193,74 @@ export async function requestDataExport(): Promise<{ error?: string; message?: s
   const limit = await validateRateLimit(`data_export_${user.id}_${ip}`)
   if ('error' in limit) return limit
 
-  // In a full implementation this would queue an async job that emails the user
-  // a zip of their data when ready. For now, we acknowledge the request.
-  // The job would collect: profile, teams, submissions, notifications, audit entries.
-  return {
-    message:
-      'Your data export has been queued. You will receive an email at ' +
-      (user.email ?? 'your registered address') +
-      ' within 24 hours with a download link.',
+  if (!user.email) {
+    return { error: 'No email address is associated with your account.' }
   }
+
+  // Collect every record we hold for this user. (COPPA: the schema contains zero
+  // student PII, so this is the user's own coach/sponsor data only.)
+  const admin = createAdminClient()
+  const [profileRes, teamsRes, notificationsRes, auditRes] = await Promise.all([
+    admin.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+    admin.from('teams').select('*').eq('owner_id', user.id),
+    admin.from('notifications').select('*').eq('recipient_id', user.id),
+    admin.from('audit_log').select('*').eq('actor_id', user.id),
+  ])
+
+  const teamIds = (teamsRes.data ?? []).map((t) => t.id)
+  let submissions: unknown[] = []
+  if (teamIds.length > 0) {
+    const subRes = await admin.from('submissions').select('*').in('team_id', teamIds)
+    submissions = subRes.data ?? []
+  }
+
+  const exportPayload = {
+    generated_at: new Date().toISOString(),
+    account: { id: user.id, email: user.email },
+    profile: profileRes.data ?? null,
+    teams: teamsRes.data ?? [],
+    submissions,
+    notifications: notificationsRes.data ?? [],
+    audit_log: auditRes.data ?? [],
+  }
+  const json = JSON.stringify(exportPayload, null, 2)
+
+  // Email the export to the requester's own verified address. This is a self-service
+  // transactional email (not sponsor-facing), so it is not subject to the admin dispatch gate.
+  try {
+    const { Resend } = await import('resend')
+    const resend = new Resend(env.RESEND_API_KEY)
+    const { error: sendError } = await resend.emails.send({
+      from: env.RESEND_FROM_EMAIL,
+      to: user.email,
+      subject: 'Your FTC Sponsorship Portal data export',
+      text:
+        'Attached is a JSON export of the data we hold for your account, including your ' +
+        'profile, team portfolio, submissions, notifications, and activity log. ' +
+        'If you did not request this export, please contact support.',
+      attachments: [
+        {
+          filename: `ftc-portal-data-export-${new Date().toISOString().slice(0, 10)}.json`,
+          content: Buffer.from(json).toString('base64'),
+        },
+      ],
+    })
+    if (sendError) {
+      console.error('[data-export] Resend returned an error', sendError)
+      return { error: 'We could not send your export right now. Please try again later.' }
+    }
+  } catch (e) {
+    console.error('[data-export] send failed', e)
+    return { error: 'We could not send your export right now. Please try again later.' }
+  }
+
+  await admin.from('audit_log').insert({
+    actor_id: user.id,
+    action: 'data_export',
+    entity_type: 'profiles',
+    entity_id: user.id,
+    metadata: { delivered_to: user.email },
+  })
+
+  return { message: `Your data export has been emailed to ${user.email}.` }
 }

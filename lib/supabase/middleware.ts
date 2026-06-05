@@ -61,19 +61,37 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Admin routes require aal2 (TOTP verified). If the session is only aal1,
-  // redirect to the MFA challenge page which will redirect back after success.
+  // Admin routes require aal2 (TOTP verified). The gate is ROLE-AWARE so it can FORCE
+  // enrollment for an admin who never set up a factor (previously such admins bypassed MFA
+  // entirely, since the old gate only fired when a factor already existed). /sponsors/browse
+  // is a coach route sharing the /sponsors prefix; /sponsors/apply is public; /admin/security
+  // is the enrollment page and must stay reachable.
   const isAdminRoute =
     (pathname.startsWith('/admin') || pathname.startsWith('/moderation') ||
      pathname.startsWith('/coaches') || pathname.startsWith('/sponsors') ||
-     pathname.startsWith('/analytics') || pathname.startsWith('/settings')) &&
-    !pathname.startsWith('/sponsors/apply')
+     pathname.startsWith('/analytics') || pathname.startsWith('/applications') ||
+     pathname.startsWith('/settings')) &&
+    !pathname.startsWith('/sponsors/apply') &&
+    !pathname.startsWith('/sponsors/browse')
 
   if (user && isAdminRoute && !pathname.startsWith('/admin/security')) {
-    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
-    if (aal?.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
-      const next = encodeURIComponent(pathname)
-      return NextResponse.redirect(new URL(`/mfa?next=${next}`, request.url))
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.role === 'admin') {
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (aal?.currentLevel !== 'aal2') {
+        if (!aal?.nextLevel || aal.nextLevel === 'aal1') {
+          // No verified TOTP factor yet — force enrollment before any admin access.
+          return NextResponse.redirect(new URL('/admin/security?setup=1', request.url))
+        }
+        // Factor exists but the session is only aal1 — force the challenge.
+        const next = encodeURIComponent(pathname)
+        return NextResponse.redirect(new URL(`/mfa?next=${next}`, request.url))
+      }
     }
   }
 
