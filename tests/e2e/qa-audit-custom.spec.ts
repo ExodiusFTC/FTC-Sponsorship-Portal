@@ -346,9 +346,15 @@ test.describe('Exhaustive QA Audit Flow', () => {
         logBug('/moderation', 'RED', 'Submitted pitch not visible in Admin Review Queue')
       } else {
         console.log('[Flow] Pitch found in Admin Review Queue. Approving...');
-        const approveBtn = page.getByRole('button', { name: /Approve & Dispatch/i })
+        const approveBtn = page.getByRole('button', { name: 'Approve & Dispatch to Sponsor' })
         if (await approveBtn.isVisible()) {
           await approveBtn.click({ force: true })
+          await page.waitForTimeout(1000)
+          
+          const confirmBtn = page.getByRole('button', { name: 'Confirm — Approve & Dispatch' })
+          await expect(confirmBtn).toBeVisible()
+          await confirmBtn.click()
+
           // The approved pitch should leave the moderation queue
           await expect(page.getByText(alignmentText)).not.toBeVisible({ timeout: 15000 })
           console.log('[Flow] Pitch approved by Admin.');
