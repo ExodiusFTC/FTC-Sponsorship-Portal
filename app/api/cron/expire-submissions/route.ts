@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import crypto from 'crypto'
 import { env } from '@/lib/env'
+import { touchRedisKeepAlive } from '@/lib/rate-limit'
 import * as Sentry from '@sentry/nextjs'
 
 // Vercel cron: runs daily at 02:00 UTC (configure in vercel.json)
@@ -57,8 +58,12 @@ export async function GET(req: Request) {
       Sentry.captureException(cleanupError)
     }
 
-    console.log(`[cron] Expired ${expiredCount} submissions`)
-    return NextResponse.json({ expired: expiredCount })
+    // Keep Upstash Redis active — one daily request prevents 14-day inactivity
+    // archival. Non-fatal: a failed ping must never fail the expiry job.
+    const redisAlive = await touchRedisKeepAlive()
+
+    console.log(`[cron] Expired ${expiredCount} submissions (redis keep-alive: ${redisAlive})`)
+    return NextResponse.json({ expired: expiredCount, redisAlive })
   } catch (err) {
     console.error('[cron] unhandled error', err)
     Sentry.captureException(err)
