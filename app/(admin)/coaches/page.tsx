@@ -50,7 +50,7 @@ export default async function CoachesPage() {
       {/* Awaiting Verification */}
       <section className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-zinc-200 uppercase tracking-widest font-mono">
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-widest font-mono">
             Awaiting Verification
           </h2>
           {pending.length > 0 && (
@@ -60,7 +60,7 @@ export default async function CoachesPage() {
           )}
         </div>
         {pending.length === 0 ? (
-          <p className="text-sm text-zinc-500 py-4 border border-dashed border-zinc-800 rounded-xl text-center">
+          <p className="text-sm text-muted-foreground py-4 border border-dashed border-border rounded-xl text-center">
             No coaches pending verification.
           </p>
         ) : (
@@ -74,11 +74,11 @@ export default async function CoachesPage() {
 
       {/* Verified */}
       <section className="flex flex-col gap-4">
-        <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-widest font-mono">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest font-mono">
           Verified Coaches
         </h2>
         {verified.length === 0 ? (
-          <p className="text-sm text-zinc-600 py-4">No verified coaches yet.</p>
+          <p className="text-sm text-muted-foreground py-4">No verified coaches yet.</p>
         ) : (
           <div className="flex flex-col gap-3">
             {verified.map(coach => (
@@ -91,7 +91,7 @@ export default async function CoachesPage() {
       {/* No credentials */}
       {waiting.length > 0 && (
         <section className="flex flex-col gap-4">
-          <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-widest font-mono">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest font-mono">
             No Credentials Uploaded
           </h2>
           <div className="flex flex-col gap-3">

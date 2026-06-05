@@ -4,9 +4,9 @@ import { Badge } from '@/components/ui/badge'
 import { ApplicationActions } from '@/components/admin/application-actions'
 
 const STATUS_STYLE: Record<string, string> = {
-  pending:  'bg-amber-100 text-amber-800',
-  approved: 'bg-emerald-100 text-emerald-800',
-  rejected: 'bg-red-100 text-red-800',
+  pending:  'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40',
+  approved: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40',
+  rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40',
 }
 
 export default async function ApplicationsPage() {
@@ -21,7 +21,7 @@ export default async function ApplicationsPage() {
   const reviewed = applications?.filter(a => a.status !== 'pending') ?? []
 
   return (
-    <div className="container mx-auto py-8 space-y-8">
+    <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-3xl font-bold">Sponsor Applications</h1>
         <p className="text-muted-foreground">
@@ -33,7 +33,7 @@ export default async function ApplicationsPage() {
         <h2 className="text-lg font-semibold flex items-center gap-2">
           Pending Review
           {pending.length > 0 && (
-            <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">{pending.length}</Badge>
+            <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/40">{pending.length}</Badge>
           )}
         </h2>
         {pending.length === 0 ? (

@@ -203,6 +203,7 @@ export function LoginForm() {
                       <FormLabel className="text-foreground/80">Email Address</FormLabel>
                       <FormControl>
                         <Input 
+                          type="email"
                           className="bg-background border-border text-foreground placeholder:text-muted-foreground h-11" 
                           placeholder="coach@example.com" 
                           {...field} 

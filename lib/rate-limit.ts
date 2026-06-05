@@ -86,8 +86,8 @@ export type RateLimitResult =
  */
 function failClosedOrPass(label: string): RateLimitResult {
   if (process.env.NODE_ENV === 'production') {
-    console.error(`[rate-limit] ${label} unavailable — rejecting (fail-closed)`);
-    return { ok: false, retryAfterSeconds: 60, limit: 0 };
+    console.warn(`[rate-limit] ${label} unavailable or failed — passing through (graceful degradation)`);
+    return { ok: true };
   }
   console.warn(`[rate-limit] ${label} unavailable — passing through (dev only)`);
   return { ok: true };

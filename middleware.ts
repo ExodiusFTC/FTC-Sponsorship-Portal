@@ -3,14 +3,19 @@ import { updateSession } from '@/lib/supabase/middleware'
 import { globalLimiter } from '@/lib/rate-limit'
 
 export async function middleware(request: NextRequest) {
-  // Global IP rate limit — fail-closed if Redis unreachable in prod.
+  // Global IP rate limit — fail-open if Redis unreachable in prod (graceful degradation).
   if (process.env.NODE_ENV === 'production') {
     if (!globalLimiter) {
-      return new NextResponse('Service unavailable', { status: 503 })
+      console.warn('[middleware] globalLimiter unavailable — passing through (graceful degradation)')
+    } else {
+      try {
+        const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1'
+        const { success } = await globalLimiter.limit(ip)
+        if (!success) return new NextResponse('Too Many Requests', { status: 429 })
+      } catch (err) {
+        console.error('[middleware] globalLimiter request failed — passing through (graceful degradation):', err)
+      }
     }
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1'
-    const { success } = await globalLimiter.limit(ip)
-    if (!success) return new NextResponse('Too Many Requests', { status: 429 })
   }
   return updateSession(request)
 }
