@@ -71,12 +71,17 @@ function failClosedOrPass(label: string): RateLimitResult {
 
 export async function checkActionLimit(identifier: string = 'anonymous'): Promise<RateLimitResult> {
   if (!actionLimiter) return failClosedOrPass('actionLimiter');
-  const res = await actionLimiter.limit(identifier);
-  if (res.success) {
-    return { ok: true };
+  try {
+    const res = await actionLimiter.limit(identifier);
+    if (res.success) {
+      return { ok: true };
+    }
+    const retryAfterSeconds = Math.ceil((res.reset - Date.now()) / 1000);
+    return { ok: false, retryAfterSeconds: Math.max(0, retryAfterSeconds), limit: res.limit };
+  } catch (err) {
+    console.error('[rate-limit] actionLimiter request failed:', err);
+    return failClosedOrPass('actionLimiter');
   }
-  const retryAfterSeconds = Math.ceil((res.reset - Date.now()) / 1000);
-  return { ok: false, retryAfterSeconds: Math.max(0, retryAfterSeconds), limit: res.limit };
 }
 
 /**
@@ -85,10 +90,15 @@ export async function checkActionLimit(identifier: string = 'anonymous'): Promis
  */
 export async function checkAuthLimit(identifier: string): Promise<RateLimitResult> {
   if (!authLimiter) return failClosedOrPass('authLimiter');
-  const res = await authLimiter.limit(identifier);
-  if (res.success) {
-    return { ok: true };
+  try {
+    const res = await authLimiter.limit(identifier);
+    if (res.success) {
+      return { ok: true };
+    }
+    const retryAfterSeconds = Math.ceil((res.reset - Date.now()) / 1000);
+    return { ok: false, retryAfterSeconds: Math.max(0, retryAfterSeconds), limit: res.limit };
+  } catch (err) {
+    console.error('[rate-limit] authLimiter request failed:', err);
+    return failClosedOrPass('authLimiter');
   }
-  const retryAfterSeconds = Math.ceil((res.reset - Date.now()) / 1000);
-  return { ok: false, retryAfterSeconds: Math.max(0, retryAfterSeconds), limit: res.limit };
 }

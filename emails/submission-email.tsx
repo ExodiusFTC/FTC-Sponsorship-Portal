@@ -3,6 +3,13 @@ import {
   Heading, Text, Hr, Img, Button, Row, Column,
 } from '@react-email/components'
 import * as React from 'react'
+import DOMPurify from 'isomorphic-dompurify'
+
+// Rich-text fields are stored as sanitized HTML. Sanitize again on render (defense in depth)
+// and strip tags where we need a short plaintext preview.
+const sanitizeHtml = (s: string | null | undefined) => DOMPurify.sanitize(s ?? '')
+const stripTags = (s: string | null | undefined) =>
+  (s ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
 
 interface BudgetItem {
   label: string
@@ -86,7 +93,7 @@ export default function SubmissionEmail({
           <Section style={summaryBox}>
             {missionStatement && (
               <Text style={text}>
-                {missionStatement.slice(0, 300)}{missionStatement.length > 300 ? '…' : ''}
+                {stripTags(missionStatement).slice(0, 300)}{stripTags(missionStatement).length > 300 ? '…' : ''}
               </Text>
             )}
             <Text style={{ ...text, marginTop: '8px' }}>
@@ -99,12 +106,12 @@ export default function SubmissionEmail({
           {/* Custom pitch */}
           <Section style={pitchBox}>
             <Heading style={h2}>Why We Align With You</Heading>
-            <Text style={text}>{customPitchAlignment}</Text>
+            <div style={text} dangerouslySetInnerHTML={{ __html: sanitizeHtml(customPitchAlignment) }} />
           </Section>
 
           <Section style={{ marginTop: '16px' }}>
             <Heading style={h2}>Our Specific Needs</Heading>
-            <Text style={text}>{specificNeedsStatement}</Text>
+            <div style={text} dangerouslySetInnerHTML={{ __html: sanitizeHtml(specificNeedsStatement) }} />
           </Section>
 
           <Hr style={hr} />
@@ -114,13 +121,13 @@ export default function SubmissionEmail({
           {technicalSummary && (
             <Section style={{ marginBottom: '12px' }}>
               <Text style={label}>Technical Summary</Text>
-              <Text style={text}>{technicalSummary}</Text>
+              <div style={text} dangerouslySetInnerHTML={{ __html: sanitizeHtml(technicalSummary) }} />
             </Section>
           )}
           {outreachSummary && (
             <Section style={{ marginBottom: '12px' }}>
               <Text style={label}>Community Outreach</Text>
-              <Text style={text}>{outreachSummary}</Text>
+              <div style={text} dangerouslySetInnerHTML={{ __html: sanitizeHtml(outreachSummary) }} />
             </Section>
           )}
 

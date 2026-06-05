@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { createHash } from 'crypto'
 import { SponsorDecisionPanel } from '@/components/sponsor/sponsor-decision-panel'
 import { Badge } from '@/components/ui/badge'
+import { RichText } from '@/components/ui/rich-text'
 
 interface Props {
   params: Promise<{ token: string }>
@@ -88,9 +89,9 @@ export default async function SponsorViewPage({ params }: Props) {
         {/* Custom Pitch */}
         <div className="bg-card rounded-xl border p-8 shadow-sm space-y-4">
           <h2 className="text-lg font-semibold text-foreground">Why We Align With You</h2>
-          <p className="text-muted-foreground leading-relaxed">{String(submission.custom_pitch_alignment ?? '')}</p>
+          <RichText html={submission.custom_pitch_alignment} className="text-muted-foreground leading-relaxed" />
           <h2 className="text-lg font-semibold text-foreground pt-2">Our Specific Needs</h2>
-          <p className="text-muted-foreground leading-relaxed">{String(submission.specific_needs_statement ?? '')}</p>
+          <RichText html={submission.specific_needs_statement} className="text-muted-foreground leading-relaxed" />
         </div>
 
         {/* Portfolio */}
@@ -102,19 +103,19 @@ export default async function SponsorViewPage({ params }: Props) {
           {team.mission_statement && (
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Mission</p>
-              <p className="text-foreground leading-relaxed">{String(team.mission_statement)}</p>
+              <RichText html={String(team.mission_statement)} className="text-foreground leading-relaxed" />
             </div>
           )}
           {team.technical_summary && (
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Technical</p>
-              <p className="text-foreground leading-relaxed">{String(team.technical_summary)}</p>
+              <RichText html={String(team.technical_summary)} className="text-foreground leading-relaxed" />
             </div>
           )}
           {team.outreach_summary && (
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Outreach</p>
-              <p className="text-foreground leading-relaxed">{String(team.outreach_summary)}</p>
+              <RichText html={String(team.outreach_summary)} className="text-foreground leading-relaxed" />
             </div>
           )}
           {team.youtube_url && (() => { try { const h = new URL(String(team.youtube_url)).hostname.toLowerCase(); return h === 'youtu.be' || h.endsWith('youtube.com') } catch { return false } })() && (

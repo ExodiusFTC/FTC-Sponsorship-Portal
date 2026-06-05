@@ -48,6 +48,7 @@ export default async function AnalyticsPage() {
 
   const statusCounts: Record<string, number> = {}
   for (const s of submissionSummary ?? []) {
+    if (!s.status) continue
     statusCounts[s.status] = (statusCounts[s.status] ?? 0) + 1
   }
   const totalSubmissions = submissionSummary?.length ?? 0

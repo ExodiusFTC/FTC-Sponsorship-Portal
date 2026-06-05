@@ -141,12 +141,12 @@ export function InsightsTab({
     let total = 0
     const sortedApproved = filteredSubmissions
       .filter(s => s.status === 'approved')
-      .sort((a, b) => new Date(a.updated_at || a.created_at).getTime() - new Date(b.updated_at || b.created_at).getTime())
+      .sort((a, b) => new Date((a.updated_at || a.created_at) ?? 0).getTime() - new Date((b.updated_at || b.created_at) ?? 0).getTime())
     
     return sortedApproved.map(s => {
       total += (team.financial_ask_cents || 0) / 100
       return {
-        date: new Date(s.updated_at || s.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        date: new Date((s.updated_at || s.created_at) ?? 0).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
         amount: total
       }
     })
