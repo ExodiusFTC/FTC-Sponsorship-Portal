@@ -29,7 +29,8 @@ test.describe('Public pages (no auth required)', () => {
 
   test('sponsor application page renders form', async ({ page }) => {
     await page.goto('/sponsors/apply')
-    await expect(page.getByRole('heading', { name: /sponsor registration/i })).toBeVisible()
+    // "Sponsor Registration" is rendered via shadcn CardTitle (a <div>), not a heading element.
+    await expect(page.getByText(/sponsor registration/i)).toBeVisible()
     await expect(page.getByLabel(/company name/i)).toBeVisible()
     await expect(page.getByLabel(/contact name/i)).toBeVisible()
     await expect(page.getByLabel(/contact email/i)).toBeVisible()

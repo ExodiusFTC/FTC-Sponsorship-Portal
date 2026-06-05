@@ -81,20 +81,25 @@ export type RateLimitResult =
   | { ok: false; retryAfterSeconds: number; limit: number }
 
 /**
- * Utility function to check limits inside server actions.
- * If Upstash isn't configured (e.g., local dev without keys), it bypasses the limit.
+ * Fallback when a limiter is unavailable (Upstash not configured) or a
+ * `.limit()` call throws.
+ *
+ * ⚠️ This fails OPEN — it passes the request through in ALL environments,
+ * including production. This is a deliberate availability tradeoff ("graceful
+ * degradation") so a Redis outage doesn't take down auth/actions. The cost is
+ * that rate limits — including auth brute-force protection — are NOT enforced
+ * while Upstash is unavailable. If a security-sensitive limiter should instead
+ * fail CLOSED, return `{ ok: false, retryAfterSeconds: 60, limit: 0 }` here for
+ * production.
  */
-function failClosedOrPass(label: string): RateLimitResult {
-  if (process.env.NODE_ENV === 'production') {
-    console.warn(`[rate-limit] ${label} unavailable or failed — passing through (graceful degradation)`);
-    return { ok: true };
-  }
-  console.warn(`[rate-limit] ${label} unavailable — passing through (dev only)`);
+function degradeOpen(label: string): RateLimitResult {
+  const context = process.env.NODE_ENV === 'production' ? 'graceful degradation' : 'dev only';
+  console.warn(`[rate-limit] ${label} unavailable or failed — passing through (${context})`);
   return { ok: true };
 }
 
 export async function checkActionLimit(identifier: string = 'anonymous'): Promise<RateLimitResult> {
-  if (!actionLimiter) return failClosedOrPass('actionLimiter');
+  if (!actionLimiter) return degradeOpen('actionLimiter');
   try {
     const res = await actionLimiter.limit(identifier);
     if (res.success) {
@@ -104,7 +109,7 @@ export async function checkActionLimit(identifier: string = 'anonymous'): Promis
     return { ok: false, retryAfterSeconds: Math.max(0, retryAfterSeconds), limit: res.limit };
   } catch (err) {
     console.error('[rate-limit] actionLimiter request failed:', err);
-    return failClosedOrPass('actionLimiter');
+    return degradeOpen('actionLimiter');
   }
 }
 
@@ -113,7 +118,7 @@ export async function checkActionLimit(identifier: string = 'anonymous'): Promis
  * Keys off email+IP to resist both single-origin and distributed stuffing.
  */
 export async function checkAuthLimit(identifier: string): Promise<RateLimitResult> {
-  if (!authLimiter) return failClosedOrPass('authLimiter');
+  if (!authLimiter) return degradeOpen('authLimiter');
   try {
     const res = await authLimiter.limit(identifier);
     if (res.success) {
@@ -123,6 +128,6 @@ export async function checkAuthLimit(identifier: string): Promise<RateLimitResul
     return { ok: false, retryAfterSeconds: Math.max(0, retryAfterSeconds), limit: res.limit };
   } catch (err) {
     console.error('[rate-limit] authLimiter request failed:', err);
-    return failClosedOrPass('authLimiter');
+    return degradeOpen('authLimiter');
   }
 }

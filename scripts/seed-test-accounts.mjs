@@ -49,43 +49,27 @@ function section(title) { console.log(`\n── ${title} ──`) }
 async function wipeUsers() {
   section('Wiping public tables & existing users')
 
-  // Clean up dependent tables first to avoid foreign key constraint violations
-  try {
-    await admin.from('transactions_ledger').delete().filter('id', 'not.is', null)
-    log('Cleared transactions_ledger')
-  } catch (e) {}
-  try {
-    await admin.from('notifications').delete().filter('id', 'not.is', null)
-    log('Cleared notifications')
-  } catch (e) {}
-  try {
-    await admin.from('submission_access_tokens').delete().filter('id', 'not.is', null)
-    log('Cleared submission_access_tokens')
-  } catch (e) {}
-  try {
-    await admin.from('pitch_sponsor_targets').delete().filter('id', 'not.is', null)
-    log('Cleared pitch_sponsor_targets')
-  } catch (e) {}
-  try {
-    await admin.from('submissions').delete().filter('id', 'not.is', null)
-    log('Cleared submissions')
-  } catch (e) {}
-  try {
-    await admin.from('pitches').delete().filter('id', 'not.is', null)
-    log('Cleared pitches')
-  } catch (e) {}
-  try {
-    await admin.from('team_achievements').delete().filter('id', 'not.is', null)
-    log('Cleared team_achievements')
-  } catch (e) {}
-  try {
-    await admin.from('teams').delete().filter('id', 'not.is', null)
-    log('Cleared teams')
-  } catch (e) {}
-  try {
-    await admin.from('profiles').delete().filter('id', 'not.is', null)
-    log('Cleared profiles')
-  } catch (e) {}
+  // Clean up dependent tables first to avoid foreign key constraint violations.
+  // Order matters: children before parents. Surface errors instead of swallowing
+  // them — a silently-failed delete leaves the DB in a partial state that produces
+  // confusing downstream seed failures. (Supabase .delete() returns an error object
+  // rather than throwing, so we check `error` directly.)
+  const tablesToClear = [
+    'transactions_ledger',
+    'notifications',
+    'submission_access_tokens',
+    'pitch_sponsor_targets',
+    'submissions',
+    'pitches',
+    'team_achievements',
+    'teams',
+    'profiles',
+  ]
+  for (const table of tablesToClear) {
+    const { error } = await admin.from(table).delete().filter('id', 'not.is', null)
+    if (error) warn(`Could not clear ${table}: ${error.message}`)
+    else log(`Cleared ${table}`)
+  }
 
   const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 })
   if (error) throw new Error(`listUsers failed: ${error.message}`)

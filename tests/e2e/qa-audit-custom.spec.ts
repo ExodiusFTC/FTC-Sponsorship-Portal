@@ -84,7 +84,13 @@ let adminMfaSecret = ''
 test.describe('Exhaustive QA Audit Flow', () => {
   test.setTimeout(300000) // 5 minutes for the whole flow
 
-  test('Perform Comprehensive Web App Testing', async ({ page }) => {
+  test('Perform Comprehensive Web App Testing', async ({ page }, testInfo) => {
+    // This audit mutates shared DB state (MFA enrollment is one-shot, the cross-persona
+    // flow seeds/approves submissions) and writes a single results file. Running it across
+    // all configured browser projects in parallel collides on that shared state, so pin it
+    // to one project.
+    test.skip(testInfo.project.name !== 'chromium', 'Single-project audit (shared DB/MFA state)')
+
     setupPageListeners(page)
 
     // ==========================================
@@ -392,7 +398,16 @@ test.describe('Exhaustive QA Audit Flow', () => {
       bugs: qaBugs,
       logs: consoleLogs
     }
+    fs.mkdirSync('test-results', { recursive: true })
     fs.writeFileSync('test-results/qa-audit-raw-results.json', JSON.stringify(results, null, 2))
     console.log('QA Audit test run completed. Results written to test-results/qa-audit-raw-results.json');
+
+    // Fail the test if the audit detected any RED-severity issues. Without this the run
+    // reports green even when pages crash or the cross-persona flow fails, defeating the audit.
+    const redBugs = qaBugs.filter(b => b.type === 'RED')
+    expect(
+      redBugs,
+      `QA audit found ${redBugs.length} RED issue(s):\n${redBugs.map(b => `  - [${b.page}] ${b.desc}${b.details ? ` (${b.details})` : ''}`).join('\n')}`
+    ).toHaveLength(0)
   })
 })

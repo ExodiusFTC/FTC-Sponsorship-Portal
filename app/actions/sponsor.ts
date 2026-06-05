@@ -304,6 +304,7 @@ export async function approveSponsorApplication(applicationId: string) {
 
   revalidatePath('/sponsors')
   revalidatePath('/applications')
+  revalidatePath('/admin')
   return { success: true, sponsorId: sponsor.id }
 }
 
