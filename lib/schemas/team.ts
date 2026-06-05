@@ -66,8 +66,8 @@ export const teamOnboardingSchema = z.object({
     .max(40, 'State must be 40 characters or fewer')
     .regex(/^[A-Za-z][A-Za-z .'-]*$/, 'State can only contain letters, spaces, periods, apostrophes, and hyphens'),
   missionStatement: richTextField(
-    1, 1500,
-    'Mission statement is required',
+    50, 1500,
+    'Mission statement must be at least 50 characters',
     'Mission statement must be 1500 characters or fewer'
   ),
   taxStatus: z.enum(['501c3', 'School', 'None']),

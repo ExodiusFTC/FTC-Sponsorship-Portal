@@ -443,7 +443,7 @@ function FindSponsorsTab({ sponsors, submissions }: { sponsors: Sponsor[], submi
               // Check if there is an active submission (non-terminal)
               const activeSub = submissions.find(sub =>
                 sub.sponsor_id === s.id &&
-                !['declined', 'expired', 'bounced'].includes(sub.status)
+                !['declined', 'expired', 'bounced'].includes(sub.status ?? '')
               )
 
               return (
@@ -597,7 +597,7 @@ function SubmissionsTab({ submissions, switchTab }: { submissions: SubmissionSum
       {/* List */}
       <div className="rounded-xl border border-border bg-card/60 divide-y divide-border">
         {filtered.map(s => {
-          const isEditable = ['draft', 'declined', 'changes_requested'].includes(s.status)
+          const isEditable = ['draft', 'declined', 'changes_requested'].includes(s.status ?? '')
           const expanded = expandedId === s.id
           return (
             <div key={s.id} className="transition-colors hover:bg-zinc-900/20">
@@ -612,9 +612,9 @@ function SubmissionsTab({ submissions, switchTab }: { submissions: SubmissionSum
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-zinc-100 truncate">{s.company_name}</div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <StatusChip status={s.status} />
+                      <StatusChip status={s.status ?? 'draft'} />
                       <span className="text-[10px] text-zinc-600" suppressHydrationWarning>
-                        {new Date(s.updated_at).toLocaleDateString()}
+                        {new Date(s.updated_at ?? 0).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
@@ -659,7 +659,7 @@ function SubmissionsTab({ submissions, switchTab }: { submissions: SubmissionSum
                           <span className="font-semibold text-amber-400">Admin feedback: </span>{s.admin_feedback}
                         </div>
                       )}
-                      {s.requested_amount_cents !== undefined && (
+                      {s.requested_amount_cents != null && (
                         <div className="text-xs text-zinc-500">
                           Ask: <span className="text-zinc-300 font-mono">${(s.requested_amount_cents / 100).toLocaleString()}</span>
                         </div>
@@ -890,7 +890,7 @@ function DraftsTab({ submissions }: { submissions: SubmissionSummary[] }) {
             <div className="min-w-0 flex-1">
               <p className="font-medium text-foreground truncate">{draft.company_name}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Saved {new Date(draft.updated_at).toLocaleDateString()}
+                Saved {new Date(draft.updated_at ?? 0).toLocaleDateString()}
               </p>
             </div>
             <Link

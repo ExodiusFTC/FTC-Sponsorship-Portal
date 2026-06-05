@@ -19,7 +19,7 @@ export async function requireAuth() {
 
 export async function requireAdmin() {
   const { supabase, user } = await requireAuth()
-  
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
@@ -28,6 +28,15 @@ export async function requireAdmin() {
 
   if (profile?.role !== 'admin') {
     throw new Error('Forbidden')
+  }
+
+  // Defense in depth: sensitive admin actions and the admin API routes require a
+  // TOTP-verified (aal2) session, not just the admin role. This closes the gap where
+  // an admin with only a password (aal1) could invoke admin server actions / APIs that
+  // the page-level MFA gate does not cover.
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+  if (aal?.currentLevel !== 'aal2') {
+    throw new Error('Two-factor authentication is required for admin actions. Please complete MFA setup in Security settings.')
   }
 
   return { supabase, user, adminClient: createAdminClient() }

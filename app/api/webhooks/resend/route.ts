@@ -94,19 +94,46 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, matched: false })
     }
 
-    await Promise.all([
-      supabase
+    // Idempotency: svix retries deliver the same (email_id, type) repeatedly. If we have
+    // already recorded this exact event, skip — never double-process or append dup audit rows.
+    const { data: alreadyProcessed } = await supabase
+      .from('audit_log')
+      .select('id')
+      .eq('action', `resend_webhook_${type}`)
+      .eq('entity_id', submissionId)
+      .contains('metadata', { resend_email_id: data.email_id })
+      .maybeSingle()
+
+    if (alreadyProcessed) {
+      return NextResponse.json({ success: true, duplicate: true })
+    }
+
+    if (type === 'email.bounced') {
+      // A bounce releases the reservation back to the sponsor's cap — but the RPC is
+      // guarded to live states only, so it can NEVER revert a funded ('approved') deal. (C-1)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).rpc('release_submission_reservation', {
+        p_submission_id: submissionId,
+        p_new_status: 'bounced',
+        p_reason: 'email_bounced',
+      })
+    } else {
+      // delivered / opened are tracking-only; guard so a late event never overwrites a
+      // terminal state (approved / declined / expired / bounced / changes_requested).
+      await supabase
         .from('submissions')
-        .update({ status: newStatus as any })
-        .eq('id', submissionId),
-      supabase.from('audit_log').insert({
-        actor_id: null,
-        action: `resend_webhook_${type}`,
-        entity_type: 'submissions',
-        entity_id: submissionId,
-        metadata: { resend_email_id: data.email_id, webhook_type: type, new_status: newStatus },
-      }),
-    ])
+        .update({ status: newStatus as never })
+        .eq('id', submissionId)
+        .in('status', ['dispatched', 'delivered', 'opened'])
+    }
+
+    await supabase.from('audit_log').insert({
+      actor_id: null,
+      action: `resend_webhook_${type}`,
+      entity_type: 'submissions',
+      entity_id: submissionId,
+      metadata: { resend_email_id: data.email_id, webhook_type: type, new_status: newStatus },
+    })
 
     return NextResponse.json({ success: true, matched: true, status: newStatus })
   } catch (error) {

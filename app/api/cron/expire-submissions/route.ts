@@ -32,12 +32,11 @@ export async function GET(req: Request) {
   const supabase = createAdminClient()
 
   try {
-    const { data: expired, error } = await supabase
-      .from('submissions')
-      .update({ status: 'expired' as never })
-      .eq('status', 'approved')
-      .lt('expires_at', new Date().toISOString())
-      .select('id')
+    // Expire only the awaiting-sponsor states (dispatched/delivered/opened) and release
+    // each reservation back to the sponsor's cap. Funded ('approved') rows are never
+    // touched — the release RPC is guarded to live states only. (Fixes C-2.)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: expireResult, error } = await (supabase as any).rpc('expire_overdue_submissions')
 
     if (error) {
       console.error('[cron] expire-submissions error', error)
@@ -45,19 +44,21 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // Clean up expired access tokens (H9)
+    const expiredCount = (expireResult as { expired?: number } | null)?.expired ?? 0
+
+    // Clean up long-expired access tokens (30-day grace).
     const { error: cleanupError } = await supabase
       .from('submission_access_tokens')
       .delete()
       .lt('expires_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
-      
+
     if (cleanupError) {
       console.error('[cron] cleanup-tokens error', cleanupError)
       Sentry.captureException(cleanupError)
     }
 
-    console.log(`[cron] Expired ${expired?.length ?? 0} submissions`)
-    return NextResponse.json({ expired: expired?.length ?? 0 })
+    console.log(`[cron] Expired ${expiredCount} submissions`)
+    return NextResponse.json({ expired: expiredCount })
   } catch (err) {
     console.error('[cron] unhandled error', err)
     Sentry.captureException(err)

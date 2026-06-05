@@ -104,11 +104,21 @@ export function SponsorDecisionPanel({ token, totalAskCents, teamName }: Props) 
                 className="rounded-l-none"
               />
             </div>
+            {parseFloat(partialAmount) * 100 > totalAskCents && (
+              <p className="text-xs text-amber-600">
+                A partial offer can&apos;t exceed the full request of {totalDisplay}.
+              </p>
+            )}
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep('choose')} disabled={isPending}>Back</Button>
               <Button
                 className="bg-green-600 hover:bg-green-700 text-white"
-                disabled={isPending || !partialAmount || parseFloat(partialAmount) <= 0}
+                disabled={
+                  isPending ||
+                  !partialAmount ||
+                  parseFloat(partialAmount) <= 0 ||
+                  Math.round(parseFloat(partialAmount) * 100) > totalAskCents
+                }
                 onClick={() => submit('partial', Math.round(parseFloat(partialAmount) * 100))}
               >
                 Confirm Partial Offer

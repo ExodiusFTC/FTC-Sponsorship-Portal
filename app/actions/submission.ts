@@ -77,6 +77,29 @@ export async function saveSubmission(
   const season = getCurrentSeasonLabel()
   const financialAsk = (await supabase.from('teams').select('financial_ask_cents').eq('id', teamId).single()).data?.financial_ask_cents ?? 0
 
+  // Block submission if the total ask exceeds the targeted sponsor's remaining capacity, so
+  // coaches get immediate feedback instead of an opaque rejection at admin review. RLS already
+  // hides exhausted/inactive sponsors, so a null row here also means "not accepting".
+  if (status === 'pending') {
+    const { data: sponsor } = await supabase
+      .from('sponsors')
+      .select('funding_cap_cents, funding_used_cents, status')
+      .eq('id', data.sponsorId)
+      .single()
+
+    if (!sponsor || sponsor.status !== 'active') {
+      return { error: 'This sponsor is not currently accepting new submissions.' }
+    }
+
+    const remaining = (sponsor.funding_cap_cents ?? 0) - (sponsor.funding_used_cents ?? 0)
+    if (financialAsk > remaining) {
+      const fmt = (cents: number) => `$${(cents / 100).toLocaleString('en-US')}`
+      return {
+        error: `Your total ask (${fmt(financialAsk)}) exceeds this sponsor's remaining capacity (${fmt(Math.max(0, remaining))}). Lower your ask or choose another sponsor.`,
+      }
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const payload: any = {
     team_id: teamId,

@@ -50,7 +50,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
       programming: (team as any).programming || '',
       mediaUrls: team.media_urls || [],
       youtubeUrl: team.youtube_url || '',
-      budgetItems: team.budget_items?.map((item: any) => ({
+      budgetItems: (team.budget_items as any[] | null)?.map((item: any) => ({
         label: item.label,
         qty: item.qty,
         unitCostCents: item.unit_cost_cents,

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { HeroBlock } from '@/components/portfolio/sections/hero-block'
 import { MissionBlock } from '@/components/portfolio/sections/mission-block'
 import { RobotBlock } from '@/components/portfolio/sections/robot-block'
@@ -69,15 +70,15 @@ export default async function PublicTeamPortfolio({ params }: Props) {
       {/* Nav */}
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur-md print:hidden">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-6 py-3">
-          <a href="/" className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground transition-colors">
+          <Link href="/" className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground transition-colors">
             Matchmaker
-          </a>
-          <a
+          </Link>
+          <Link
             href="/sponsors/apply"
             className="inline-flex h-8 items-center gap-1.5 rounded-full bg-foreground px-4 text-xs font-medium text-background hover:-translate-y-px transition-all"
           >
             Sponsor this team
-          </a>
+          </Link>
         </div>
       </header>
 

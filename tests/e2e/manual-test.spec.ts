@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { writeFileSync } from 'node:fs';
 
 test('Golden Path E2E Test', async ({ page }) => {
   test.setTimeout(120000);
@@ -18,8 +19,8 @@ test('Golden Path E2E Test', async ({ page }) => {
     await page.click('text=Pitch this sponsor');
   } catch (e) {
     const html = await page.content();
-    require('fs').writeFileSync('scratch/failed-html.html', html);
-    console.log("FAILED TO FIND SPONSOR. Saved HTML to scratch/failed-html.html");
+    writeFileSync('test-results/failed-html.html', html);
+    console.log("FAILED TO FIND SPONSOR. Saved HTML to test-results/failed-html.html");
     throw e;
   }
   
