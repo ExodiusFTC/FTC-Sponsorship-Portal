@@ -299,6 +299,7 @@ export async function signIn(data: LoginInput) {
   })
 
   if (error) {
+    console.error('Supabase signIn error:', error.message, error.name, error.status)
     return { error: 'Invalid email or password.' }
   }
 

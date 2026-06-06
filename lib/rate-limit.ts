@@ -99,6 +99,9 @@ function degradeOpen(label: string): RateLimitResult {
 }
 
 export async function checkActionLimit(identifier: string = 'anonymous'): Promise<RateLimitResult> {
+  if (process.env.NODE_ENV !== 'production') {
+    return { ok: true };
+  }
   if (!actionLimiter) return degradeOpen('actionLimiter');
   try {
     const res = await actionLimiter.limit(identifier);
@@ -118,6 +121,9 @@ export async function checkActionLimit(identifier: string = 'anonymous'): Promis
  * Keys off email+IP to resist both single-origin and distributed stuffing.
  */
 export async function checkAuthLimit(identifier: string): Promise<RateLimitResult> {
+  if (process.env.NODE_ENV !== 'production') {
+    return { ok: true };
+  }
   if (!authLimiter) return degradeOpen('authLimiter');
   try {
     const res = await authLimiter.limit(identifier);
