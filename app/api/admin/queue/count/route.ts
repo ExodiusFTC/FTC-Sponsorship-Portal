@@ -29,7 +29,7 @@ export async function GET(req: Request) {
 
   const { count, error } = await supabase
     .from('submissions')
-    .select('id', { count: 'planned', head: true })
+    .select('id', { count: 'exact', head: true })
     .eq('status', 'pending')
 
   if (error) {

@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const code = searchParams.get('code')
   const token_hash = searchParams.get('token_hash')
   const type = searchParams.get('type') as EmailOtpType | null
-  const next = searchParams.get('next') ?? '/'
+  const next = sanitizeNext(searchParams.get('next'))
 
   const supabase = await createClient()
 
@@ -29,6 +29,16 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+}
+
+// Only allow same-origin relative paths as the post-auth destination. Rejects
+// absolute URLs, protocol-relative (`//host`), backslash tricks, and userinfo
+// injection (`@evil.com` would turn `https://host` + next into `https://host@evil.com`).
+function sanitizeNext(next: string | null): string {
+  if (!next || !next.startsWith('/') || next.startsWith('//') || next.startsWith('/\\')) {
+    return '/'
+  }
+  return next
 }
 
 function buildRedirect(origin: string, request: Request, next: string) {

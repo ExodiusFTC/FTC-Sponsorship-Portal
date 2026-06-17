@@ -24,8 +24,15 @@ const CSV_HEADERS = [
 
 function escapeCell(value: unknown): string {
   if (value === null || value === undefined) return ''
-  const str = String(value)
-  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+  let str = String(value)
+  // CSV formula-injection defense: a cell beginning with = + - @ (or tab/CR) is
+  // interpreted as a formula by Excel/Sheets. Prefix with a tab so the spreadsheet
+  // treats it as literal text. Field values here are attacker-influenced (team /
+  // company names, free-text pitch fields) and admins open this file locally.
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `\t${str}`
+  }
+  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
     return `"${str.replace(/"/g, '""')}"`
   }
   return str

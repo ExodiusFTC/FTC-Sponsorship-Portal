@@ -6,7 +6,6 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   // Supabase (server-only)
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  SUPABASE_POOLER_URL: z.string().url().optional(),
   // Resend
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.string().email(),
@@ -42,21 +41,31 @@ const envSchema = z.object({
   }
 })
 
-// In development, missing vars warn instead of crashing.
-// In production (VERCEL=1), missing vars throw at startup.
+// Validation policy:
+// - Development: missing vars warn instead of crashing.
+// - Production runtime (serverless function handling a request): missing vars throw
+//   immediately so a misconfigured deploy fails fast and loudly.
+// - Production BUILD phase (`next build`): runtime-only secrets (service role, Resend,
+//   Upstash, cron) are injected at request time on Vercel and are NOT needed to render
+//   static pages. Throwing here would crash `collect page data` with a cryptic error on
+//   an unrelated route (e.g. /sitemap.xml). So during the build phase we warn and defer
+//   the hard check to runtime.
+const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build'
+
 function parseEnv() {
   const result = envSchema.safeParse(process.env)
   if (!result.success) {
     const missing = result.error.issues.map((i) => i.path.join('.')).join(', ')
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === 'production' && !isBuildPhase) {
       throw new Error(`Missing required environment variables: ${missing}`)
     }
-    console.warn(`[env] Missing variables (OK in dev): ${missing}`)
-    // Return partial object for dev — individual fields will be undefined
+    console.warn(`[env] Missing variables (${isBuildPhase ? 'deferred to runtime during build' : 'OK in dev'}): ${missing}`)
+    // Return partial object — individual fields will be undefined
     return process.env as unknown as z.infer<typeof envSchema>
   }
   if (
     process.env.NODE_ENV === 'production' &&
+    !isBuildPhase &&
     !result.data.RESEND_FROM_EMAIL.toLowerCase().startsWith('noreply@')
   ) {
     throw new Error('RESEND_FROM_EMAIL must use a noreply@ address in production.')

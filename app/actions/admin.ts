@@ -230,7 +230,7 @@ export async function approveSponsorApplication(applicationId: string) {
   if (fetchError || !app) return { error: 'Application not found' }
 
   // Create the sponsor record
-  const { error: insertError } = await adminClient.from('sponsors').insert({
+  const { data: newSponsor, error: insertError } = await adminClient.from('sponsors').insert({
     company_name: app.company_name,
     contact_name: app.contact_name,
     contact_email: app.contact_email,
@@ -239,13 +239,31 @@ export async function approveSponsorApplication(applicationId: string) {
     source: 'public_optin' as const,
     notes: app.message ?? null,
   })
+    .select('id')
+    .single()
 
-  if (insertError) return { error: insertError.message }
+  if (insertError || !newSponsor) return { error: insertError?.message ?? 'Failed to create sponsor' }
+
+  // Link the applicant's profile to the new sponsor so requireSponsor() admits them.
+  // Public opt-in applicants signed up via signUpSponsor (role='sponsor', sponsor_id=null);
+  // without this they would be locked out of the entire sponsor portal after approval.
+  // Match on the application contact email (same value the user signed up with).
+  if (app.contact_email) {
+    const { error: linkError } = await adminClient
+      .from('profiles')
+      .update({ sponsor_id: newSponsor.id } as never)
+      .eq('email', app.contact_email)
+      .eq('role', 'sponsor')
+
+    if (linkError) {
+      console.error('[approveSponsorApplication] failed to link profile to sponsor:', linkError)
+    }
+  }
 
   // Mark application as approved
   await adminClient
     .from('sponsor_applications')
-    .update({ status: 'approved' })
+    .update({ status: 'approved', approved_at: new Date().toISOString(), approved_by: user.id } as never)
     .eq('id', applicationId)
 
   await adminClient.from('audit_log').insert({

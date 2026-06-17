@@ -96,8 +96,11 @@ export function LoginForm() {
     setError(null)
     setRateLimitData(null)
     const result = await signIn(values)
-    if (result?.error === 'rate_limited' && 'retryAfterSeconds' in result) {
-      setRateLimitData({ retryAfterSeconds: result.retryAfterSeconds as number, limit: (result as { limit?: number }).limit || 0 })
+    // Auth rate limiting surfaces as { error: <message>, retryAfterSeconds }. Detect it by
+    // the presence of retryAfterSeconds (not a magic 'rate_limited' string, which signIn
+    // never returns) so the countdown notice renders instead of a plain error.
+    if (result?.error && 'retryAfterSeconds' in result && typeof result.retryAfterSeconds === 'number') {
+      setRateLimitData({ retryAfterSeconds: result.retryAfterSeconds, limit: (result as { limit?: number }).limit || 0 })
       setIsPending(false)
       return
     }

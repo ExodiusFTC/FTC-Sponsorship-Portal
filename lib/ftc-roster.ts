@@ -57,7 +57,7 @@ export async function validateFTCTeam(teamNumber: number): Promise<FTCTeam | nul
     .from('ftc_teams_cache')
     .select('*')
     .eq('team_number', teamNumber)
-    .single()
+    .maybeSingle()
 
   if (cachedTeam) {
     return cachedTeam as FTCTeam

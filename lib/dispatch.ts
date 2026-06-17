@@ -1,5 +1,6 @@
 import SubmissionEmail from '@/emails/submission-email'
 import { Resend } from 'resend'
+import { createHash } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { env } from '@/lib/env'
 
@@ -57,13 +58,13 @@ export async function dispatchApprovedSubmission(submissionId: string, accessTok
         heroImageUrl: ((team.media_urls as string[]) ?? [])[0] ?? null,
         viewerUrl,
       }),
-      headers: {
-        'Idempotency-Key': (await import('crypto')).createHash('sha256').update(submissionId + 'sponsor').digest('hex')
-      },
       tags: [
         { name: 'submission_id', value: submission.id },
         { name: 'sponsor_id', value: sponsor.id as string },
       ],
+    }, {
+      // Request-level idempotency so a retried dispatch never double-sends.
+      idempotencyKey: createHash('sha256').update(submissionId + 'sponsor').digest('hex'),
     })
 
     if (result.data?.id) {
