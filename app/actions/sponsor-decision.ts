@@ -82,6 +82,7 @@ export async function sponsorUpdateSubmissionStatus(
 
   if (recipientId) {
     await createInAppNotification({
+      skipEmail: true,
       recipientId,
       type: status === 'approved' ? 'submission_approved' : status === 'declined' ? 'submission_declined' : 'submission_changes_requested',
       title: status === 'approved' ? `${sponsorName} approved your submission` : status === 'declined' ? `${sponsorName} declined your submission` : `${sponsorName} requested changes`,
@@ -158,6 +159,7 @@ export async function recordSponsorDecision(
       : `${sponsorName} approved your submission`
 
     await createInAppNotification({
+      skipEmail: true,
       recipientId,
       type: statusType,
       title: statusTitle,

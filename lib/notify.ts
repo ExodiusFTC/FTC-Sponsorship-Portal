@@ -4,6 +4,7 @@ import SponsorAppConfirmation from '@/emails/sponsor-app-confirmation'
 import HandshakeEmail from '@/emails/handshake-email'
 import CoachVerificationEmail from '@/emails/coach-verification-email'
 import CoachSignupWelcomeEmail from '@/emails/coach-signup-welcome'
+import NotificationEmail from '@/emails/notification-email'
 import { Resend } from 'resend'
 import { createHash } from 'crypto'
 import { createClient } from '@/lib/supabase/server'
@@ -183,22 +184,56 @@ export async function sendSponsorApplicationConfirmation(
 }
 
 export async function createInAppNotification({
-  recipientId, type, title, body, submissionId,
+  recipientId, type, title, body, submissionId, skipEmail = false,
 }: {
   recipientId: string
   type: 'submission_declined' | 'submission_approved' | 'submission_changes_requested' | 'coach_verified' | 'general'
   title: string
   body?: string
   submissionId?: string
+  /**
+   * Set true ONLY when the caller already sends a richer, recipient-specific
+   * email for the same event (e.g. a decision or verification template) so we
+   * don't double-email. When false (the default) every inbox alert is mirrored
+   * by a direct email, guaranteeing both channels fire for every event.
+   */
+  skipEmail?: boolean
 }) {
+  const supabase = createAdminClient()
+
+  // 1. In-app inbox alert.
   try {
-    const supabase = createAdminClient()
     await supabase.from('notifications').insert({
       recipient_id: recipientId,
       type, title, body: body ?? null, submission_id: submissionId ?? null,
     })
   } catch (err) {
-    console.error('[notify] createInAppNotification failed', err)
+    console.error('[notify] createInAppNotification (in-app) failed', err)
+  }
+
+  // 2. Mirror it as a direct email (unless the caller sends its own).
+  if (skipEmail) return
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', recipientId)
+      .single()
+    if (profile?.email) {
+      await resend.emails.send({
+        from: env.RESEND_FROM_EMAIL,
+        to: profile.email,
+        subject: title,
+        react: NotificationEmail({
+          title,
+          body,
+          ctaUrl: `${env.NEXT_PUBLIC_APP_URL}/dashboard`,
+          ctaLabel: 'Open the portal',
+        }),
+      })
+    }
+  } catch (err) {
+    console.error('[notify] createInAppNotification (email) failed', err)
   }
 }
 
@@ -293,5 +328,6 @@ export async function sendWelcomeInAppNotification(userId: string, name: string)
     type: 'general',
     title: 'Welcome to the Matchmaker platform! 🎉',
     body: `Hi ${name},\n\nWe're thrilled to have you here. Your account is currently pending verification—our team reviews photo IDs within 24-48 hours.\n\nIn the meantime, you can start building your team portfolio to get a head start on your funding requests!`,
+    skipEmail: true, // coach already receives sendCoachSignupWelcomeEmail
   })
 }

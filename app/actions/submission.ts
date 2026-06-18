@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { submissionSchema, type SubmissionInput } from '@/lib/schemas/submission'
 import { redirect } from 'next/navigation'
 import { requireAuth, requireVerifiedCoach } from '@/lib/actions-utils'
+import { createInAppNotification } from '@/lib/notify'
 
 const EDITABLE_SUBMISSION_STATUSES = ['draft', 'declined', 'changes_requested'] as const
 
@@ -164,6 +165,23 @@ export async function saveSubmission(
       entity_id: submissionId ?? null,
       metadata: { sponsor_id: data.sponsorId },
     })
+
+    // Notify every admin (inbox + email) that a pitch is awaiting moderation.
+    const { data: admins } = await admin.from('profiles').select('id').eq('role', 'admin')
+    if (admins?.length) {
+      await Promise.all(
+        admins.map((a) =>
+          createInAppNotification({
+            recipientId: a.id,
+            type: 'general',
+            title: 'New submission awaiting review',
+            body: 'A coach has submitted a pitch for review. Open the moderation queue to approve, decline, or request changes.',
+            submissionId: submissionId ?? undefined,
+          })
+        )
+      )
+    }
+
     redirect('/dashboard')
   }
   return { success: true }

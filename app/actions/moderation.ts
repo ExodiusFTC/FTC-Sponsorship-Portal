@@ -72,6 +72,7 @@ export async function approveSubmission(submissionId: string) {
 
   if (coachId) {
     await createInAppNotification({
+      skipEmail: true,
       recipientId: coachId,
       type: 'submission_approved',
       title: `Your application to ${sponsorName} was approved`,
@@ -153,6 +154,7 @@ export async function declineSubmission(submissionId: string, feedback: string) 
 
   if (coachId) {
     await createInAppNotification({
+      skipEmail: true,
       recipientId: coachId,
       type: 'submission_declined',
       title: `Your application to ${sponsorName} was declined`,
@@ -215,6 +217,7 @@ export async function requestEdit(submissionId: string, feedback: string) {
 
   if (coachId) {
     await createInAppNotification({
+      skipEmail: true,
       recipientId: coachId,
       type: 'submission_changes_requested',
       title: `Changes requested for your application to ${sponsorName}`,

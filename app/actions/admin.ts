@@ -107,6 +107,7 @@ export async function verifyCoach(coachId: string, verified: boolean) {
 
     await Promise.all([
       createInAppNotification({
+        skipEmail: true,
         recipientId: coachId,
         type: 'coach_verified',
         title: 'Your account has been verified!',
@@ -185,6 +186,7 @@ export async function denyCoach(coachId: string, reason: string) {
     
     // Also send an in-app notification
     await createInAppNotification({
+      skipEmail: true,
       recipientId: coachId,
       type: 'coach_verified', // Re-using type since we don't have a distinct 'coach_denied' type yet
       title: 'Application Update Required',

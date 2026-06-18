@@ -107,6 +107,7 @@ export async function signUpSponsor(data: SponsorSignupInput) {
     if (admins) {
       await Promise.all(admins.map(admin => 
         createInAppNotification({
+          skipEmail: true,
           recipientId: admin.id,
           type: 'general',
           title: 'New Sponsor Application',
