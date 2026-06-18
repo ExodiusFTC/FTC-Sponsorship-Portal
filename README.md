@@ -25,16 +25,17 @@ A "Dynamic Portfolio" and Verified Grant Portal connecting FIRST Tech Challenge 
 | Role | Description |
 |---|---|
 | `coach` | Adult advisor who registers, builds team portfolio, creates submissions |
-| `admin` | Platform operator who verifies coaches, reviews submissions, and triggers dispatch |
+| `admin` | Platform operator who verifies coaches, reviews submissions, and triggers dispatch. Requires TOTP/MFA (`aal2`) for all admin actions. |
+| `sponsor` | Funder account that reviews dispatched submissions and approves/declines funding from `/sponsor/dashboard` |
 
-Sponsors have no platform login in v1 — they receive emails with a unique, trackable link to view the pitch.
+Sponsors can also be reached without logging in via a unique, trackable link (`/sponsor-view/[token]`) sent by email.
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 20+
-- Python 3.9+ (for `main.py` dev launcher)
+- The [Supabase CLI](https://supabase.com/docs/guides/cli) and `psql` (for migrations)
 - A [Supabase](https://supabase.com) project
 - A [Resend](https://resend.com) account
 
@@ -44,34 +45,37 @@ Copy `.env.example` to `.env.local` and fill in:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=        # Supabase anon key — use the legacy JWT (eyJ…)
+SUPABASE_SERVICE_ROLE_KEY=            # Supabase service_role key — legacy JWT (eyJ…)
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=noreply@yourdomain.com
+RESEND_WEBHOOK_SECRET=                # Svix signing secret; required in production
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+CRON_SECRET=                          # bearer token for the Vercel cron; required
+# Optional: SENTRY_DSN, NEXT_PUBLIC_SENTRY_DSN, ADMIN_NOTIFICATION_EMAILS
 ```
+
+> **Use the legacy Supabase JWT keys** (Settings → API → JWT keys, they start with `eyJ`). The new `sb_publishable_…` / `sb_secret_…` format is **not** reliably accepted by the API. There is **no** Upstash/Redis dependency — rate limiting was removed.
 
 ### Database Setup
 
-```bash
-# Apply migrations
-supabase db push
+Migrations are idempotent and build the full schema (tables, RLS, storage buckets, enums). Apply them with `supabase db reset --linked` **or** `psql`. A few migrations define multiple `$$`-quoted functions in one file (0035/0041/0044/0047), which the Supabase CLI splitter mishandles — apply those with `psql -f`, which parses dollar-quotes correctly:
 
-# (Optional) Seed dev data
-psql "$DATABASE_URL" < supabase/seed.sql
+```bash
+# Apply every migration in order via the session-mode pooler
+for f in supabase/migrations/*.sql; do
+  psql "postgresql://postgres.<ref>:<password>@<region>.pooler.supabase.com:5432/postgres" \
+    -v ON_ERROR_STOP=1 -f "$f"
+done
 ```
+
+Do **not** run `supabase/seed.sql` against production — it is dev-only test data.
 
 ### Running Locally
 
 ```bash
 npm install
 npm run dev
-```
-
-Or use the Python launcher which also prints useful URLs:
-
-```bash
-python main.py
 ```
 
 App runs at [http://localhost:3000](http://localhost:3000).
@@ -83,10 +87,12 @@ app/
   (auth)/          # Login, signup, verify-email, credential upload
   (coach)/         # Dashboard, team edit, submission builder, sponsor browser
   (admin)/         # Review queue, moderation, sponsor management, analytics
+  (sponsor)/       # Sponsor dashboard — review & decide on dispatched submissions
   sponsor-view/    # Public, token-authenticated pitch viewer
   api/
     webhooks/      # Resend bounce/open webhook handler
     cron/          # Scheduled jobs (e.g. expiring submissions)
+    health/        # Liveness + authed deep DB probe
 components/
   portfolio-builder/ # Multi-step submission form
   team/            # Onboarding and master portfolio forms
@@ -95,7 +101,8 @@ components/
 lib/
   supabase/        # server.ts, client.ts, admin.ts, types.ts
   schemas/         # Zod schemas shared between client and server
-  dispatch.ts      # Resend batch email dispatch logic
+  dispatch.ts      # Admin-gated sponsor pitch dispatch (Resend)
+  notify.ts        # Dual-channel notifications — in-app inbox + email (always both)
   ftc-roster.ts    # FTC team number validator (cached)
   env.ts           # Zod-validated environment variables
 supabase/
@@ -113,4 +120,8 @@ emails/            # React Email templates
 | 3 | Done | Submission builder with custom pitch alignment |
 | 4 | Done | Sponsor database, targeting UI, opt-in application |
 | 5 | Done | Admin review queue and Resend dispatch |
-| 6 | In Progress | Analytics hardening, COPPA hardening, E2E tests, launch prep |
+| 6 | Done | Analytics/COPPA hardening, E2E tests, dual-channel notifications, launch prep |
+
+## Deployment
+
+Live on Vercel at **https://ftc-sponsorship-portal.vercel.app** (Hobby tier). Runtime env vars are configured in the Vercel project (not committed). The daily cron (`/api/cron/expire-submissions`) is defined in `vercel.json` and authed with `CRON_SECRET`. See `CLAUDE.md` → "Deployment & Ops" for the Supabase-key and migration gotchas.
