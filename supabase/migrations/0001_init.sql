@@ -17,7 +17,9 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";  -- for gen_random_uuid() on older PG
 -- ---------------------------------------------------------------------------
 
 DO $$ BEGIN
-  CREATE TYPE user_role AS ENUM ('coach', 'admin');
+  -- 'sponsor' is declared up front (later added idempotently by 0030/0040 via
+  -- ADD VALUE IF NOT EXISTS) so a fresh replay has it before 0030 references it.
+  CREATE TYPE user_role AS ENUM ('coach', 'admin', 'sponsor');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN

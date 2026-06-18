@@ -1,9 +1,8 @@
 -- Production Hardening & Logic Fixes
 
--- 1. Add 'dispatched' to submission_status enum
--- Admin approval transitions to 'dispatched' (sent to sponsor).
--- Sponsor approval transitions to 'approved' (funded).
-ALTER TYPE submission_status ADD VALUE IF NOT EXISTS 'dispatched';
+-- 1. The 'dispatched' submission_status value is pre-declared in 0008, so the
+--    ALTER TYPE ... ADD VALUE that used to live here is no longer needed.
+--    (Admin approval → 'dispatched' (sent to sponsor); sponsor approval → 'approved'.)
 
 -- 2. Add requested_amount_cents to submissions
 -- Snapshots the financial ask at the time of submission to prevent retroactive changes.

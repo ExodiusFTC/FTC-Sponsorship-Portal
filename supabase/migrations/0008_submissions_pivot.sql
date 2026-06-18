@@ -20,7 +20,11 @@ DROP TYPE IF EXISTS dispatch_status CASCADE;
 DROP TYPE IF EXISTS pitch_status CASCADE;
 
 -- 3. Create new submissions architecture
-CREATE TYPE submission_status AS ENUM ('draft', 'pending', 'approved', 'declined');
+-- NOTE: All status values that later migrations (0011/0015/0019/0035) add are
+-- declared up front so this migration's policies (which reference
+-- 'changes_requested') apply cleanly to a fresh database. The later ALTER TYPE
+-- ... ADD VALUE statements are IF NOT EXISTS and become no-ops.
+CREATE TYPE submission_status AS ENUM ('draft', 'pending', 'approved', 'declined', 'changes_requested', 'opened', 'bounced', 'delivered', 'expired', 'dispatched');
 
 CREATE TABLE submissions (
     id                          uuid                PRIMARY KEY DEFAULT gen_random_uuid(),

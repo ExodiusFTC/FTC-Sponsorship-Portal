@@ -1,9 +1,11 @@
 -- Create a bucket for coach credentials
 insert into storage.buckets (id, name, public)
-values ('coach-credentials', 'coach-credentials', false);
+values ('coach-credentials', 'coach-credentials', false)
+on conflict (id) do nothing;
 
 -- Set up RLS for the bucket
 -- Allow coaches to upload their own credentials
+drop policy if exists "Coaches can upload their own credentials" on storage.objects;
 create policy "Coaches can upload their own credentials"
 on storage.objects for insert
 with check (
@@ -12,6 +14,7 @@ with check (
 );
 
 -- Allow coaches to see their own credentials
+drop policy if exists "Coaches can see their own credentials" on storage.objects;
 create policy "Coaches can see their own credentials"
 on storage.objects for select
 using (
@@ -20,6 +23,7 @@ using (
 );
 
 -- Allow admins to see all credentials
+drop policy if exists "Admins can see all credentials" on storage.objects;
 create policy "Admins can see all credentials"
 on storage.objects for select
 using (

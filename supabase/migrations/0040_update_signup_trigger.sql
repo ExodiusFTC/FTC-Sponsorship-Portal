@@ -1,5 +1,5 @@
--- Add 'sponsor' to user_role enum
-ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'sponsor';
+-- The 'sponsor' user_role value is pre-declared in 0001, so the
+-- ALTER TYPE ... ADD VALUE that used to live here is no longer needed.
 
 -- Update handle_new_user to respect role from metadata
 CREATE OR REPLACE FUNCTION handle_new_user()
