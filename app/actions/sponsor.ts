@@ -5,7 +5,7 @@ import { sponsorApplicationSchema, sponsorSchema, type SponsorApplicationInput, 
 import { sendSponsorApplicationConfirmation } from '@/lib/notify'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { getClientIp, validateRateLimit, requireAdmin } from '@/lib/actions-utils'
+import { requireAdmin } from '@/lib/actions-utils'
 
 export async function submitSponsorApplication(data: SponsorApplicationInput) {
   const result = sponsorApplicationSchema.safeParse(data)
@@ -14,9 +14,6 @@ export async function submitSponsorApplication(data: SponsorApplicationInput) {
   }
 
   const { companyName, contactName, contactEmail, proposedCapCents, message } = result.data
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`sponsor_app_${contactEmail.toLowerCase()}_${ip}`)
-  if ('error' in limit) return limit
 
   // Use admin client since the user may be unauthenticated
   const supabase = createAdminClient()
@@ -64,10 +61,6 @@ export async function adminCreateSponsor(data: SponsorInput) {
     return { error: e.message }
   }
 
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`admin_create_sponsor_${user.id}_${ip}`)
-  if ('error' in limit) return limit
-
   const { error } = await adminClient
     .from('sponsors')
     .insert({
@@ -112,10 +105,6 @@ export async function adminUpdateSponsor(id: string, data: SponsorInput) {
   } catch (e: any) {
     return { error: e.message }
   }
-
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`admin_update_sponsor_${user.id}_${ip}`)
-  if ('error' in limit) return limit
 
   const { error } = await adminClient
     .from('sponsors')
@@ -164,10 +153,6 @@ export async function deleteSponsor(id: string): Promise<{ success?: true; error
     return { error: e.message }
   }
 
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`admin_delete_sponsor_${user.id}_${ip}`)
-  if ('error' in limit) return limit
-
   // Snapshot for audit metadata before delete.
   const { data: snapshot } = await adminClient
     .from('sponsors')
@@ -207,10 +192,6 @@ export async function searchSponsors(query?: string) {
     return { error: e.message as string }
   }
 
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`admin_search_sponsors_${ip}`)
-  if ('error' in limit) return limit
-
   const trimmed = query?.trim() ?? ''
 
   if (trimmed) {
@@ -242,10 +223,6 @@ export async function adminToggleSponsorStatus(id: string, newStatus: 'active' |
   } catch (e: any) {
     return { error: e.message }
   }
-
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`admin_toggle_sponsor_${user.id}_${ip}`)
-  if ('error' in limit) return limit
 
   const { error } = await adminClient
     .from('sponsors')

@@ -5,7 +5,7 @@ import { teamOnboardingSchema, type TeamOnboardingInput } from '@/lib/schemas/te
 import { achievementSchema, type AchievementInput } from '@/lib/schemas/achievement'
 import { validateFTCTeam, type FTCTeam } from '@/lib/ftc-roster'
 import { redirect } from 'next/navigation'
-import { getClientIp, validateRateLimit, requireAuth } from '@/lib/actions-utils'
+import { requireAuth } from '@/lib/actions-utils'
 
 function parseList(value: string | string[] | null | undefined): string[] {
   if (!value) return []
@@ -31,10 +31,6 @@ export async function lookupFTCTeam(
     return { error: 'Invalid team number' }
   }
 
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`lookup_ftc_team_${ip}`)
-  if ('error' in limit) return { error: 'Too many requests. Please try again later.' }
-
   const team = await validateFTCTeam(teamNumber)
   if (!team) {
     return { error: `FTC Team #${teamNumber} could not be found in the FIRST registry.` }
@@ -56,10 +52,6 @@ export async function createTeam(data: TeamOnboardingInput) {
   } catch {
     return { error: 'Not authenticated' }
   }
-
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`create_team_${user.id}_${ip}`)
-  if ('error' in limit) return limit
 
   const payloadData = result.data
 
@@ -176,10 +168,6 @@ export async function uploadTeamLogo(teamId: string, formData: FormData) {
     return { error: 'Not authenticated' }
   }
 
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`upload_logo_${user.id}_${ip}`)
-  if ('error' in limit) return limit
-
   const file = formData.get('file') as File | null
   if (!file || file.size === 0) return { error: 'No file provided' }
 
@@ -220,10 +208,6 @@ export async function updateTeam(id: string, data: Partial<TeamOnboardingInput>)
   } catch {
     return { error: 'Not authenticated' }
   }
-
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`update_team_${user.id}_${ip}`)
-  if ('error' in limit) return limit
 
   const updatePayload: Record<string, unknown> = {}
 
@@ -334,10 +318,6 @@ export async function addAchievement(teamId: string, data: AchievementInput) {
   } catch {
     return { error: 'Not authenticated' }
   }
-
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`add_achievement_${user.id}_${ip}`)
-  if ('error' in limit) return limit
 
   const { data: team } = await supabase
     .from('teams')

@@ -4,7 +4,7 @@ import { createHash } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { createInAppNotification, sendHandshakeEmail, sendSubmissionDecisionEmail } from '@/lib/notify'
-import { getClientIp, validateRateLimit, requireSponsor } from '@/lib/actions-utils'
+import { requireSponsor } from '@/lib/actions-utils'
 import { z } from 'zod'
 
 const sponsorUpdateSchema = z.object({
@@ -52,10 +52,6 @@ export async function sponsorUpdateSubmissionStatus(
   } catch (e: any) {
     return { error: e.message }
   }
-
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`sponsor_update_sub_${user.id}_${ip}`)
-  if ('error' in limit) return limit
 
   const normalizedFeedback = feedback?.trim() || undefined
   const amountCents = status === 'approved' ? Math.max(0, Math.floor(fundingAmountCents ?? 0)) : 0
@@ -128,9 +124,6 @@ export async function recordSponsorDecision(
 
   const adminClient = createAdminClient()
   const tokenHash = createHash('sha256').update(token).digest('hex')
-
-  const limit = await validateRateLimit(`record_sponsor_decision_${tokenHash}`)
-  if ('error' in limit) return { ok: false, error: 'Too many requests. Please try again later.' }
 
   const { data: context } = await adminClient
     .from('submission_access_tokens')

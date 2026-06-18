@@ -7,7 +7,6 @@ import { signupSchema } from '@/lib/schemas/auth'
 import { redirect } from 'next/navigation'
 import { env } from '@/lib/env'
 import { sendCredentialUploadAlert, sendCoachSignupWelcomeEmail, sendWelcomeInAppNotification } from '@/lib/notify'
-import { getClientIp, validateAuthLimit } from '@/lib/actions-utils'
 
 import { sponsorSignupSchema, type SponsorSignupInput } from '@/lib/schemas/sponsor-signup'
 import { sendSponsorApplicationConfirmation, sendSponsorApplicationAlert, createInAppNotification } from '@/lib/notify'
@@ -19,9 +18,6 @@ export async function signUpSponsor(data: SponsorSignupInput) {
   }
 
   const payload = result.data
-  const ip = await getClientIp()
-  const limit = await validateAuthLimit(`sponsor_signup_${payload.email}_${ip}`)
-  if ('error' in limit) return limit
 
   const supabase = await createClient()
   const adminClient = createAdminClient()
@@ -168,9 +164,6 @@ export async function signUp(formData: FormData) {
   }
 
   const payload = result.data
-  const ip = await getClientIp()
-  const limit = await validateAuthLimit(`signup_${payload.email}_${ip}`)
-  if ('error' in limit) return limit
 
   const supabase = await createClient()
   const adminClient = createAdminClient()
@@ -287,9 +280,6 @@ export async function signIn(data: LoginInput) {
   }
 
   const { email, password } = result.data
-  const ip = await getClientIp()
-  const limit = await validateAuthLimit(`signin_${email}_${ip}`)
-  if ('error' in limit) return limit
 
   const supabase = await createClient()
 

@@ -3,7 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
-import { getClientIp, validateRateLimit, requireAuth } from '@/lib/actions-utils'
+import { requireAuth } from '@/lib/actions-utils'
 import { env } from '@/lib/env'
 
 const updateProfileSchema = z.object({
@@ -45,10 +45,6 @@ export async function updateProfile(data: { fullName: string }) {
     return { error: 'Not authenticated' }
   }
 
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`update_profile_${user.id}_${ip}`)
-  if ('error' in limit) return limit
-
   const { error: authError } = await supabase.auth.updateUser({
     data: { full_name: result.data.fullName },
   })
@@ -79,10 +75,6 @@ export async function updatePassword(data: { newPassword: string; currentPasswor
     return { error: 'Not authenticated' }
   }
 
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`update_password_${user.id}_${ip}`)
-  if ('error' in limit) return limit
-
   // Re-authenticate before changing password
   const { error: reauthError } = await supabase.auth.signInWithPassword({
     email: user.email ?? '',
@@ -112,10 +104,6 @@ export async function changeEmail(data: { newEmail: string; currentPassword: str
   } catch {
     return { error: 'Not authenticated' }
   }
-
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`change_email_${user.id}_${ip}`)
-  if ('error' in limit) return limit
 
   if (result.data.newEmail === (user.email ?? '').toLowerCase()) {
     return { error: 'New email must be different from your current email.' }
@@ -152,10 +140,6 @@ export async function deleteAccount(data: { confirmEmail: string; currentPasswor
     return { error: 'Not authenticated' }
   }
 
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`delete_account_${user.id}_${ip}`)
-  if ('error' in limit) return limit
-
   const userEmail = (user.email ?? '').toLowerCase()
   if (!userEmail || parsed.data.confirmEmail !== userEmail) {
     return { error: 'Confirmation email does not match your account email.' }
@@ -188,10 +172,6 @@ export async function requestDataExport(): Promise<{ error?: string; message?: s
   } catch {
     return { error: 'Not authenticated' }
   }
-
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`data_export_${user.id}_${ip}`)
-  if ('error' in limit) return limit
 
   if (!user.email) {
     return { error: 'No email address is associated with your account.' }

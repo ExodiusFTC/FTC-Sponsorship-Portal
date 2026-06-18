@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createInAppNotification, sendCoachVerificationEmail, sendCoachDenialEmail } from '@/lib/notify'
-import { getClientIp, validateRateLimit, requireAdmin } from '@/lib/actions-utils'
+import { requireAdmin } from '@/lib/actions-utils'
 import { z } from 'zod'
 
 const verifyCoachSchema = z.object({
@@ -26,10 +26,6 @@ export async function verifyCoach(coachId: string, verified: boolean) {
   } catch (e: any) {
     return { error: e.message }
   }
-
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`admin_verify_coach_${user.id}_${ip}`)
-  if ('error' in limit) return limit
 
   // Fetch coach profile to get pending data and name
   const { data: coachProfile } = await adminClient
@@ -138,10 +134,6 @@ export async function denyCoach(coachId: string, reason: string) {
     return { error: e.message }
   }
 
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`admin_deny_coach_${user.id}_${ip}`)
-  if ('error' in limit) return limit
-
   // Fetch coach info to get their email/name and current credentials path
   const { data: coachProfile } = await adminClient
     .from('profiles')
@@ -217,10 +209,6 @@ export async function approveSponsorApplication(applicationId: string) {
     return { error: e.message }
   }
 
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`admin_approve_app_${user.id}_${ip}`)
-  if ('error' in limit) return limit
-
   const { data: app, error: fetchError } = await adminClient
     .from('sponsor_applications')
     .select('company_name, contact_name, contact_email, proposed_cap_cents, message')
@@ -290,10 +278,6 @@ export async function rejectSponsorApplication(applicationId: string) {
   } catch (e: any) {
     return { error: e.message }
   }
-
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`admin_reject_app_${user.id}_${ip}`)
-  if ('error' in limit) return limit
 
   const { error } = await adminClient
     .from('sponsor_applications')

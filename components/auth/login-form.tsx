@@ -11,7 +11,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import Link from 'next/link'
-import { RateLimitNotice } from '@/components/ui/rate-limit-notice'
 import { ArrowRight, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSearchParams } from 'next/navigation'
@@ -20,7 +19,6 @@ export function LoginForm() {
   const searchParams = useSearchParams()
   const resetSuccess = searchParams.get('reset') === 'success'
   const [error, setError] = useState<string | null>(null)
-  const [rateLimitData, setRateLimitData] = useState<{ retryAfterSeconds: number; limit: number } | null>(null)
   const [isPending, setIsPending] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
@@ -94,16 +92,7 @@ export function LoginForm() {
   async function onSubmit(values: LoginInput) {
     setIsPending(true)
     setError(null)
-    setRateLimitData(null)
     const result = await signIn(values)
-    // Auth rate limiting surfaces as { error: <message>, retryAfterSeconds }. Detect it by
-    // the presence of retryAfterSeconds (not a magic 'rate_limited' string, which signIn
-    // never returns) so the countdown notice renders instead of a plain error.
-    if (result?.error && 'retryAfterSeconds' in result && typeof result.retryAfterSeconds === 'number') {
-      setRateLimitData({ retryAfterSeconds: result.retryAfterSeconds, limit: (result as { limit?: number }).limit || 0 })
-      setIsPending(false)
-      return
-    }
     if (result?.error) {
       setError(result.error)
       setIsPending(false)
@@ -194,10 +183,6 @@ export function LoginForm() {
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
-                {rateLimitData && (
-                  <RateLimitNotice retryAfterSeconds={rateLimitData.retryAfterSeconds} />
-                )}
-                
                 <FormField
                   control={form.control}
                   name="email"

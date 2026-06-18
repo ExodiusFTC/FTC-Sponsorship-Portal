@@ -10,10 +10,6 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.string().email(),
   RESEND_WEBHOOK_SECRET: z.string().min(1).optional(), // Optional for dev environments
-  // Upstash — fully OPTIONAL. Rate limiting degrades gracefully (fails open) when
-  // these are unset. Set both to enable brute-force protection; leave unset to skip it.
-  UPSTASH_REDIS_REST_URL: z.string().optional(),
-  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
   // App
   NEXT_PUBLIC_APP_URL: z.string().url(),
   // Comma-separated list of admin recipient emails for system alerts.

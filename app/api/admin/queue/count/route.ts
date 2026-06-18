@@ -1,17 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { globalLimiter } from '@/lib/rate-limit'
 
-export async function GET(req: Request) {
-  // Rate limiting
-  if (globalLimiter) {
-    const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1'
-    const { success } = await globalLimiter.limit(`admin_queue_${ip}`)
-    if (!success) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-    }
-  }
-
+export async function GET() {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()

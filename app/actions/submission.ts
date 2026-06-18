@@ -3,7 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { submissionSchema, type SubmissionInput } from '@/lib/schemas/submission'
 import { redirect } from 'next/navigation'
-import { getClientIp, validateRateLimit, requireAuth, requireVerifiedCoach } from '@/lib/actions-utils'
+import { requireAuth, requireVerifiedCoach } from '@/lib/actions-utils'
 
 const EDITABLE_SUBMISSION_STATUSES = ['draft', 'declined', 'changes_requested'] as const
 
@@ -55,10 +55,6 @@ export async function saveSubmission(
   const ctx = await getCoachTeamId()
   if ('error' in ctx) return { error: ctx.error }
   const { supabase, user, teamId } = ctx
-
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`save_sub_${user.id}_${ip}`)
-  if ('error' in limit) return limit
 
   // Spec: max 3 pending submissions per rolling 7-day window
   if (status === 'pending') {
@@ -181,10 +177,6 @@ export async function autoSaveSubmissionDraft(
   if ('error' in ctx) return { error: ctx.error }
   const { supabase, user, teamId } = ctx
 
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`autosave_sub_${user.id}_${ip}`)
-  if ('error' in limit) return limit
-
   if (!data.sponsorId) {
     return { error: 'Sponsor ID is required to autosave' }
   }
@@ -256,10 +248,6 @@ export async function cloneSubmission(
   const ctx = await getCoachTeamId()
   if ('error' in ctx) return { error: ctx.error }
   const { supabase, user, teamId } = ctx
-
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`clone_sub_${user.id}_${ip}`)
-  if ('error' in limit) return limit
 
   const { data: source } = await supabase
     .from('submissions')

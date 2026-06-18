@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Webhook } from 'svix'
 import { env } from '@/lib/env'
-import { globalLimiter } from '@/lib/rate-limit'
 import * as Sentry from '@sentry/nextjs'
 import { z } from 'zod'
 
@@ -21,14 +20,6 @@ const EVENT_STATUS_MAP: Record<string, string> = {
 }
 
 export async function POST(req: Request) {
-  if (globalLimiter) {
-    const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1'
-    const { success } = await globalLimiter.limit(`webhook_resend_${ip}`)
-    if (!success) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-    }
-  }
-
   try {
     const payload = await req.text()
     const svixHeaders = {

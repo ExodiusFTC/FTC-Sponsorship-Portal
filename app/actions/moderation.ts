@@ -3,7 +3,7 @@
 import { dispatchApprovedSubmission } from '@/lib/dispatch'
 import { sendSubmissionDecisionEmail, createInAppNotification } from '@/lib/notify'
 import { revalidatePath } from 'next/cache'
-import { getClientIp, validateRateLimit, requireAdmin } from '@/lib/actions-utils'
+import { requireAdmin } from '@/lib/actions-utils'
 import { z } from 'zod'
 
 const moderationSchema = z.object({
@@ -23,10 +23,6 @@ export async function approveSubmission(submissionId: string) {
   } catch (e: any) {
     return { error: e.message }
   }
-
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`admin_approve_sub_${user.id}_${ip}`)
-  if ('error' in limit) return limit
 
   // Atomic RPC: locks sponsor row, debits budget, writes ledger + audit_log,
   // mints access token, and stamps sent_at / expires_at on the submission row.
@@ -122,10 +118,6 @@ export async function declineSubmission(submissionId: string, feedback: string) 
     return { error: e.message }
   }
 
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`admin_decline_sub_${user.id}_${ip}`)
-  if ('error' in limit) return limit
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rpcData, error: rpcError } = await (adminClient as any).rpc('admin_terminal_decision_atomic', {
     p_submission_id: submissionId,
@@ -187,10 +179,6 @@ export async function requestEdit(submissionId: string, feedback: string) {
   } catch (e: any) {
     return { error: e.message }
   }
-
-  const ip = await getClientIp()
-  const limit = await validateRateLimit(`admin_request_edit_${user.id}_${ip}`)
-  if ('error' in limit) return limit
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rpcData, error: rpcError } = await (adminClient as any).rpc('admin_terminal_decision_atomic', {

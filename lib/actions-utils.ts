@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { checkActionLimit, checkAuthLimit } from '@/lib/rate-limit'
 import { headers } from 'next/headers'
 
 export async function getClientIp() {
@@ -56,28 +55,6 @@ export async function requireSponsor() {
   }
 
   return { supabase, user, sponsorId: profile.sponsor_id, adminClient: createAdminClient() }
-}
-
-export type LimitOutcome =
-  | { ok: true }
-  | { error: string; retryAfterSeconds: number }
-
-export async function validateRateLimit(key: string): Promise<LimitOutcome> {
-  const r = await checkActionLimit(key)
-  if (r.ok) return { ok: true }
-  return {
-    error: `Too many requests. Please try again in ${r.retryAfterSeconds}s.`,
-    retryAfterSeconds: r.retryAfterSeconds,
-  }
-}
-
-export async function validateAuthLimit(key: string): Promise<LimitOutcome> {
-  const r = await checkAuthLimit(key)
-  if (r.ok) return { ok: true }
-  return {
-    error: `Too many auth attempts. Please try again in ${r.retryAfterSeconds}s.`,
-    retryAfterSeconds: r.retryAfterSeconds,
-  }
 }
 
 export async function requireVerifiedCoach() {
