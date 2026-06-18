@@ -17,7 +17,7 @@ export function LandingFooter() {
                 <path d="M9 1L16.5 5.5V12.5L9 17L1.5 12.5V5.5L9 1Z" stroke="currentColor" strokeWidth="1.5" />
                 <path d="M9 4L14 7V11.5L9 14.5L4 11.5V7L9 4Z" stroke="currentColor" strokeWidth="1" opacity="0.5" />
               </svg>
-              <span className="text-sm font-semibold text-foreground">Matchmaker</span>
+              <span className="text-sm font-semibold text-foreground">FTC Matchmaker</span>
             </div>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
               The moderated sponsorship pipeline for FIRST Tech Challenge. Built for coaches,
@@ -58,7 +58,7 @@ export function LandingFooter() {
         </div>
 
         <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6 text-xs text-muted-foreground">
-          <span suppressHydrationWarning>© {new Date().getFullYear()} Matchmaker · FTC Sponsorship Portal</span>
+          <span suppressHydrationWarning>© {new Date().getFullYear()} FTC Matchmaker</span>
           <span className="font-mono">Built for Season {CURRENT_SEASON}</span>
         </div>
       </div>

@@ -62,7 +62,7 @@ export default function HandshakeEmail({
 
           <Hr style={hr} />
           <Text style={footer}>
-            Matchmaker · This match was facilitated through the Matchmaker FTC Sponsorship Portal.
+            FTC Matchmaker · This match was facilitated through FTC Matchmaker.
           </Text>
         </Container>
       </Body>

@@ -11,65 +11,9 @@ export const ACCENT_DARK_GLOBE = "#ffffff" // Slate 600
 export const ACCENT_LIGHT_TEXT = "#617c98ff" // Slate 800
 export const ACCENT_LIGHT_GLOBE = "#000000" // Slate 500
 
-// ─── Platform stats ─────────────────────────────────────────────────────────
-export const PLATFORM_STATS = [
-  { label: 'Teams onboarded', value: 0, suffix: '+' },
-  { label: 'Sponsors active', value: 0, suffix: '' },
-  { label: 'Avg. review time', value: 0, suffix: 'h' },
-  { label: 'Pitches dispatched', value: 0, suffix: '' },
-] as const
-
 // ─── Season ──────────────────────────────────────────────────────────────────
 export const CURRENT_SEASON = '2026'
 export const DISPATCH_SEASON_LABEL = `Season ${CURRENT_SEASON} dispatch window open`
-
-// ─── Sponsors showcase ───────────────────────────────────────────────────────
-// Cards displayed in the #sponsors section. Add real sponsors here as the
-// platform grows; keep descriptions concise (≤ 2 sentences).
-export const SPONSORS_SHOWCASE = [
-  {
-    name: 'Gringotts Capital',
-    industry: 'Financial Services',
-    tier: 'Platinum',
-    description: 'Empowering the next generation of STEM innovators through targeted FIRST Robotics investments.',
-    href: '#',
-  },
-  {
-    name: 'Ollivanders Precision',
-    industry: 'Advanced Manufacturing',
-    tier: 'Gold',
-    description: 'Crafting the tools that build tomorrow — proud partner of competitive robotics programs nationwide.',
-    href: '#',
-  },
-  {
-    name: 'Weasley Tech Co.',
-    industry: 'Consumer Electronics',
-    tier: 'Gold',
-    description: 'We believe tinkering changes the world. That\'s why we sponsor teams that build, break, and build again.',
-    href: '#',
-  },
-  {
-    name: 'Honeydukes Labs',
-    industry: 'Biotechnology',
-    tier: 'Silver',
-    description: 'Investing in scientific curiosity and hands-on STEM education at the grassroots level.',
-    href: '#',
-  },
-  {
-    name: 'QQ Supplies Co.',
-    industry: 'Engineering & Supply',
-    tier: 'Silver',
-    description: 'Providing premium components and materials to FTC teams competing at the highest levels.',
-    href: '#',
-  },
-  {
-    name: 'The Daily Dispatch',
-    industry: 'Media & Communications',
-    tier: 'Bronze',
-    description: 'Amplifying STEM stories and spotlighting team achievements across our regional readership.',
-    href: '#',
-  },
-] as const
 
 // ─── Portfolio mock (product showcase) ───────────────────────────────────────
 export const PORTFOLIO_MOCK = {
@@ -84,16 +28,16 @@ export const PORTFOLIO_MOCK = {
 
 // ─── Moderation queue mock ───────────────────────────────────────────────────
 export const MODERATION_MOCK_ROWS = [
-  { to: 'griphook@gringotts.test', team: 'The Golden Snitches', status: 'pending' },
-  { to: 'garrick@ollivanders.test', team: 'Ravenclaw Roboteers', status: 'approved' },
-  { to: 'fred@weasley.test', team: 'Gryffindor Gearheads', status: 'pending' },
-  { to: 'rita@prophet.test', team: 'The Golden Snitches', status: 'changes' },
+  { to: 'partnerships@northwind.example', team: 'Iron Eagles · 14256', status: 'pending' },
+  { to: 'grants@cascade-mfg.example', team: 'Circuit Breakers · 9871', status: 'approved' },
+  { to: 'community@brightpath.example', team: 'Voltage Vipers · 18203', status: 'pending' },
+  { to: 'giving@summit-labs.example', team: 'Gear Daemons · 7412', status: 'changes' },
 ] as const
 
 // ─── Footer social links ─────────────────────────────────────────────────────
 export const FOOTER_SOCIALS = [
   { label: 'Website', href: 'https://firstinspires.org', icon: 'Globe' },
-  { label: 'Contact', href: 'mailto:hello@matchmaker.app', icon: 'Mail' },
+  { label: 'Contact', href: 'mailto:exodiusftc@gmail.com', icon: 'Mail' },
   { label: 'FTC Forum', href: 'https://ftcforum.firstinspires.org', icon: 'AtSign' },
 ] as const
 

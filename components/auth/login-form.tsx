@@ -239,7 +239,7 @@ export function LoginForm() {
             </Form>
           </CardContent>
           
-          <CardFooter className="border-t border-border/50 flex justify-center py-6 bg-accent/10">
+          <CardFooter className="border-t border-border/50 flex justify-center py-6 bg-accent/10 rounded-b-xl">
             <p className="text-sm text-muted-foreground">
               Don&apos;t have an account?{' '}
               <Link href="/signup" className="text-foreground hover:underline font-medium">

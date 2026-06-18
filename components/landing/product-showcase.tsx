@@ -54,7 +54,7 @@ export function PortfolioMock() {
         <span className="h-2.5 w-2.5 rounded-full bg-border" />
         <span className="h-2.5 w-2.5 rounded-full bg-border" />
         <span className="h-2.5 w-2.5 rounded-full bg-border" />
-        <span className="ml-3 font-mono text-[10px] text-muted-foreground">matchmaker.app/portfolio</span>
+        <span className="ml-3 font-mono text-[10px] text-muted-foreground">ftcmatchmaker.app/portfolio</span>
       </div>
       <div className="rounded-lg border border-border bg-card p-5 space-y-4">
         <div className="flex items-center justify-between">

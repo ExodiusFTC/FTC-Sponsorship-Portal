@@ -47,7 +47,7 @@ export default async function HomePage() {
           bullets={[
             'One portfolio, zero duplicated maintenance',
             'Budget line-items with live totals',
-            'Imports from The Blue Alliance',
+            'FTC team number verification built in',
           ]}
           visual={<PortfolioMock />}
         />
@@ -56,7 +56,7 @@ export default async function HomePage() {
           title="Nothing ships without a human read."
           body="Every outbound sponsor email queues for admin review. Approve, send changes back, or block — the submission thread stays tied to the audit log."
           bullets={[
-            'Median review time under 6 hours',
+            'Every email read by a human admin',
             'Inline redlines, not rejection emails',
             'Immutable audit trail per decision',
           ]}

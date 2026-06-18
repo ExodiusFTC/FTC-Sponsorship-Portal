@@ -162,7 +162,7 @@ export default async function SponsorViewPage({ params }: Props) {
         )}
 
         <p className="text-center text-xs text-muted-foreground pb-8">
-          Verified by Matchmaker · FTC Sponsorship Portal
+          Verified by FTC Matchmaker
         </p>
       </div>
     </div>

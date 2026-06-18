@@ -137,7 +137,7 @@ function WorkspacePill({ role }: { role: Role }) {
       <div className="flex-1 min-w-0">
         <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Workspace</div>
         <div className="text-xs font-medium text-foreground truncate">
-          {role === 'admin' ? 'Matchmaker · Admin' : role === 'sponsor' ? 'Matchmaker · Sponsor' : 'Matchmaker · Team'}
+          {role === 'admin' ? 'FTC Matchmaker · Admin' : role === 'sponsor' ? 'FTC Matchmaker · Sponsor' : 'FTC Matchmaker · Team'}
         </div>
       </div>
       <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
@@ -257,7 +257,7 @@ export function Sidebar() {
               <path d="M9 1L16.5 5.5V12.5L9 17L1.5 12.5V5.5L9 1Z" stroke="currentColor" strokeWidth="1.5" />
               <path d="M9 4L14 7V11.5L9 14.5L4 11.5V7L9 4Z" stroke="currentColor" strokeWidth="1" opacity="0.5" />
             </svg>
-            <span className="text-sm font-semibold tracking-tight text-foreground">Matchmaker</span>
+            <span className="text-sm font-semibold tracking-tight text-foreground">FTC Matchmaker</span>
           </Link>
         </div>
 

@@ -326,7 +326,7 @@ export async function sendWelcomeInAppNotification(userId: string, name: string)
   return createInAppNotification({
     recipientId: userId,
     type: 'general',
-    title: 'Welcome to the Matchmaker platform! 🎉',
+    title: 'Welcome to the FTC Matchmaker platform! 🎉',
     body: `Hi ${name},\n\nWe're thrilled to have you here. Your account is currently pending verification—our team reviews photo IDs within 24-48 hours.\n\nIn the meantime, you can start building your team portfolio to get a head start on your funding requests!`,
     skipEmail: true, // coach already receives sendCoachSignupWelcomeEmail
   })

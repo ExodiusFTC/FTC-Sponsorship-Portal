@@ -68,7 +68,7 @@ export default function SubmissionDecisionEmail({
 
           <Hr style={hr} />
           <Text style={footer}>
-            Matchmaker · You received this email because you submitted a portfolio on our platform.
+            FTC Matchmaker · You received this email because you submitted a portfolio on our platform.
           </Text>
         </Container>
       </Body>

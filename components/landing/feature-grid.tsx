@@ -45,7 +45,7 @@ export function FeatureGrid() {
           Built for coaches who don&apos;t have time to send dozens of cold emails.
         </h2>
         <p className="mt-4 text-muted-foreground leading-relaxed">
-          Matchmaker replaces the spray-and-pray sponsorship workflow with a single pipeline that
+          FTC Matchmaker replaces the spray-and-pray sponsorship workflow with a single pipeline that
           your admins, your grantors, and your team lead can all trust.
         </p>
       </FadeUp>

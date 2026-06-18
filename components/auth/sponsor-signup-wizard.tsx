@@ -208,7 +208,7 @@ export function SponsorSignupWizard() {
                             <FormItem><FormLabel>Confirm Password</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
                           )} />
                         </div>
-                        <p className="text-xs text-muted-foreground">Password must be at least 8 characters with uppercase, lowercase, a number, and a special character.</p>
+                        <p className="text-xs text-muted-foreground">Password must be at least 12 characters and include uppercase, lowercase, and a number.</p>
                       </>
                     )}
 

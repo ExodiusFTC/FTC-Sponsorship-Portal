@@ -5,12 +5,12 @@ import { Accordion } from '@/components/ui/accordion'
 
 const items = [
   {
-    q: 'Is Matchmaker COPPA compliant?',
+    q: 'Is FTC Matchmaker COPPA compliant?',
     a: 'Yes — structurally, not just on paper. Only verified adult coaches can register. Student PII never enters the database, and row-level security enforces that guarantee even against a misbehaving admin.',
   },
   {
     q: 'How long does dispatch review usually take?',
-    a: 'Median review time this season is under six hours during weekdays. Every email is read by a human admin before it leaves the platform — no auto-send, no LLM-grammar-check-and-ship.',
+    a: 'Every email is read by a human admin before it leaves the platform — we aim to review within one business day. No auto-send, no LLM-grammar-check-and-ship.',
   },
   {
     q: 'How do you vet sponsors?',
@@ -18,14 +18,14 @@ const items = [
   },
   {
     q: 'Does it cost anything?',
-    a: 'Matchmaker is free for FTC teams during the 2026 season. Sponsors pay nothing to be listed. We do not take a cut of funding.',
+    a: 'FTC Matchmaker is free for teams during the 2026 season. Sponsors pay nothing to be listed. We do not take a cut of funding.',
   },
   {
     q: 'What happens to my team data if we leave?',
     a: 'Coaches can export their full portfolio as JSON + PDF and request deletion at any time. Deletion is hard — not soft — and is logged in an immutable audit trail.',
   },
   {
-    q: 'Can my team use Matchmaker without my coach onboard?',
+    q: 'Can my team use FTC Matchmaker without my coach onboard?',
     a: 'No. The platform requires a verified adult coach to originate every submission. This is a hard constraint, not a policy — student-only accounts cannot be created.',
   },
 ]

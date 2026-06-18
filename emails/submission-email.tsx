@@ -177,7 +177,7 @@ export default function SubmissionEmail({
 
           <Hr style={hr} />
           <Text style={footer}>
-            This proposal was verified and dispatched by the Matchmaker FTC Sponsorship Portal.
+            This proposal was verified and dispatched by FTC Matchmaker.
             {taxLabel ? ' Contributions may be tax-deductible — consult your tax advisor.' : ''}
           </Text>
 

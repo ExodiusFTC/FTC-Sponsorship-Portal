@@ -13,8 +13,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains-mono" })
 
 export const metadata: Metadata = {
-  title: "FTC Sponsorship Portal",
-  description: "Connecting FTC robotics teams with corporate sponsors.",
+  title: "FTC Matchmaker · Sponsorship Portal",
+  description: "The moderated sponsorship pipeline for FIRST Tech Challenge teams. Build a verified portfolio, send admin-reviewed pitches, and connect with sponsors.",
 }
 
 import { ThemeProvider } from "@/components/theme-provider"

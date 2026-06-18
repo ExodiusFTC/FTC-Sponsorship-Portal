@@ -6,11 +6,10 @@ export const sponsorSignupSchema = z.object({
   email: z.string().trim().toLowerCase().email('Invalid email address'),
   password: z
     .string()
-    .min(8, 'Password must be at least 8 characters')
+    .min(12, 'Password must be at least 12 characters')
     .regex(/[A-Z]/, 'Password must include at least one uppercase letter')
     .regex(/[a-z]/, 'Password must include at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must include at least one number')
-    .regex(/[^A-Za-z0-9]/, 'Password must include at least one special character'),
+    .regex(/[0-9]/, 'Password must include at least one number'),
   confirmPassword: z.string().min(1, 'Please confirm your password'),
 
   // Step 2: Company Identity

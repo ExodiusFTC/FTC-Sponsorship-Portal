@@ -71,7 +71,7 @@ export default async function PublicTeamPortfolio({ params }: Props) {
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur-md print:hidden">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-6 py-3">
           <Link href="/" className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground transition-colors">
-            Matchmaker
+            FTC Matchmaker
           </Link>
           <Link
             href="/sponsors/apply"
