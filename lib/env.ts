@@ -10,7 +10,8 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.string().email(),
   RESEND_WEBHOOK_SECRET: z.string().min(1).optional(), // Optional for dev environments
-  // Upstash — optional until rate-limiting is wired up (no format check so placeholders are OK)
+  // Upstash — fully OPTIONAL. Rate limiting degrades gracefully (fails open) when
+  // these are unset. Set both to enable brute-force protection; leave unset to skip it.
   UPSTASH_REDIS_REST_URL: z.string().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
   // App
@@ -24,13 +25,6 @@ const envSchema = z.object({
   CRON_SECRET: z.string().min(1),
 }).superRefine((env, ctx) => {
   if (process.env.NODE_ENV === 'production') {
-    if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Upstash Redis must be configured in production',
-        path: ['UPSTASH_REDIS_REST_URL'],
-      })
-    }
     if (!env.RESEND_WEBHOOK_SECRET) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -46,7 +40,7 @@ const envSchema = z.object({
 // - Production runtime (serverless function handling a request): missing vars throw
 //   immediately so a misconfigured deploy fails fast and loudly.
 // - Production BUILD phase (`next build`): runtime-only secrets (service role, Resend,
-//   Upstash, cron) are injected at request time on Vercel and are NOT needed to render
+//   cron) are injected at request time on Vercel and are NOT needed to render
 //   static pages. Throwing here would crash `collect page data` with a cryptic error on
 //   an unrelated route (e.g. /sitemap.xml). So during the build phase we warn and defer
 //   the hard check to runtime.
