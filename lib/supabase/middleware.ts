@@ -55,7 +55,13 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  if (!user && !isAuthPage && !isPublicRoute) {
+  // API routes authenticate themselves in their handlers (webhooks via Svix,
+  // cron via CRON_SECRET, /api/health is public, the rest return JSON 401/403).
+  // They must never be bounced to the HTML /login page — doing so silently
+  // breaks the Resend webhook and the Vercel cron, which call with no session.
+  const isApiRoute = pathname.startsWith('/api')
+
+  if (!user && !isAuthPage && !isPublicRoute && !isApiRoute) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
