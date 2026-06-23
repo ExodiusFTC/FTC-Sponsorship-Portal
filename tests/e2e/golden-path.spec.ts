@@ -10,6 +10,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test'
+import { clerk, setupClerkTestingToken } from '@clerk/testing/playwright'
 
 const timestamp = Date.now()
 const COACH_EMAIL = `coach_${timestamp}@test.local`
@@ -21,6 +22,9 @@ const COACH_NAME = `Test Coach ${timestamp}`
 // ---------------------------------------------------------------------------
 
 async function signUp(page: Page, name: string, email: string, password: string) {
+  // Signup is now Clerk-driven. Inject a Testing Token so the flow bypasses bot
+  // detection; selectors are best-effort against the Clerk-backed signup form.
+  await setupClerkTestingToken({ page })
   await page.goto('/signup')
   await page.getByLabel(/full name/i).fill(name)
   await page.getByLabel(/^email/i).fill(email)
@@ -29,11 +33,16 @@ async function signUp(page: Page, name: string, email: string, password: string)
   await page.getByRole('button', { name: /create account/i }).click()
 }
 
+// Programmatic Clerk sign-in (no UI form driving). Clears any existing session
+// first, injects a Testing Token, then signs in with the password strategy.
 async function signIn(page: Page, email: string, password: string) {
-  await page.goto('/login')
-  await page.getByLabel(/email/i).fill(email)
-  await page.getByLabel(/password/i).fill(password)
-  await page.getByRole('button', { name: /sign in/i }).click()
+  await setupClerkTestingToken({ page })
+  await page.goto('/')
+  await clerk.signOut({ page }).catch(() => {})
+  await clerk.signIn({
+    page,
+    signInParams: { strategy: 'password', identifier: email, password },
+  })
 }
 
 // ---------------------------------------------------------------------------

@@ -20,7 +20,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { cn } from '@/lib/utils'
+import { cn, htmlToPlainText } from '@/lib/utils'
 import { sponsorUpdateSubmissionStatus } from '@/app/actions/sponsor-decision'
 import { toast } from 'sonner'
 
@@ -87,30 +87,30 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
       {/* Back Link */}
       <button 
         onClick={() => router.back()}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        className="flex items-center gap-2 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
         <ChevronLeft className="h-4 w-4" />
         Back to Dashboard
       </button>
 
-      <div className="grid lg:grid-cols-[1fr,400px] gap-8">
+      <div className="grid lg:grid-cols-[1fr,400px] gap-12 lg:gap-8">
         {/* Left Column: Team Portfolio */}
         <div className="space-y-8">
           <section className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl">
+            <div className="flex items-center gap-5">
+              <div className="h-20 w-20 shrink-0 rounded-2xl bg-primary flex items-center justify-center text-3xl font-medium tracking-tight text-primary-foreground shadow-sm">
                 {teamData?.ftc_team_number || '??'}
               </div>
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">{teamData?.team_name || 'Unknown Team'}</h1>
-                <div className="flex flex-wrap items-center gap-3 mt-1 text-muted-foreground">
+                <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">{teamData?.team_name || 'Unknown Team'}</h1>
+                <div className="flex flex-wrap items-center gap-3 mt-2 text-[15px] text-muted-foreground">
                   <div className="flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5" />
+                    <MapPin className="h-4 w-4" strokeWidth={1.5} />
                     {teamData?.city || 'Unknown'}, {teamData?.state || 'Unknown'}
                   </div>
                   <span>•</span>
                   <div className="flex items-center gap-1.5">
-                    <Building2 className="h-3.5 w-3.5" />
+                    <Building2 className="h-4 w-4" strokeWidth={1.5} />
                     {teamData?.organization || 'Independent'}
                   </div>
                 </div>
@@ -119,66 +119,66 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
           </section>
 
           {/* Custom Pitch Section */}
-          <Card className="border-primary/20 bg-primary/5 backdrop-blur-sm overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              <MessageSquare className="h-12 w-12" />
+          <Card className="border-primary/20 bg-primary/5 shadow-none overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+              <MessageSquare className="h-16 w-16" />
             </div>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Target className="h-5 w-5 text-primary" />
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg flex items-center gap-2 text-primary">
+                <Target className="h-5 w-5" />
                 The Pitch to {sponsorCompany}
               </CardTitle>
-              <CardDescription>Specifically tailored alignment and needs for your company.</CardDescription>
+              <CardDescription className="text-[13px]">Specifically tailored alignment and needs for your company.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground font-mono">Why us?</Label>
-                <p className="text-foreground leading-relaxed italic border-l-2 border-primary/30 pl-4">
-                  &ldquo;{submissionData.custom_pitch_alignment || 'No specific alignment provided.'}&rdquo;
+              <div className="space-y-3">
+                <Label className="text-[11px] uppercase tracking-widest text-muted-foreground font-mono">Why us?</Label>
+                <p className="whitespace-pre-wrap text-[15px] text-foreground leading-relaxed italic border-l-2 border-primary/30 pl-4">
+                  &ldquo;{htmlToPlainText(submissionData.custom_pitch_alignment) || 'No specific alignment provided.'}&rdquo;
                 </p>
               </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground font-mono">Specific Needs</Label>
-                <p className="text-foreground leading-relaxed">
-                  {submissionData.specific_needs_statement || 'General sponsorship request.'}
+              <div className="space-y-3">
+                <Label className="text-[11px] uppercase tracking-widest text-muted-foreground font-mono">Specific Needs</Label>
+                <p className="whitespace-pre-wrap text-[15px] text-foreground leading-relaxed">
+                  {htmlToPlainText(submissionData.specific_needs_statement) || 'General sponsorship request.'}
                 </p>
               </div>
             </CardContent>
           </Card>
 
           {/* Team Portfolio Tabs/Sections */}
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold border-b border-border pb-2">Team Portfolio</h2>
+          <div className="space-y-6 pt-4">
+            <h2 className="text-xl font-medium tracking-tight border-b border-border pb-3">Team Portfolio</h2>
             
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Mission Statement</Label>
-                <p className="text-sm leading-relaxed">{teamData?.mission_statement || 'No mission statement provided.'}</p>
+            <div className="grid gap-8 sm:grid-cols-2">
+              <div className="space-y-3">
+                <Label className="text-[13px] text-muted-foreground">Mission Statement</Label>
+                <p className="text-[15px] leading-relaxed text-foreground">{teamData?.mission_statement || 'No mission statement provided.'}</p>
               </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Technical Capabilities</Label>
+              <div className="space-y-3">
+                <Label className="text-[13px] text-muted-foreground">Technical Capabilities</Label>
                 <div className="flex flex-wrap gap-2">
                   {teamData?.manufacturing_capabilities?.map((cap: string) => (
-                    <span key={cap} className="px-2 py-1 bg-secondary text-secondary-foreground rounded text-[10px] font-medium uppercase tracking-wider">
+                    <span key={cap} className="px-2.5 py-1 bg-secondary text-secondary-foreground rounded-md text-[11px] font-medium uppercase tracking-wider">
                       {cap}
                     </span>
-                  )) || <span className="text-sm text-muted-foreground italic">None listed</span>}
+                  )) || <span className="text-[15px] text-muted-foreground italic">None listed</span>}
                 </div>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <Label className="text-muted-foreground">Recent Achievements</Label>
+            <div className="space-y-4 pt-4">
+              <Label className="text-[13px] text-muted-foreground">Recent Achievements</Label>
               <div className="grid gap-3">
                 {teamData?.team_achievements?.map((ach) => (
-                  <div key={ach.id} className="p-3 rounded-lg border border-border bg-card/50 flex items-start gap-3">
-                    <Award className="h-4 w-4 text-amber-500 mt-1 shrink-0" />
-                    <div>
-                      <div className="text-sm font-semibold">{ach.award || ach.event_name}</div>
-                      <div className="text-xs text-muted-foreground">{ach.season} • {ach.description}</div>
+                  <div key={ach.id} className="p-4 rounded-xl border border-border bg-card flex items-start gap-4 shadow-sm">
+                    <Award className="h-5 w-5 text-amber-500 shrink-0" strokeWidth={1.5} />
+                    <div className="min-w-0">
+                      <div className="text-[15px] font-medium text-foreground">{ach.award || ach.event_name}</div>
+                      <div className="text-[13px] text-muted-foreground mt-0.5">{ach.season} • {ach.description}</div>
                     </div>
                   </div>
-                )) || <div className="text-sm text-muted-foreground italic">No achievements listed.</div>}
+                )) || <div className="text-[15px] text-muted-foreground italic">No achievements listed.</div>}
               </div>
             </div>
           </div>
@@ -188,35 +188,35 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
         <div className="space-y-6">
           <div className="sticky top-8 space-y-6">
             {['approved', 'declined', 'changes_requested'].includes(submissionData.status) ? (
-              <Card className="border-border/50 bg-card/50 backdrop-blur-xl shadow-2xl">
+              <Card className="border-border bg-card shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-lg">Decision Recorded</CardTitle>
-                  <CardDescription>
-                    This submission has already been marked as <strong>{submissionData.status.replace(/_/g, ' ')}</strong>.
+                  <CardDescription className="text-[13px]">
+                    This submission has already been marked as <strong className="text-foreground font-medium">{submissionData.status.replace(/_/g, ' ')}</strong>.
                   </CardDescription>
                 </CardHeader>
               </Card>
             ) : (
-              <Card className="border-border/50 bg-card/50 backdrop-blur-xl shadow-2xl">
-                <CardHeader>
-                  <CardTitle className="text-lg">Decision Console</CardTitle>
-                  <CardDescription>Review and respond to this request.</CardDescription>
+              <Card className="border-border bg-card shadow-md">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg font-medium tracking-tight">Decision Console</CardTitle>
+                  <CardDescription className="text-[13px]">Review and respond to this request.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     <div className="space-y-2">
-                      <Label htmlFor="feedback">Internal/External Feedback</Label>
+                      <Label htmlFor="feedback" className="text-[13px] text-muted-foreground">Internal/External Feedback</Label>
                       <Textarea 
                         id="feedback"
                         placeholder="Add a message for the team or internal notes..."
                         value={feedback}
                         onChange={(e) => setFeedback(e.target.value)}
-                        className="min-h-[120px] bg-background/50"
+                        className="min-h-[120px] bg-background border-border text-[14px]"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="amount">Funding Offer ($)</Label>
+                      <Label htmlFor="amount" className="text-[13px] text-muted-foreground">Funding Offer ($)</Label>
                       <div className="relative">
                         <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
                         <Input 
@@ -224,27 +224,27 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
                           type="number"
                           value={fundingAmount}
                           onChange={(e) => setFundingAmount(parseFloat(e.target.value))}
-                          className="pl-7 bg-background/50"
+                          className="pl-7 bg-background border-border text-[15px] font-mono"
                         />
                       </div>
-                      <p className="text-[10px] text-muted-foreground">Team is asking for ${((submissionData.requested_amount_cents || teamData?.financial_ask_cents || 0) / 100).toLocaleString()}</p>
+                      <p className="text-[11px] text-muted-foreground font-mono">Team is asking for ${((submissionData.requested_amount_cents || teamData?.financial_ask_cents || 0) / 100).toLocaleString()}</p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-2 pt-4 border-t border-border">
+                  <div className="grid grid-cols-1 gap-3 pt-6 border-t border-border">
                     <Button 
                       variant="default" 
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
                       disabled={isPending}
                       onClick={() => setShowConfirm('approved')}
                     >
                       <CheckCircle2 className="mr-2 h-4 w-4" />
                       Approve Sponsorship
                     </Button>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       <Button 
                         variant="outline" 
-                        className="border-amber-500/20 text-amber-500 hover:bg-amber-500/10"
+                        className="border-border hover:bg-accent text-foreground"
                         disabled={isPending}
                         onClick={() => setShowConfirm('changes_requested')}
                       >
@@ -253,7 +253,7 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
                       </Button>
                       <Button 
                         variant="outline" 
-                        className="border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
+                        className="border-rose-500/20 text-rose-600 hover:bg-rose-500/10"
                         disabled={isPending}
                         onClick={() => setShowConfirm('declined')}
                       >
@@ -273,18 +273,18 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="p-4 rounded-xl border border-primary/30 bg-primary/5 backdrop-blur-md space-y-4 shadow-xl shadow-primary/10"
+                  className="p-5 rounded-xl border border-border bg-card space-y-5 shadow-lg"
                 >
-                  <p className="text-sm font-medium text-center">
-                    Are you sure you want to <span className="font-bold uppercase">{showConfirm}</span> this submission?
+                  <p className="text-[14px] leading-relaxed text-center text-foreground">
+                    Are you sure you want to <span className="font-semibold uppercase tracking-wider">{showConfirm.replace('_', ' ')}</span> this submission?
                   </p>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" className="flex-1" onClick={() => setShowConfirm(null)}>Cancel</Button>
+                  <div className="flex gap-3">
+                    <Button variant="ghost" className="flex-1 text-[13px]" onClick={() => setShowConfirm(null)}>Cancel</Button>
                     <Button 
                       variant="default" 
                       className={cn(
-                        "flex-1",
-                        showConfirm === 'approved' ? 'bg-emerald-600' : showConfirm === 'declined' ? 'bg-rose-600' : 'bg-amber-600'
+                        "flex-1 text-[13px] shadow-sm",
+                        showConfirm === 'approved' ? 'bg-primary hover:bg-primary/90' : showConfirm === 'declined' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-amber-600 hover:bg-amber-700'
                       )}
                       onClick={() => handleDecision(showConfirm)}
                       disabled={isPending}
@@ -301,9 +301,9 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
                 href={teamData?.website || '#'}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+                className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
               >
-                <ExternalLink className="h-3 w-3" />
+                <ExternalLink className="h-3.5 w-3.5" />
                 View Team Website
               </a>
             </div>

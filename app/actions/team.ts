@@ -159,11 +159,12 @@ export async function createTeam(data: TeamOnboardingInput) {
 }
 
 export async function uploadTeamLogo(teamId: string, formData: FormData) {
-  let user, supabase
+  let user, supabase, clerkUserId
   try {
     const auth = await requireAuth()
     user = auth.user
     supabase = auth.supabase
+    clerkUserId = auth.clerkUserId
   } catch {
     return { error: 'Not authenticated' }
   }
@@ -179,7 +180,7 @@ export async function uploadTeamLogo(teamId: string, formData: FormData) {
     return { error: 'Logo must be under 2 MB' }
   }
 
-  const filePath = `${user.id}/${teamId}.${ext}`
+  const filePath = `${clerkUserId}/${teamId}.${ext}`
   const { error: uploadError } = await supabase.storage
     .from('team-logos')
     .upload(filePath, file, { upsert: true, contentType: file.type })
@@ -267,23 +268,39 @@ export async function updateTeam(id: string, data: Partial<TeamOnboardingInput>)
     return { error: error.message }
   }
 
-  // Handle achievements sync
+  // Handle achievements sync. Only rewrite when the content actually changed, so an
+  // unchanged save doesn't churn achievement ids/created_at or spend two extra DB
+  // round-trips deleting and re-inserting identical rows.
   if (data.achievements) {
-    // Simple sync: delete existing and insert new
-    await supabase.from('team_achievements').delete().eq('team_id', id)
-    if (data.achievements.length > 0) {
-      const { error: achError } = await supabase.from('team_achievements').insert(
-        data.achievements.map(a => ({
-          team_id: id,
-          season: a.season,
-          event_name: a.eventName,
-          award: a.award,
-          description: a.description
-        }))
-      )
-      if (achError) {
-        console.error('Failed to sync achievements:', achError)
-        // We don't return error here because the main team update succeeded
+    const incoming = data.achievements.map(a => ({
+      team_id: id,
+      season: a.season,
+      event_name: a.eventName,
+      award: a.award,
+      description: a.description ?? null,
+    }))
+
+    const { data: existing } = await supabase
+      .from('team_achievements')
+      .select('season, event_name, award, description')
+      .eq('team_id', id)
+
+    const signature = (a: { season?: string | null; event_name?: string | null; award?: string | null; description?: string | null }) =>
+      JSON.stringify([a.season ?? null, a.event_name ?? null, a.award ?? null, a.description ?? null])
+    const existingSigs = (existing ?? []).map(signature).sort()
+    const incomingSigs = incoming.map(signature).sort()
+    const unchanged =
+      existingSigs.length === incomingSigs.length &&
+      existingSigs.every((s, i) => s === incomingSigs[i])
+
+    if (!unchanged) {
+      await supabase.from('team_achievements').delete().eq('team_id', id)
+      if (incoming.length > 0) {
+        const { error: achError } = await supabase.from('team_achievements').insert(incoming)
+        if (achError) {
+          console.error('Failed to sync achievements:', achError)
+          // We don't return error here because the main team update succeeded
+        }
       }
     }
   }

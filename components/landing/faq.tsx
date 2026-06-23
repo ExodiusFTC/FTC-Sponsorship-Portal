@@ -2,6 +2,9 @@
 
 import { FadeUp } from '@/components/motion/fade-up'
 import { Accordion } from '@/components/ui/accordion'
+import { Section } from '@/components/ui/section'
+import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 
 const items = [
   {
@@ -32,15 +35,31 @@ const items = [
 
 export function FAQ() {
   return (
-    <section id="faq" className="mx-auto max-w-3xl px-6 py-24">
-      <FadeUp>
-        <h2 className="mt-3 text-center text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
-          Questions coaches actually ask.
-        </h2>
-      </FadeUp>
-      <FadeUp delay={0.1} className="mt-12">
-        <Accordion items={items} />
-      </FadeUp>
-    </section>
+    <Section id="faq" className="bg-card border-y border-border">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8">
+        <div className="lg:col-span-5 flex flex-col justify-start">
+          <FadeUp>
+            <h2 className="text-3xl md:text-4xl font-medium tracking-tight text-foreground">
+              Questions coaches actually ask.
+            </h2>
+            <p className="mt-4 text-[17px] text-muted-foreground leading-relaxed">
+              Have a question that isn&apos;t answered here? Reach out to our team.
+            </p>
+            <Link 
+              href="mailto:exodiusftc@gmail.com"
+              className="mt-8 inline-flex w-fit items-center gap-2 rounded-full border border-border bg-background px-6 py-3 text-sm font-medium text-foreground hover:bg-accent transition-colors shadow-sm"
+            >
+              Contact support
+              <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
+            </Link>
+          </FadeUp>
+        </div>
+        <div className="lg:col-span-7">
+          <FadeUp delay={0.1}>
+            <Accordion items={items} />
+          </FadeUp>
+        </div>
+      </div>
+    </Section>
   )
 }

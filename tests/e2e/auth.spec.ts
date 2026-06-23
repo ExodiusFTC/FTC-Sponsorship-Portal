@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test'
+import { setupClerkTestingToken } from '@clerk/testing/playwright'
 
 test.describe('Auth pages', () => {
   test('login page renders form', async ({ page }) => {
+    await setupClerkTestingToken({ page })
     await page.goto('/login')
     await expect(page.getByLabel(/email/i)).toBeVisible()
     await expect(page.getByLabel(/password/i)).toBeVisible()
@@ -10,6 +12,7 @@ test.describe('Auth pages', () => {
   })
 
   test('login shows error for invalid credentials', async ({ page }) => {
+    await setupClerkTestingToken({ page })
     await page.goto('/login')
     await page.getByLabel(/email/i).fill('nobody@nowhere.invalid')
     await page.getByLabel(/password/i).fill('wrongpassword')

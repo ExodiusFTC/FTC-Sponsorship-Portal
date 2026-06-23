@@ -1,15 +1,15 @@
 import { PortfolioForm } from '@/components/portfolio-builder/portfolio-form'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthedProfile } from '@/lib/actions-utils'
 import { redirect } from 'next/navigation'
 
 export default async function NewSubmissionPage({ searchParams }: { searchParams: Promise<{ sponsor?: string, reuse?: string }> }) {
   const params = await searchParams
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const authed = await getAuthedProfile()
 
-  if (!user) {
+  if (!authed) {
     redirect('/login')
   }
+  const { supabase, user } = authed
 
   const { data: team } = await supabase
     .from('teams')

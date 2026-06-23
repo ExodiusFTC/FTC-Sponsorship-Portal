@@ -1,14 +1,14 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAuthedProfile } from '@/lib/actions-utils'
 import { redirect } from 'next/navigation'
 import { SponsorForm } from '@/components/sponsor/sponsor-form'
 import { buttonVariants } from '@/components/ui/button'
 import Link from 'next/link'
 
 export default async function NewSponsorPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const authed = await getAuthedProfile()
 
-  if (!user) redirect('/login')
+  if (!authed) redirect('/login')
+  const { supabase, user } = authed
 
   const { data: profile } = await supabase
     .from('profiles')

@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { UploadCloud, CheckCircle2, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@clerk/nextjs'
 import { toast } from 'sonner'
 
 export default function UploadCredentialsPage() {
@@ -17,6 +18,7 @@ export default function UploadCredentialsPage() {
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
+  const { userId } = useAuth()
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -37,11 +39,10 @@ export default function UploadCredentialsPage() {
 
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
+      if (!userId) throw new Error('Not authenticated')
 
       const fileExt = file.name.split('.').pop()
-      const filePath = `${user.id}/credentials.${fileExt}`
+      const filePath = `${userId}/credentials.${fileExt}`
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage
@@ -54,7 +55,7 @@ export default function UploadCredentialsPage() {
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ coach_credentials_url: filePath })
-        .eq('id', user.id)
+        .eq('clerk_user_id', userId)
 
       if (updateError) throw updateError
 

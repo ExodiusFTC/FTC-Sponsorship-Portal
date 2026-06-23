@@ -3,6 +3,7 @@
 import { FileCog, ShieldCheck, Mailbox, GitBranch, Gauge, Lock } from 'lucide-react'
 import { FadeUp } from '@/components/motion/fade-up'
 import { StaggerContainer, StaggerItem } from '@/components/motion/stagger-container'
+import { Section, SectionHeading } from '@/components/ui/section'
 
 const features = [
   {
@@ -39,34 +40,31 @@ const features = [
 
 export function FeatureGrid() {
   return (
-    <section id="product" className="mx-auto max-w-[1440px] px-6 py-24">
-      <FadeUp className="max-w-2xl">
-        <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
-          Built for coaches who don&apos;t have time to send dozens of cold emails.
-        </h2>
-        <p className="mt-4 text-muted-foreground leading-relaxed">
-          FTC Matchmaker replaces the spray-and-pray sponsorship workflow with a single pipeline that
-          your admins, your grantors, and your team lead can all trust.
-        </p>
+    <Section id="product" className="pt-0">
+      <FadeUp>
+        <SectionHeading 
+          title="Built for coaches who don't have time to send dozens of cold emails."
+          description="FTC Matchmaker replaces the spray-and-pray sponsorship workflow with a single pipeline that your admins, your grantors, and your team lead can all trust."
+        />
       </FadeUp>
 
-      <StaggerContainer className="mt-12 grid gap-px bg-border rounded-xl border border-border overflow-hidden sm:grid-cols-2 lg:grid-cols-3">
+      <StaggerContainer className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {features.map((f) => {
           const Icon = f.icon
           return (
             <StaggerItem
               key={f.title}
-              className="group relative bg-background p-6 transition-colors hover:bg-accent/40"
+              className="group relative rounded-xl border border-border bg-card p-8 shadow-sm transition-shadow hover:shadow-md"
             >
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-muted/60 text-muted-foreground transition-colors group-hover:border-border/80 group-hover:text-foreground">
-                <Icon className="h-[18px] w-[18px]" strokeWidth={1.5} />
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                <Icon className="h-6 w-6" strokeWidth={1.5} />
               </div>
-              <h3 className="mt-5 text-base font-medium text-foreground">{f.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.body}</p>
+              <h3 className="mt-6 text-lg font-medium tracking-tight text-foreground">{f.title}</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{f.body}</p>
             </StaggerItem>
           )
         })}
       </StaggerContainer>
-    </section>
+    </Section>
   )
 }

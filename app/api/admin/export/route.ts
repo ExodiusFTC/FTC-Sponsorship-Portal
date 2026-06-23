@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/actions-utils'
+import { htmlToPlainText } from '@/lib/utils'
 
 const CSV_HEADERS = [
   'submission_id',
@@ -97,8 +98,8 @@ export async function GET() {
         s.status,
         s.created_at,
         s.requested_amount_cents,
-        s.custom_pitch_alignment,
-        s.specific_needs_statement,
+        htmlToPlainText(s.custom_pitch_alignment),
+        htmlToPlainText(s.specific_needs_statement),
         team?.id,
         team?.team_name,
         team?.ftc_team_number,

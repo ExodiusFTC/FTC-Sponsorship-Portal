@@ -1,14 +1,14 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAuthedProfile } from '@/lib/actions-utils'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { DashboardShell } from '@/components/coach/dashboard-shell'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const authed = await getAuthedProfile()
 
-  if (!user) return null
+  if (!authed) return null
+  const { supabase, user } = authed
 
   // 1. Initial Data Fetch
   const [

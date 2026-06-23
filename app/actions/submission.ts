@@ -26,21 +26,20 @@ async function getCoachTeamId() {
 
   const { data: team } = await supabase
     .from('teams')
-    .select('id')
+    .select('id, financial_ask_cents')
     .eq('owner_id', user.id)
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle()
 
   if (!team) return { error: 'Team not found. Complete onboarding first.' as const }
-  return { supabase, user, teamId: team.id }
+  return { supabase, user, teamId: team.id, financialAsk: team.financial_ask_cents ?? 0 }
 }
 
 export async function saveSubmission(
   data: SubmissionInput,
   status: 'draft' | 'pending' = 'draft',
-  submissionId?: string,
-  variantLabel = 'default'
+  submissionId?: string
 ) {
   if (status === 'pending') {
     const result = submissionSchema.safeParse(data)
@@ -55,7 +54,7 @@ export async function saveSubmission(
 
   const ctx = await getCoachTeamId()
   if ('error' in ctx) return { error: ctx.error }
-  const { supabase, user, teamId } = ctx
+  const { supabase, user, teamId, financialAsk } = ctx
 
   // Spec: max 3 pending submissions per rolling 7-day window
   if (status === 'pending') {
@@ -72,7 +71,6 @@ export async function saveSubmission(
   }
 
   const season = getCurrentSeasonLabel()
-  const financialAsk = (await supabase.from('teams').select('financial_ask_cents').eq('id', teamId).single()).data?.financial_ask_cents ?? 0
 
   // Block submission if the total ask exceeds the targeted sponsor's remaining capacity, so
   // coaches get immediate feedback instead of an opaque rejection at admin review. RLS already
@@ -105,7 +103,6 @@ export async function saveSubmission(
     specific_needs_statement: data.specificNeedsStatement ?? null,
     local_connection_notes: data.localConnectionNotes ?? null,
     status,
-    variant_label: variantLabel,
     season,
     submitted_at: status === 'pending' ? new Date().toISOString() : null,
     requested_amount_cents: financialAsk
@@ -193,7 +190,7 @@ export async function autoSaveSubmissionDraft(
 ): Promise<{ id?: string; error?: string }> {
   const ctx = await getCoachTeamId()
   if ('error' in ctx) return { error: ctx.error }
-  const { supabase, user, teamId } = ctx
+  const { supabase, teamId, financialAsk } = ctx
 
   if (!data.sponsorId) {
     return { error: 'Sponsor ID is required to autosave' }
@@ -207,7 +204,7 @@ export async function autoSaveSubmissionDraft(
     local_connection_notes: data.localConnectionNotes ?? null,
     status: 'draft' as const,
     season: getCurrentSeasonLabel(),
-    requested_amount_cents: (await supabase.from('teams').select('financial_ask_cents').eq('id', teamId).single()).data?.financial_ask_cents ?? 0
+    requested_amount_cents: financialAsk
   }
 
   if (submissionId) {
@@ -251,48 +248,6 @@ export async function autoSaveSubmissionDraft(
   const { data: inserted, error } = await supabase
     .from('submissions')
     .insert(payload)
-    .select('id')
-    .single()
-
-  if (error) return { error: error.message }
-  return { id: inserted.id }
-}
-
-/** Clone an existing draft to a new variant label (Application V2 versioning). */
-export async function cloneSubmission(
-  submissionId: string,
-  newVariantLabel: string
-): Promise<{ id?: string; error?: string }> {
-  const ctx = await getCoachTeamId()
-  if ('error' in ctx) return { error: ctx.error }
-  const { supabase, user, teamId } = ctx
-
-  const { data: source } = await supabase
-    .from('submissions')
-    .select('*')
-    .eq('id', submissionId)
-    .eq('team_id', teamId)
-    .single()
-
-  if (!source) return { error: 'Submission not found' }
-  if (source.status !== 'draft') return { error: 'Only draft submissions can be cloned' }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const clonePayload: any = {
-    team_id: teamId,
-    sponsor_id: source.sponsor_id,
-    custom_pitch_alignment: source.custom_pitch_alignment,
-    specific_needs_statement: source.specific_needs_statement,
-    local_connection_notes: source.local_connection_notes,
-    status: 'draft',
-    variant_label: newVariantLabel,
-    season: source.season || getCurrentSeasonLabel(),
-    requested_amount_cents: source.requested_amount_cents || (await supabase.from('teams').select('financial_ask_cents').eq('id', teamId).single()).data?.financial_ask_cents || 0
-  }
-
-  const { data: inserted, error } = await supabase
-    .from('submissions')
-    .insert(clonePayload)
     .select('id')
     .single()
 

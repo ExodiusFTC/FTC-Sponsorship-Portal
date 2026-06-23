@@ -6,6 +6,13 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   // Supabase (server-only)
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  // Clerk (public)
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
+  NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.string().default('/login'),
+  NEXT_PUBLIC_CLERK_SIGN_UP_URL: z.string().default('/signup'),
+  // Clerk (server-only)
+  CLERK_SECRET_KEY: z.string().min(1),
+  CLERK_WEBHOOK_SIGNING_SECRET: z.string().min(1).optional(), // Optional for dev environments
   // Resend
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.string().email(),
@@ -26,6 +33,13 @@ const envSchema = z.object({
         code: z.ZodIssueCode.custom,
         message: 'RESEND_WEBHOOK_SECRET is required in production',
         path: ['RESEND_WEBHOOK_SECRET'],
+      })
+    }
+    if (!env.CLERK_WEBHOOK_SIGNING_SECRET) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'CLERK_WEBHOOK_SIGNING_SECRET is required in production',
+        path: ['CLERK_WEBHOOK_SIGNING_SECRET'],
       })
     }
   }

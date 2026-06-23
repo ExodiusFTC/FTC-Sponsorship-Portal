@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import Image from 'next/image'
 import type { Team, TeamAchievement } from '@/lib/supabase/types'
 import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { ImageCropperDialog, getCroppedBlob, computeCenterCrop } from '@/components/ui/image-cropper-dialog'
@@ -24,6 +25,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
   const [uploadingDrop, setUploadingDrop] = useState(false)
   const [pendingPitchFile, setPendingPitchFile] = useState<File | null>(null)
   const [pitchCropperOpen, setPitchCropperOpen] = useState(false)
+  const { userId } = useAuth()
 
   const isIncubator = team.status === 'incubator'
 
@@ -88,9 +90,11 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
   })
 
   async function uploadFile(file: File) {
+    if (!userId) {
+      toast.error('Not authenticated')
+      return
+    }
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
 
     const ext = file.name.split('.').pop()?.toLowerCase()
     if (!ext || !['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) {
@@ -102,7 +106,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
       return
     }
 
-    const filePath = `${user.id}/${Date.now()}.${ext}`
+    const filePath = `${userId}/${Date.now()}.${ext}`
     const { error } = await supabase.storage.from('pitch-storage').upload(filePath, file)
     if (error) { toast.error(error.message); return }
     const { data: urlData } = supabase.storage.from('pitch-storage').getPublicUrl(filePath)
@@ -241,7 +245,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
                 <FormControl>
                   <select 
                     {...field} 
-                    className="flex h-9 w-full rounded-md border border-input bg-zinc-950 px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <option value="501c3">501(c)(3) Non-profit</option>
                     <option value="School">School-based Team</option>
@@ -263,10 +267,10 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
         </div>
 
         {isIncubator && (
-          <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/5 p-6 space-y-5">
-            <div className="flex items-center gap-2 text-indigo-400">
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 space-y-5">
+            <div className="flex items-center gap-2 text-primary">
               <Sparkles className="h-5 w-5" />
-              <h3 className="text-sm font-semibold uppercase tracking-widest border-b border-indigo-500/20 pb-2 flex-1">
+              <h3 className="text-sm font-semibold uppercase tracking-widest border-b border-primary/20 pb-2 flex-1 text-primary">
                 The Founder's Pitch
               </h3>
             </div>
@@ -522,9 +526,9 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
           >
             {visualItems.length === 0 ? (
               <div className="text-center py-12 px-6 pointer-events-none">
-                <ImageIcon className="mx-auto h-8 w-8 mb-3 text-zinc-600" />
-                <p className="text-sm text-zinc-500">Drop images here or click Browse above</p>
-                <p className="text-xs text-zinc-700 mt-1">PNG, JPG, WebP, GIF up to 5 MB each</p>
+                <ImageIcon className="mx-auto h-8 w-8 mb-3 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">Drop images here or click Browse above</p>
+                <p className="text-xs text-muted-foreground/80 mt-1">PNG, JPG, WebP, GIF up to 5 MB each</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3">
@@ -536,7 +540,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
                         <Trash className="h-3.5 w-3.5" />
                       </button>
                       <FormField control={form.control} name={`visualPitchItems.${index}.caption`} render={({ field }) => (
-                        <FormControl><Input className="bg-zinc-950/80 border-none text-xs h-8 placeholder:text-zinc-500" placeholder="Add caption…" {...field} value={field.value ?? ''} /></FormControl>
+                        <FormControl><Input className="bg-background/80 border-none text-xs h-8 placeholder:text-muted-foreground text-foreground" placeholder="Add caption…" {...field} value={field.value ?? ''} /></FormControl>
                       )} />
                     </div>
                   </div>
@@ -621,7 +625,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
             <FormField control={form.control} name="budgetItems" render={({ field }) => (
               <div className="space-y-3">
                 {(field.value || []).map((item: any, index: number) => (
-                  <div key={index} className="grid grid-cols-12 gap-3 items-end bg-zinc-950/30 p-3 rounded-lg border border-border/50">
+                  <div key={index} className="grid grid-cols-12 gap-3 items-end bg-accent/50 p-3 rounded-lg border border-border/50">
                     <div className="col-span-6">
                       <FormLabel className="text-[10px] uppercase text-muted-foreground">Item</FormLabel>
                       <Input 
@@ -689,7 +693,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
             
             <div className="flex items-center justify-between pt-2 border-t border-border">
               <span className="text-sm font-medium text-foreground">Total Request</span>
-              <span className="text-lg font-bold text-indigo-400">
+              <span className="text-lg font-bold text-foreground">
                 ${((form.watch('financialAskCents') || 0) / 100).toLocaleString()}
               </span>
             </div>
@@ -697,7 +701,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
         </div>
 
         <div className="flex justify-end pt-4">
-          <Button type="submit" disabled={isPending} className="px-8 h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg shadow-indigo-500/20">
+          <Button type="submit" disabled={isPending} className="px-8 h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-sm">
             {isPending ? 'Saving…' : 'Save Changes'}
           </Button>
         </div>

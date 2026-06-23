@@ -1,13 +1,13 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAuthedProfile } from '@/lib/actions-utils'
 import { redirect } from 'next/navigation'
 import { PageHeader } from '@/components/page-header'
 import { AccountSettings } from '@/components/account/account-settings'
 
 export default async function SettingsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const authed = await getAuthedProfile()
 
-  if (!user) redirect('/login')
+  if (!authed) redirect('/login')
+  const { supabase, user } = authed
 
   const { data: profile } = await supabase
     .from('profiles')

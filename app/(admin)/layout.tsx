@@ -1,12 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAuthedProfile } from '@/lib/actions-utils'
 import { redirect } from 'next/navigation'
 import { AppLayout } from '@/components/app-layout'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const authed = await getAuthedProfile()
+  if (!authed) redirect('/login')
+  const { supabase, user } = authed
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') redirect('/dashboard')

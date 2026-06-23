@@ -164,6 +164,7 @@ export type Database = {
           address_line1: string | null
           age_confirmed_at: string | null
           city: string | null
+          clerk_user_id: string | null
           coach_credentials_url: string | null
           coach_verified: boolean
           coppa_acknowledged: boolean
@@ -186,6 +187,7 @@ export type Database = {
           address_line1?: string | null
           age_confirmed_at?: string | null
           city?: string | null
+          clerk_user_id?: string | null
           coach_credentials_url?: string | null
           coach_verified?: boolean
           coppa_acknowledged?: boolean
@@ -208,6 +210,7 @@ export type Database = {
           address_line1?: string | null
           age_confirmed_at?: string | null
           city?: string | null
+          clerk_user_id?: string | null
           coach_credentials_url?: string | null
           coach_verified?: boolean
           coppa_acknowledged?: boolean

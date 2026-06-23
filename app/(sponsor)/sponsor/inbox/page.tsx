@@ -1,11 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAuthedProfile } from '@/lib/actions-utils'
 import { redirect } from 'next/navigation'
 import { SponsorInboxWrapper } from '@/components/sponsor/inbox-wrapper'
 
 export default async function SponsorInboxPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const authed = await getAuthedProfile()
+  if (!authed) redirect('/login')
+  const { supabase, user } = authed
 
   const { data: notifications } = await supabase
     .from('notifications')

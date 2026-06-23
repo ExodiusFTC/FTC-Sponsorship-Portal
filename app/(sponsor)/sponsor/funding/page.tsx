@@ -1,13 +1,13 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAuthedProfile } from '@/lib/actions-utils'
 import { redirect } from 'next/navigation'
 import { Wallet, History, ArrowUpRight, TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 
 export default async function SponsorFundingPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const authed = await getAuthedProfile()
+  if (!authed) redirect('/login')
+  const { supabase, user } = authed
 
   const { data: profile } = await supabase
     .from('profiles')

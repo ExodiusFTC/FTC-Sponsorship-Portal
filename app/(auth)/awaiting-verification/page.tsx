@@ -1,15 +1,15 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { getAuthedProfile } from '@/lib/actions-utils'
 import { redirect } from 'next/navigation'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { signOut } from '@/app/actions/auth'
+import { SignOutButton } from './sign-out-button'
 
 export default async function AwaitingVerificationPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const authed = await getAuthedProfile()
 
-  if (!user) redirect('/login')
+  if (!authed) redirect('/login')
+  const { supabase, user } = authed
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -74,14 +74,7 @@ export default async function AwaitingVerificationPage() {
           >
             Contact support
           </a>
-          <form action={signOut} className="w-full">
-            <button
-              type="submit"
-              className={cn(buttonVariants({ variant: 'ghost' }), 'w-full text-muted-foreground')}
-            >
-              Sign out
-            </button>
-          </form>
+          <SignOutButton />
         </div>
       </div>
     </div>

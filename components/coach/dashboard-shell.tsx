@@ -5,13 +5,14 @@ import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import {
   Search, Plus, ArrowUpRight, Sparkles, Building2, AlertCircle,
-  Trash2, ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { FadeUp } from '@/components/motion/fade-up'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { StatCard } from '@/components/ui/stat-card'
 import {
   Dialog,
   DialogContent,
@@ -24,23 +25,29 @@ import {
 import { cn } from '@/lib/utils'
 import { PortfolioTab } from './portfolio-tab'
 import { InboxTab } from './inbox-tab'
-import { InsightsTab } from './insights-tab'
 import { AccountSettings } from '@/components/account/account-settings'
 import { updateTeam } from '@/app/actions/team'
 import { toast } from 'sonner'
 import type { Team, Notification, Submission, Sponsor, TeamAchievement, SubmissionSummary } from '@/lib/supabase/types'
 
+/* Three primary destinations + two reachable-but-hidden views (Inbox via the
+   top-bar bell, Settings via the account menu). Legacy tab names are aliased
+   so old links and keyboard shortcuts keep working. */
 const TABS = [
-  { id: 'overview', label: 'Overview' },
+  { id: 'overview', label: 'Home' },
   { id: 'portfolio', label: 'Portfolio' },
-  { id: 'find-sponsors', label: 'Find Sponsors' },
-  { id: 'submissions', label: 'Submissions' },
-  { id: 'drafts', label: 'Drafts' },
+  { id: 'sponsors', label: 'Sponsors' },
   { id: 'inbox', label: 'Inbox' },
-  { id: 'insights', label: 'Insights' },
-  { id: 'ledger', label: 'Ledger' },
   { id: 'settings', label: 'Settings' },
 ]
+
+const TAB_ALIASES: Record<string, string> = {
+  'find-sponsors': 'sponsors',
+  'submissions': 'sponsors',
+  'drafts': 'sponsors',
+  'ledger': 'portfolio',
+  'insights': 'overview',
+}
 
 export function DashboardShell({
   team,
@@ -65,7 +72,10 @@ export function DashboardShell({
   const reduce = useReducedMotion()
 
   const rawTab = searchParams.get('tab') ?? 'overview'
-  const tab = TABS.some(t => t.id === rawTab) ? rawTab : 'overview'
+  const canonical = TAB_ALIASES[rawTab] ?? rawTab
+  const tab = TABS.some(t => t.id === canonical) ? canonical : 'overview'
+  // When arriving from a legacy "submissions"/"drafts" link, open the pitches view.
+  const initialSponsorsView: 'find' | 'pitches' = (rawTab === 'submissions' || rawTab === 'drafts') ? 'pitches' : 'find'
 
   const setTab = (newTab: string) => {
     const sp = new URLSearchParams(searchParams)
@@ -88,8 +98,8 @@ export function DashboardShell({
               <> · {team.city}{team.city && team.state && ', '}{team.state}</>
             )}
           </div>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">{team.team_name}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{team.organization ?? 'Independent'}</p>
+          <h1 className="mt-2 text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">{team.team_name}</h1>
+          <p className="mt-1 text-[15px] text-muted-foreground">{team.organization ?? 'Independent'}</p>
         </div>
       </div>
 
@@ -115,12 +125,8 @@ export function DashboardShell({
             />
           )}
           {tab === 'portfolio' && <PortfolioTab team={team} achievements={achievements} />}
-          {tab === 'find-sponsors' && <FindSponsorsTab sponsors={sponsors} submissions={submissions} />}
-          {tab === 'submissions' && <SubmissionsTab submissions={submissions} switchTab={setTab} />}
-          {tab === 'drafts' && <DraftsTab submissions={submissions} />}
+          {tab === 'sponsors' && <SponsorsTab sponsors={sponsors} submissions={submissions} initialView={initialSponsorsView} />}
           {tab === 'inbox' && <InboxTab notifications={notifications} switchTab={setTab} />}
-          {tab === 'insights' && <InsightsTab submissions={submissions} sponsors={sponsors} team={team} />}
-          {tab === 'ledger' && <LedgerTab team={team} />}
           {tab === 'settings' && (
             <div className="max-w-[600px] mx-auto">
               <AccountSettings currentName={profile?.full_name} email={profile?.email} role={profile?.role} />
@@ -133,16 +139,6 @@ export function DashboardShell({
 }
 
 /* ── Shared components ──────────────────────────────────────────────────────── */
-
-function KpiCard({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-border/80">
-      <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">{label}</div>
-      <div className="mt-2 text-3xl font-semibold tracking-tight text-foreground tabular-nums">{value}</div>
-      {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
-    </div>
-  )
-}
 
 function StatusChip({ status }: { status: string }) {
   const statusConfig: Record<string, { bg: string; text: string; border: string }> = {
@@ -209,17 +205,17 @@ function OverviewTab({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-20">
       {team.status === 'incubator' && (
         <FadeUp>
-          <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-600 dark:text-indigo-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Sparkles className="h-5 w-5" />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">Ready to graduate?</h4>
-                <p className="mt-1 text-sm text-indigo-700 dark:text-indigo-300/80 max-w-md">
+                <h4 className="text-[15px] font-semibold text-foreground">Ready to graduate?</h4>
+                <p className="mt-1 text-[13px] text-muted-foreground max-w-md leading-relaxed">
                   If you have secured your seed funding and registered with FIRST, you can upgrade your account to unlock technical robot specs and award history.
                 </p>
               </div>
@@ -227,36 +223,36 @@ function OverviewTab({
 
             <Dialog open={showGraduation} onOpenChange={setShowGraduation}>
               <DialogTrigger
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md bg-indigo-500 px-4 py-2 text-sm font-medium text-white shadow transition-colors hover:bg-indigo-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500 disabled:pointer-events-none disabled:opacity-50"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
               >
                 I have a team now
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px] bg-zinc-950 border-zinc-800">
+              <DialogContent className="sm:max-w-[425px] bg-card border-border">
                 <DialogHeader>
-                  <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-indigo-400" />
+                  <DialogTitle className="text-xl font-medium tracking-tight flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
                     Level Up Your Team
                   </DialogTitle>
-                  <DialogDescription className="text-zinc-400">
+                  <DialogDescription className="text-muted-foreground text-[13px]">
                     Enter your official registration details to graduate from an Incubator to an Existing Team.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
-                    <Label className="text-zinc-300">New FTC Team Number</Label>
+                    <Label className="text-foreground">New FTC Team Number</Label>
                     <Input
                       type="number"
                       placeholder="e.g. 12345"
-                      className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-600 focus:ring-indigo-500"
+                      className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-primary"
                       value={gradNumber}
                       onChange={(e) => setGradNumber(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-zinc-300">Official Team Name</Label>
+                    <Label className="text-foreground">Official Team Name</Label>
                     <Input
                       placeholder="Enter official team name"
-                      className="bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-600 focus:ring-indigo-500"
+                      className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-primary"
                       value={gradName}
                       onChange={(e) => setGradName(e.target.value)}
                     />
@@ -266,14 +262,14 @@ function OverviewTab({
                   <Button
                     variant="outline"
                     onClick={() => setShowGraduation(false)}
-                    className="border-zinc-800 text-zinc-300 hover:bg-zinc-900 hover:text-white"
+                    className="border-border text-foreground hover:bg-accent hover:text-foreground"
                   >
                     Cancel
                   </Button>
                   <Button
                     onClick={handleGraduate}
                     disabled={isGraduating || !gradNumber}
-                    className="bg-indigo-600 text-white hover:bg-indigo-500"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
                   >
                     {isGraduating ? 'Upgrading...' : 'Graduate Team'}
                   </Button>
@@ -288,6 +284,7 @@ function OverviewTab({
         <Button
           variant="secondary"
           onClick={() => switchTab('portfolio')}
+          className="shadow-sm border border-border/50"
         >
           Edit Portfolio
         </Button>
@@ -297,21 +294,21 @@ function OverviewTab({
         <FadeUp>
           <div className="space-y-3">
             {needsAttention.map(s => (
-              <div key={s.id} className="rounded-xl border border-border bg-destructive/5 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div key={s.id} className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-[var(--accent-error)]" />
-                    <h4 className="text-sm font-medium text-[var(--accent-error)]">
+                    <AlertCircle className="h-4 w-4 text-rose-600" />
+                    <h4 className="text-[14px] font-medium text-rose-600">
                       {s.status === 'declined' ? 'Submission Declined' : 'Changes Requested'}
                     </h4>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="mt-1 text-[13px] text-muted-foreground">
                     <span className="font-semibold text-foreground">{s.company_name}</span>: {s.admin_feedback || 'Needs your attention.'}
                   </p>
                 </div>
                 <Link
                   href={`/submissions/${s.id}/edit`}
-                  className="inline-flex items-center justify-center whitespace-nowrap rounded-[6px] bg-[var(--accent-error)] text-white px-3 h-9 shrink-0 text-sm font-medium transition-all hover:brightness-105 active:scale-95 shadow-[0_0_12px_rgba(229,32,32,0.18)]"
+                  className="inline-flex items-center justify-center whitespace-nowrap rounded-[6px] bg-rose-600 text-white px-4 h-9 shrink-0 text-[13px] font-medium transition-all hover:bg-rose-700 active:scale-95 shadow-sm"
                 >
                   Review Submission
                 </Link>
@@ -321,13 +318,58 @@ function OverviewTab({
         </FadeUp>
       )}
 
-      <FadeUp className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Active pitches" value={activePitches} hint="In review or approved" />
-        <KpiCard label="Submissions" value={submissionsCount} hint="All-time sponsor outreach" />
-        <KpiCard label="Funded" value={totalFunded} hint="Approved by sponsors" />
-        <KpiCard label="Portfolio ask" value={`$${(portfolioAsk / 100).toLocaleString('en-US')}`} hint="Season target" />
+      <FadeUp className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard icon={AlertCircle} label="Active pitches" value={activePitches} description="In review or approved" />
+        <StatCard icon={Search} label="Submissions" value={submissionsCount} description="All-time sponsor outreach" />
+        <StatCard icon={Building2} label="Funded" value={totalFunded} description="Approved by sponsors" />
+        <StatCard icon={Sparkles} label="Portfolio ask" value={`$${(portfolioAsk / 100).toLocaleString('en-US')}`} description="Season target" />
       </FadeUp>
 
+    </div>
+  )
+}
+
+/* ── Sponsors tab ───────────────────────────────────────────────────────────── */
+/* Combines sponsor discovery and the pitch lifecycle (submissions + drafts) behind
+   a single toggle, replacing the former Find Sponsors / Submissions / Drafts tabs. */
+
+function SponsorsTab({
+  sponsors, submissions, initialView,
+}: {
+  sponsors: Sponsor[]
+  submissions: SubmissionSummary[]
+  initialView: 'find' | 'pitches'
+}) {
+  const [view, setView] = useState<'find' | 'pitches'>(initialView)
+  const pitchCount = submissions.length
+
+  const VIEWS: { id: 'find' | 'pitches'; label: string }[] = [
+    { id: 'find', label: 'Find sponsors' },
+    { id: 'pitches', label: `My pitches${pitchCount ? ` · ${pitchCount}` : ''}` },
+  ]
+
+  return (
+    <div className="space-y-6 pb-20">
+      <div className="inline-flex rounded-lg border border-border bg-card/60 p-0.5 shadow-sm">
+        {VIEWS.map(v => (
+          <button
+            key={v.id}
+            onClick={() => setView(v.id)}
+            className={cn(
+              'rounded-md px-4 py-1.5 text-[13px] font-medium transition-colors',
+              view === v.id
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+            )}
+          >
+            {v.label}
+          </button>
+        ))}
+      </div>
+
+      {view === 'find'
+        ? <FindSponsorsTab sponsors={sponsors} submissions={submissions} />
+        : <SubmissionsTab submissions={submissions} onNewPitch={() => setView('find')} />}
     </div>
   )
 }
@@ -350,7 +392,7 @@ function SponsorInitials({ name, logoUrl }: { name: string; logoUrl?: string | n
     )
   }
   return (
-    <span className="text-sm font-semibold text-zinc-300">{initials}</span>
+    <span className="text-sm font-semibold">{initials}</span>
   )
 }
 
@@ -378,21 +420,21 @@ function FindSponsorsTab({ sponsors, submissions }: { sponsors: Sponsor[], submi
   return (
     <FadeUp>
       <div className="space-y-6">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-indigo-400" strokeWidth={1.5} />
-          <h2 className="text-lg font-medium text-zinc-100">Find sponsors for your next pitch</h2>
+        <div className="flex items-center gap-2 text-primary">
+          <Sparkles className="h-4 w-4" strokeWidth={1.5} />
+          <h2 className="text-[15px] font-medium tracking-tight text-foreground">Find sponsors for your next pitch</h2>
         </div>
 
         {/* Filters row */}
         <div className="flex flex-wrap gap-3">
           {/* Search */}
           <div className="relative flex-1 min-w-[220px]">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" strokeWidth={1.5} />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" strokeWidth={1.5} />
             <input
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search companies…"
-              className="w-full rounded-lg border border-border bg-card/80 py-2.5 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary/50 transition-colors"
+              className="w-full rounded-md border border-border bg-card py-2 pl-9 pr-3 text-[13px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary/50 transition-shadow shadow-sm"
             />
           </div>
 
@@ -403,10 +445,10 @@ function FindSponsorsTab({ sponsors, submissions }: { sponsors: Sponsor[], submi
                 key={t}
                 onClick={() => setIndustry(t)}
                 className={cn(
-                  'rounded-full border px-3 py-1 text-xs transition-colors capitalize',
+                  'rounded-md border px-3 py-1.5 text-[11px] font-medium transition-colors capitalize shadow-sm',
                   industry === t
-                    ? 'border-indigo-600 bg-indigo-600/20 text-indigo-300'
-                    : 'border-zinc-800 bg-zinc-950/60 text-zinc-400 hover:text-zinc-100 hover:border-zinc-700'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-card text-muted-foreground hover:text-foreground hover:border-border/80 hover:bg-accent'
                 )}
               >
                 {t}
@@ -421,10 +463,10 @@ function FindSponsorsTab({ sponsors, submissions }: { sponsors: Sponsor[], submi
                 key={r.label}
                 onClick={() => setFundingRange(i)}
                 className={cn(
-                  'rounded-full border px-3 py-1 text-xs transition-colors',
+                  'rounded-md border px-3 py-1.5 text-[11px] font-medium transition-colors shadow-sm',
                   fundingRange === i
-                    ? 'border-emerald-600/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                    : 'border-border bg-card/60 text-muted-foreground hover:text-foreground hover:border-border/80'
+                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600'
+                    : 'border-border bg-card text-muted-foreground hover:text-foreground hover:border-border/80 hover:bg-accent'
                 )}
               >
                 {r.label}
@@ -434,7 +476,7 @@ function FindSponsorsTab({ sponsors, submissions }: { sponsors: Sponsor[], submi
         </div>
 
         {/* Sponsor cards — larger, more visual */}
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           <AnimatePresence mode="popLayout">
             {results.map(s => {
               const remaining = s.funding_cap_cents - s.funding_used_cents
@@ -454,17 +496,17 @@ function FindSponsorsTab({ sponsors, submissions }: { sponsors: Sponsor[], submi
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.97 }}
                   transition={{ duration: 0.18 }}
-                  className="group flex flex-col gap-0 rounded-xl border border-zinc-800/80 bg-zinc-950 overflow-hidden transition-all hover:brightness-150 light:hover:brightness-95"
+                  className="group flex flex-col gap-0 rounded-xl border border-border bg-card overflow-hidden transition-all hover:shadow-md hover:border-border/80"
                 >
                   {/* Card header */}
                   <div className="flex items-start gap-4 p-5 pb-4">
-                    <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-primary/10 bg-primary/5 text-primary overflow-hidden shadow-sm">
                       <SponsorInitials name={s.company_name} logoUrl={s.logo_url} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-base font-semibold text-zinc-100 truncate">{s.company_name}</div>
+                      <div className="text-[15px] font-medium text-foreground tracking-tight truncate">{s.company_name}</div>
                       {s.industry && (
-                        <span className="mt-1 inline-block rounded bg-indigo-900/40 border border-indigo-800/60 px-2 py-0.5 text-[10px] text-indigo-300 capitalize">
+                        <span className="mt-1 inline-block rounded-md bg-secondary border border-border/50 px-2 py-0.5 text-[10px] uppercase font-medium tracking-wider text-muted-foreground">
                           {s.industry}
                         </span>
                       )}
@@ -472,28 +514,28 @@ function FindSponsorsTab({ sponsors, submissions }: { sponsors: Sponsor[], submi
                   </div>
 
                   {/* Funding bar */}
-                  <div className="px-5 pb-4 space-y-1.5">
-                    <div className="flex items-center justify-between text-[11px] text-zinc-500">
+                  <div className="px-5 pb-5 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
                       <span>Remaining</span>
-                      <span className="font-mono text-zinc-300">${(remaining / 100).toLocaleString()}</span>
+                      <span className="font-mono text-foreground">${(remaining / 100).toLocaleString()}</span>
                     </div>
-                    <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                    <div className="h-1.5 rounded-full bg-border overflow-hidden">
                       <div
                         className="h-full rounded-full bg-emerald-500 transition-all"
                         style={{ width: `${100 - pct}%` }}
                       />
                     </div>
-                    <div className="text-[10px] text-zinc-600">{100 - pct}% capacity available</div>
+                    <div className="text-[10px] text-muted-foreground">{100 - pct}% capacity available</div>
                   </div>
 
                   {/* Actions */}
-                  <div className="mt-auto border-t border-zinc-900 grid grid-cols-2 divide-x divide-zinc-900">
+                  <div className="mt-auto border-t border-border grid grid-cols-2 divide-x divide-border">
                     {s.website ? (
                       <a
                         href={s.website}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center justify-center gap-1.5 py-3 text-xs text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900/50 transition-colors"
+                        className="flex items-center justify-center gap-1.5 py-3 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                       >
                         Visit site <ArrowUpRight className="h-3 w-3" />
                       </a>
@@ -504,7 +546,7 @@ function FindSponsorsTab({ sponsors, submissions }: { sponsors: Sponsor[], submi
                       <Link
                         href={`/submissions/${activeSub.id}/edit`}
                         className={cn(
-                          'flex items-center justify-center gap-1.5 py-3 text-xs font-semibold transition-colors bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20',
+                          'flex items-center justify-center gap-1.5 py-3 text-[12px] font-semibold transition-colors bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20',
                           !s.website && 'col-span-2',
                         )}
                       >
@@ -514,10 +556,10 @@ function FindSponsorsTab({ sponsors, submissions }: { sponsors: Sponsor[], submi
                       <Link
                         href={`/submissions/new?sponsor=${s.id}`}
                         className={cn(
-                          'flex items-center justify-center gap-1.5 py-3 text-xs font-semibold transition-colors',
+                          'flex items-center justify-center gap-1.5 py-3 text-[12px] font-semibold transition-colors',
                           s.website
-                            ? 'text-zinc-100 hover:bg-zinc-900/60'
-                            : 'col-span-2 text-zinc-100 hover:bg-zinc-900/60',
+                            ? 'text-primary hover:bg-primary/5 hover:text-primary/90'
+                            : 'col-span-2 text-primary hover:bg-primary/5 hover:text-primary/90',
                         )}
                       >
                         <Plus className="h-3.5 w-3.5" /> Pitch this sponsor
@@ -529,7 +571,7 @@ function FindSponsorsTab({ sponsors, submissions }: { sponsors: Sponsor[], submi
             })}
           </AnimatePresence>
           {results.length === 0 && (
-            <div className="col-span-full rounded-xl border border-dashed border-zinc-800 p-12 text-center text-sm text-zinc-500">
+            <div className="col-span-full rounded-xl border border-dashed border-border p-12 text-center text-[13px] text-muted-foreground">
               No sponsors match your filters.
             </div>
           )}
@@ -551,7 +593,7 @@ const SUBMISSION_FILTERS: { id: SubmissionFilter; label: string }[] = [
   { id: 'draft', label: 'Drafts' },
 ]
 
-function SubmissionsTab({ submissions, switchTab }: { submissions: SubmissionSummary[], switchTab: (t: string) => void }) {
+function SubmissionsTab({ submissions, onNewPitch }: { submissions: SubmissionSummary[], onNewPitch: () => void }) {
   const [filter, setFilter] = useState<SubmissionFilter>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -563,7 +605,7 @@ function SubmissionsTab({ submissions, switchTab }: { submissions: SubmissionSum
   })
 
   return (
-    <div className="space-y-4 max-w-4xl mx-auto">
+    <div className="space-y-4 max-w-4xl">
       {/* Filter tabs and Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex gap-1.5 flex-wrap">
@@ -578,10 +620,10 @@ function SubmissionsTab({ submissions, switchTab }: { submissions: SubmissionSum
               key={f.id}
               onClick={() => setFilter(f.id)}
               className={cn(
-                'rounded-full border px-3 py-1 text-xs transition-colors',
+                'rounded-md border px-3 py-1.5 text-[11px] font-medium transition-colors shadow-sm',
                 filter === f.id
-                  ? 'border-foreground bg-foreground text-background font-medium'
-                  : 'border-border bg-card/60 text-muted-foreground hover:text-foreground hover:border-border/80'
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border bg-card text-muted-foreground hover:text-foreground hover:border-border/80 hover:bg-accent'
               )}
             >
               {f.label} <span className="ml-1 opacity-50">{count}</span>
@@ -589,42 +631,42 @@ function SubmissionsTab({ submissions, switchTab }: { submissions: SubmissionSum
           )
         })}
         </div>
-        <Button onClick={() => switchTab('find-sponsors')} className="gap-2 shrink-0 bg-primary text-primary-foreground hover:bg-primary/90">
+        <Button onClick={onNewPitch} className="gap-2 shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
           <Plus className="h-4 w-4" /> New Pitch
         </Button>
       </div>
 
       {/* List */}
-      <div className="rounded-xl border border-border bg-card/60 divide-y divide-border">
+      <div className="rounded-xl border border-border bg-card shadow-sm divide-y divide-border">
         {filtered.map(s => {
           const isEditable = ['draft', 'declined', 'changes_requested'].includes(s.status ?? '')
           const expanded = expandedId === s.id
           return (
-            <div key={s.id} className="transition-colors hover:bg-zinc-900/20">
+            <div key={s.id} className="transition-colors hover:bg-accent/40">
               <div
-                className="flex flex-col md:flex-row md:items-center justify-between gap-3 px-5 py-4 cursor-pointer"
+                className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-5 py-4 cursor-pointer"
                 onClick={() => setExpandedId(expanded ? null : s.id)}
               >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900/60">
-                    <Building2 className="h-4 w-4 text-zinc-400" strokeWidth={1.5} />
+                <div className="flex items-center gap-4 min-w-0 flex-1">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-primary/10 bg-primary/5 shadow-sm text-primary">
+                    <Building2 className="h-5 w-5" strokeWidth={1.5} />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm font-medium text-zinc-100 truncate">{s.company_name}</div>
-                    <div className="flex items-center gap-2 mt-0.5">
+                    <div className="text-[14px] font-medium text-foreground truncate">{s.company_name}</div>
+                    <div className="flex items-center gap-2 mt-1">
                       <StatusChip status={s.status ?? 'draft'} />
-                      <span className="text-[10px] text-zinc-600" suppressHydrationWarning>
+                      <span className="text-[11px] text-muted-foreground font-mono" suppressHydrationWarning>
                         {new Date(s.updated_at ?? 0).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   {isEditable ? (
                     <Link
                       href={`/submissions/${s.id}/edit`}
                       onClick={e => e.stopPropagation()}
-                      className="text-xs px-3 py-1.5 bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded hover:bg-[var(--bg-hover)] text-[var(--text-primary)] font-medium transition-colors"
+                      className="text-[11px] uppercase tracking-wider px-3 py-1.5 bg-background border border-border rounded-md hover:bg-accent text-foreground font-semibold transition-colors shadow-sm"
                     >
                       Edit
                     </Link>
@@ -632,12 +674,12 @@ function SubmissionsTab({ submissions, switchTab }: { submissions: SubmissionSum
                     <Link
                       href={`/submissions/${s.id}/edit`}
                       onClick={e => e.stopPropagation()}
-                      className="text-xs px-3 py-1.5 bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded hover:bg-[var(--bg-hover)] text-[var(--text-primary)] font-medium transition-colors"
+                      className="text-[11px] uppercase tracking-wider px-3 py-1.5 bg-background border border-border rounded-md hover:bg-accent text-foreground font-semibold transition-colors shadow-sm"
                     >
                       View
                     </Link>
                   )}
-                  <span className="text-zinc-600">
+                  <span className="text-muted-foreground/50">
                     {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </span>
                 </div>
@@ -653,15 +695,15 @@ function SubmissionsTab({ submissions, switchTab }: { submissions: SubmissionSum
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <div className="px-5 pb-5 space-y-3 border-t border-zinc-900 pt-4">
+                    <div className="px-5 pb-5 space-y-3 border-t border-border pt-4 bg-accent/20">
                       {s.admin_feedback && (
-                        <div className="rounded-lg border border-amber-900/50 bg-amber-900/10 p-3 text-xs text-amber-200">
-                          <span className="font-semibold text-amber-400">Admin feedback: </span>{s.admin_feedback}
+                        <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-[13px] text-amber-700">
+                          <span className="font-semibold text-amber-700">Admin feedback: </span>{s.admin_feedback}
                         </div>
                       )}
                       {s.requested_amount_cents != null && (
-                        <div className="text-xs text-zinc-500">
-                          Ask: <span className="text-zinc-300 font-mono">${(s.requested_amount_cents / 100).toLocaleString()}</span>
+                        <div className="text-[12px] text-muted-foreground">
+                          Ask: <span className="text-foreground font-mono font-medium">${(s.requested_amount_cents / 100).toLocaleString()}</span>
                         </div>
                       )}
                     </div>
@@ -672,235 +714,8 @@ function SubmissionsTab({ submissions, switchTab }: { submissions: SubmissionSum
           )
         })}
         {filtered.length === 0 && (
-          <div className="p-8 text-center text-zinc-500 text-sm">No submissions in this category.</div>
+          <div className="p-12 text-center text-muted-foreground text-[13px]">No submissions in this category.</div>
         )}
-      </div>
-    </div>
-  )
-}
-
-/* ── Ledger tab — inline editing ────────────────────────────────────────────── */
-
-type BudgetItem = { label: string; qty: number; unit_cost_cents: number; total_cents: number }
-
-function LedgerTab({ team }: { team: Team }) {
-  const [items, setItems] = useState<BudgetItem[]>(() =>
-    (team.budget_items as BudgetItem[] | null) ?? []
-  )
-  const [isPending, startTransition] = useTransition()
-
-  const runningTotal = items.reduce((acc, i) => acc + (i.total_cents || 0), 0)
-
-  function updateItem(index: number, field: keyof BudgetItem, raw: string) {
-    setItems(prev => {
-      const next = [...prev]
-      if (field === 'label') {
-        next[index] = { ...next[index], label: raw }
-      } else {
-        const dollars = parseFloat(raw) || 0
-        const cents = Math.round(dollars * 100)
-        if (field === 'qty') {
-          const qty = parseInt(raw) || 0
-          const unit = next[index].unit_cost_cents
-          next[index] = { ...next[index], qty, total_cents: qty * unit }
-        } else if (field === 'unit_cost_cents') {
-          next[index] = { ...next[index], unit_cost_cents: cents, total_cents: next[index].qty * cents }
-        }
-      }
-      return next
-    })
-  }
-
-  function loadIncubatorDefaults() {
-    const defaults: BudgetItem[] = [
-      { label: 'FIRST Rookie Registration Fee', qty: 1, unit_cost_cents: 90000, total_cents: 90000 },
-      { label: 'REV Robotics Core Starter Kit', qty: 1, unit_cost_cents: 120000, total_cents: 120000 },
-      { label: 'Control Hub & Electronics Kit', qty: 1, unit_cost_cents: 65000, total_cents: 65000 },
-      { label: 'Basic Toolset (Metric/Imperial)', qty: 1, unit_cost_cents: 15000, total_cents: 15000 },
-      { label: 'Partial Field Perimeter', qty: 1, unit_cost_cents: 10000, total_cents: 10000 },
-    ]
-    setItems(defaults)
-    toast.info('Loaded startup essentials')
-  }
-
-  function addItem() {
-    setItems(prev => [...prev, { label: '', qty: 1, unit_cost_cents: 0, total_cents: 0 }])
-  }
-
-  function removeItem(index: number) {
-    setItems(prev => prev.filter((_, i) => i !== index))
-  }
-
-  function save() {
-    startTransition(async () => {
-      const budgetItems = items.map(i => ({
-        label: i.label,
-        qty: i.qty,
-        unitCostCents: i.unit_cost_cents,
-        totalCents: i.total_cents,
-      }))
-      const total = items.reduce((a, i) => a + i.total_cents, 0)
-      const result = await updateTeam(team.id, { budgetItems, financialAskCents: total } as any)
-      if (result?.error) toast.error('Failed to save: ' + result.error)
-      else toast.success('Ledger saved!')
-    })
-  }
-
-  return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-medium text-zinc-100">
-            {team.status === 'incubator' ? 'Seed Capital Ledger' : 'Team Ledger'}
-          </h2>
-          <p className="text-sm text-zinc-400 mt-1">
-            {team.status === 'incubator'
-              ? 'Define your startup costs. Use the tool below to load rookie essentials.'
-              : 'Edit your budget items directly. Changes save to your portfolio.'}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {team.status === 'incubator' && items.length === 0 && (
-            <button
-              onClick={loadIncubatorDefaults}
-              className="inline-flex items-center gap-1.5 rounded-md border border-indigo-500/30 bg-indigo-500/10 px-3 h-9 text-sm text-indigo-300 hover:bg-indigo-500/20 transition-colors"
-            >
-              <Sparkles className="h-3.5 w-3.5" /> Load Startup Essentials
-            </button>
-          )}
-          <button
-            onClick={addItem}
-            className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-900 px-3 h-9 text-sm text-zinc-200 hover:bg-zinc-800 transition-colors"
-          >
-            <Plus className="h-3.5 w-3.5" /> Add Item
-          </button>
-          <button
-            onClick={save}
-            disabled={isPending}
-            className="inline-flex items-center justify-center rounded-md bg-foreground px-3.5 h-9 text-sm font-medium text-background hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {isPending ? 'Saving…' : 'Save Ledger'}
-          </button>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 overflow-hidden">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-zinc-900/50 border-b border-zinc-800 text-zinc-400 uppercase text-[10px] tracking-wider font-mono">
-            <tr>
-              <th className="px-4 py-3 border-r border-zinc-800 w-[42%]">Item</th>
-              <th className="px-4 py-3 border-r border-zinc-800 text-right w-[12%]">Qty</th>
-              <th className="px-4 py-3 border-r border-zinc-800 text-right w-[18%]">Unit ($)</th>
-              <th className="px-4 py-3 border-r border-zinc-800 text-right w-[18%]">Total</th>
-              <th className="px-4 py-3 w-[10%]" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-800">
-            {items.map((item, i) => (
-              <tr key={i} className="hover:bg-zinc-900/20 transition-colors group">
-                <td className="px-3 py-2 border-r border-zinc-800">
-                  <input
-                    value={item.label}
-                    onChange={e => updateItem(i, 'label', e.target.value)}
-                    placeholder="Item name…"
-                    className="w-full bg-transparent text-zinc-200 placeholder:text-zinc-700 outline-none focus:text-zinc-50"
-                  />
-                </td>
-                <td className="px-3 py-2 border-r border-zinc-800">
-                  <input
-                    type="number"
-                    min={1}
-                    value={item.qty}
-                    onChange={e => updateItem(i, 'qty', e.target.value)}
-                    className="w-full bg-transparent text-right text-zinc-400 outline-none focus:text-zinc-200 tabular-nums"
-                  />
-                </td>
-                <td className="px-3 py-2 border-r border-zinc-800">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    value={(item.unit_cost_cents / 100).toFixed(2)}
-                    onChange={e => updateItem(i, 'unit_cost_cents', e.target.value)}
-                    className="w-full bg-transparent text-right text-zinc-400 outline-none focus:text-zinc-200 tabular-nums"
-                  />
-                </td>
-                <td className="px-4 py-2 border-r border-zinc-800 text-right font-mono text-zinc-300 tabular-nums">
-                  ${(item.total_cents / 100).toFixed(2)}
-                </td>
-                <td className="px-3 py-2 text-center">
-                  <button
-                    onClick={() => removeItem(i)}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded text-zinc-600 hover:text-red-400 transition-all"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {items.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-zinc-500 text-sm">
-                  No items yet. Click "Add Item" to get started.
-                </td>
-              </tr>
-            )}
-          </tbody>
-          <tfoot className="bg-zinc-900 border-t border-zinc-800">
-            <tr>
-              <td colSpan={3} className="px-4 py-3 text-right text-[11px] font-mono text-zinc-500 uppercase tracking-widest border-r border-zinc-800">
-                Portfolio Total Ask
-              </td>
-              <td className="px-4 py-3 text-right text-base font-semibold text-emerald-400 tabular-nums border-r border-zinc-800">
-                ${(runningTotal / 100).toFixed(2)}
-              </td>
-              <td />
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-function DraftsTab({ submissions }: { submissions: SubmissionSummary[] }) {
-  const drafts = submissions.filter(s => s.status === 'draft')
-
-  if (drafts.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-12 text-center max-w-2xl mx-auto">
-        <div className="mb-3 text-4xl">📝</div>
-        <h3 className="text-lg font-medium text-foreground">No drafts yet</h3>
-        <p className="mt-1 text-sm text-muted-foreground">Start a new pitch to Sponsors to create a draft.</p>
-        <Link href="/dashboard?tab=find-sponsors" className={cn('mt-4', buttonVariants())}>
-          Find Sponsors
-        </Link>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-3 max-w-2xl">
-      <p className="text-sm text-muted-foreground">
-        {drafts.length} draft{drafts.length !== 1 ? 's' : ''}. Continue editing whenever you're ready.
-      </p>
-      <div className="rounded-xl border border-border bg-card/60 divide-y divide-border">
-        {drafts.map(draft => (
-          <div key={draft.id} className="flex items-center justify-between px-5 py-4 hover:bg-muted/40 transition-colors">
-            <div className="min-w-0 flex-1">
-              <p className="font-medium text-foreground truncate">{draft.company_name}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Saved {new Date(draft.updated_at ?? 0).toLocaleDateString()}
-              </p>
-            </div>
-            <Link
-              href={`/submissions/${draft.id}/edit`}
-              className={cn('shrink-0 ml-4', buttonVariants({ size: 'sm' }))}
-            >
-              Continue editing
-            </Link>
-          </div>
-        ))}
       </div>
     </div>
   )

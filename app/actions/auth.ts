@@ -1,133 +1,36 @@
 'use server'
 
-import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { auth, clerkClient } from '@clerk/nextjs/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { signupSchema } from '@/lib/schemas/auth'
-import { redirect } from 'next/navigation'
-import { env } from '@/lib/env'
-import { sendCredentialUploadAlert, sendCoachSignupWelcomeEmail, sendWelcomeInAppNotification } from '@/lib/notify'
-
 import { sponsorSignupSchema, type SponsorSignupInput } from '@/lib/schemas/sponsor-signup'
-import { sendSponsorApplicationConfirmation, sendSponsorApplicationAlert, createInAppNotification } from '@/lib/notify'
+import {
+  sendCredentialUploadAlert,
+  sendCoachSignupWelcomeEmail,
+  sendWelcomeInAppNotification,
+  sendSponsorApplicationConfirmation,
+  sendSponsorApplicationAlert,
+  createInAppNotification,
+} from '@/lib/notify'
 
-export async function signUpSponsor(data: SponsorSignupInput) {
-  const result = sponsorSignupSchema.safeParse(data)
-  if (!result.success) {
-    return { error: 'Validation failed: ' + result.error.issues.map(i => i.message).join(', ') }
-  }
+/**
+ * Finalize a coach signup AFTER the Clerk session is active. The client wizard
+ * creates + verifies the Clerk user first; this action then provisions the
+ * `profiles` row, stores the credential file, mirrors the role into Clerk, and
+ * fires the welcome / admin-alert notifications. It does NOT redirect — the
+ * client owns navigation.
+ */
+export async function createCoachProfile(
+  formData: FormData
+): Promise<{ error?: string } | void> {
+  const { userId: clerkUserId } = await auth()
+  if (!clerkUserId) return { error: 'Not authenticated' }
 
-  const payload = result.data
-
-  const supabase = await createClient()
-  const adminClient = createAdminClient()
-
-  // 1. Create Auth User - Include role in metadata so trigger handles it correctly
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email: payload.email,
-    password: payload.password,
-    options: {
-      data: {
-        full_name: payload.fullName,
-        role: 'sponsor',
-      },
-      emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback`,
-    },
-  })
-
-  if (authError || !authData.user) {
-    if (authError?.message.toLowerCase().includes('already')) {
-      return { error: 'Unable to create account. If this email is already registered, please log in.' }
-    }
-    return { error: `Unable to create account: ${authError?.message || 'Unknown error'}` }
-  }
-
-  const userId = authData.user.id
-
-  // 2. Update Profile - Set role and extra info (retry if needed due to trigger delay)
-  let profileUpdateSuccess = false
-  for (let i = 0; i < 3; i++) {
-    const { error: profileError } = await adminClient
-      .from('profiles')
-      .update({
-        role: 'sponsor',
-        phone_number: payload.phoneNumber,
-        address_line1: payload.companyAddress,
-        coppa_acknowledged: payload.coppaAcknowledged,
-        tos_accepted: payload.tosAccepted,
-      } as any)
-      .eq('id', userId)
-
-    if (!profileError) {
-      profileUpdateSuccess = true
-      break
-    }
-    await new Promise(r => setTimeout(r, 500))
-  }
-
-  if (!profileUpdateSuccess) {
-    console.error('Failed to update sponsor profile after retries')
-  }
-
-  // 3. Create a Sponsor Application entry
-  const { error: appError } = await adminClient
-    .from('sponsor_applications')
-    .insert({
-      company_name: payload.companyName,
-      contact_name: payload.fullName,
-      contact_email: payload.email,
-      proposed_cap_cents: payload.proposedCapCents,
-      message: payload.sponsorshipReason,
-    })
-
-  if (appError) {
-    console.error('Failed to create sponsor application entry:', appError)
-  }
-
-  // 4. Send Notifications
-  try {
-    // Confirmation to sponsor
-    await sendSponsorApplicationConfirmation(
-      payload.companyName,
-      payload.email,
-      payload.fullName,
-      payload.proposedCapCents
-    )
-
-    // Alert to admins (Email)
-    await sendSponsorApplicationAlert(
-      payload.companyName,
-      payload.fullName,
-      payload.email,
-      payload.proposedCapCents
-    )
-
-    // Alert to admins (In-App)
-    const { data: admins } = await adminClient.from('profiles').select('id').eq('role', 'admin')
-    if (admins) {
-      await Promise.all(admins.map(admin => 
-        createInAppNotification({
-          skipEmail: true,
-          recipientId: admin.id,
-          type: 'general',
-          title: 'New Sponsor Application',
-          body: `${payload.companyName} (${payload.fullName}) has applied to become a sponsor.`,
-        })
-      ))
-    }
-  } catch (e) {
-    console.error('Failed to send sponsor notifications:', e)
-  }
-
-  redirect('/verify-email')
-}
-
-export async function signUp(formData: FormData) {
   // Parse JSON data
   const dataString = formData.get('data') as string
   if (!dataString) return { error: 'No data provided' }
 
-  let rawData;
+  let rawData
   try {
     rawData = JSON.parse(dataString)
   } catch {
@@ -166,28 +69,7 @@ export async function signUp(formData: FormData) {
 
   const payload = result.data
 
-  const supabase = await createClient()
   const adminClient = createAdminClient()
-
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email: payload.email,
-    password: payload.password,
-    options: {
-      data: {
-        full_name: payload.fullName,
-      },
-      emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback`,
-    },
-  })
-
-  if (authError || !authData.user) {
-    if (authError?.message.toLowerCase().includes('already')) {
-      return { error: 'Unable to create account. If this email is already registered, please log in.' }
-    }
-    return { error: 'Unable to create account right now. Please try again.' }
-  }
-
-  const userId = authData.user.id
 
   // Derive extension from validated MIME type — never trust the client filename.
   const extByMime: Record<string, string> = {
@@ -197,7 +79,8 @@ export async function signUp(formData: FormData) {
   }
   const canonicalExt = extByMime[file.type]
   if (!canonicalExt) return { error: 'Invalid file type.' }
-  const filePath = `${userId}/credentials_${Date.now()}.${canonicalExt}`
+  // RLS partitions coach-credentials storage by Clerk id.
+  const filePath = `${clerkUserId}/credentials_${Date.now()}.${canonicalExt}`
 
   const { error: uploadError } = await adminClient.storage
     .from('coach-credentials')
@@ -205,100 +88,162 @@ export async function signUp(formData: FormData) {
 
   if (uploadError) {
     console.error('Failed to upload credentials:', uploadError)
-    // Continue despite error, we can retry upload later or notify admin
+    // Continue despite error; admin can request a re-upload later.
   }
 
-  // Update profile with all the extra fields using admin client
-  const { error: updateError } = await adminClient
+  // Provision the coach profile keyed by the Clerk id. Profile creation is owned
+  // here (the old handle_new_user DB trigger is gone).
+  const { error: upsertError } = await adminClient
     .from('profiles')
-    .update({
-      date_of_birth: payload.dateOfBirth,
-      phone_number: payload.phoneNumber,
-      address_line1: payload.addressLine1,
-      city: payload.city,
-      state: payload.state,
-      zip_code: payload.zipCode,
-      referral_source: payload.referralSource || null,
-      coppa_acknowledged: payload.coppaAcknowledged,
-      tos_accepted: payload.tosAccepted,
-      coach_credentials_url: uploadError ? null : filePath,
-      pending_team_data: payload.teamData,
-    })
-    .eq('id', userId)
+    .upsert(
+      {
+        clerk_user_id: clerkUserId,
+        role: 'coach',
+        email: payload.email,
+        full_name: payload.fullName,
+        date_of_birth: payload.dateOfBirth,
+        phone_number: payload.phoneNumber,
+        address_line1: payload.addressLine1,
+        city: payload.city,
+        state: payload.state,
+        zip_code: payload.zipCode,
+        referral_source: payload.referralSource || null,
+        coppa_acknowledged: payload.coppaAcknowledged,
+        tos_accepted: payload.tosAccepted,
+        age_confirmed_at: new Date().toISOString(),
+        coach_credentials_url: uploadError ? null : filePath,
+        pending_team_data: payload.teamData,
+      } as never,
+      { onConflict: 'clerk_user_id' }
+    )
 
-  if (updateError) {
-    console.error('Failed to update profile data:', updateError)
+  if (upsertError) {
+    console.error('Failed to upsert coach profile:', upsertError)
+    return { error: 'Unable to create your profile right now. Please try again.' }
+  }
+
+  // Mirror the role into Clerk publicMetadata for client UX gating (not security).
+  try {
+    const clerk = await clerkClient()
+    await clerk.users.updateUserMetadata(clerkUserId, {
+      publicMetadata: { role: 'coach' },
+    })
+  } catch (e) {
+    console.error('Failed to mirror coach role into Clerk metadata:', e)
   }
 
   // Notify admins
-  await sendCredentialUploadAlert(userId, payload.fullName, payload.email)
+  await sendCredentialUploadAlert(clerkUserId, payload.fullName, payload.email)
 
   // Welcome user
   await Promise.all([
     sendCoachSignupWelcomeEmail(payload.email, payload.fullName),
-    sendWelcomeInAppNotification(userId, payload.fullName)
+    sendWelcomeInAppNotification(clerkUserId, payload.fullName),
   ])
-
-  redirect('/verify-email')
 }
 
-import { loginSchema, type LoginInput } from '@/lib/schemas/auth'
-
-export async function forgotPassword(email: string) {
-  const parsed = z.string().email().safeParse(email.trim().toLowerCase())
-  if (!parsed.success) return { error: 'Please enter a valid email address.' }
-
-  const supabase = await createClient()
-  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, {
-    redirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/reset-password`,
-  })
-
-  if (error) return { error: 'Unable to send reset email. Please try again.' }
-  return { success: true }
-}
-
-export async function resetPassword(password: string) {
-  const parsed = z
-    .string()
-    .min(12, 'Password must be at least 12 characters')
-    .regex(/[A-Z]/, 'Must include an uppercase letter')
-    .regex(/[a-z]/, 'Must include a lowercase letter')
-    .regex(/[0-9]/, 'Must include a number')
-    .safeParse(password)
-
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
-
-  const supabase = await createClient()
-  const { error } = await supabase.auth.updateUser({ password: parsed.data })
-  if (error) return { error: 'Unable to update password. The reset link may have expired.' }
-  return { success: true }
-}
-
-export async function signIn(data: LoginInput) {
-  const result = loginSchema.safeParse(data)
+/**
+ * Finalize a sponsor application AFTER the Clerk session is active. Mirrors
+ * `createCoachProfile`: provisions the `profiles` row (role='sponsor',
+ * `sponsor_id` stays null until an admin links the company), mirrors the role
+ * into Clerk, records the `sponsor_applications` row, and notifies. No redirect.
+ */
+export async function createSponsorApplication(
+  data: SponsorSignupInput
+): Promise<{ error?: string } | void> {
+  const result = sponsorSignupSchema.safeParse(data)
   if (!result.success) {
-    return { error: 'Invalid data provided' }
+    return { error: 'Validation failed: ' + result.error.issues.map(i => i.message).join(', ') }
   }
 
-  const { email, password } = result.data
+  const { userId: clerkUserId } = await auth()
+  if (!clerkUserId) return { error: 'Not authenticated' }
 
-  const supabase = await createClient()
+  const payload = result.data
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+  const adminClient = createAdminClient()
 
-  if (error) {
-    console.error('Supabase signIn error:', error.message, error.name, error.status)
-    return { error: 'Invalid email or password.' }
+  // Provision the sponsor profile keyed by the Clerk id. sponsor_id stays null
+  // until an admin approves and links the company row.
+  const { error: upsertError } = await adminClient
+    .from('profiles')
+    .upsert(
+      {
+        clerk_user_id: clerkUserId,
+        role: 'sponsor',
+        email: payload.email,
+        full_name: payload.fullName,
+        phone_number: payload.phoneNumber,
+        address_line1: payload.companyAddress,
+        coppa_acknowledged: payload.coppaAcknowledged,
+        tos_accepted: payload.tosAccepted,
+        age_confirmed_at: new Date().toISOString(),
+      } as never,
+      { onConflict: 'clerk_user_id' }
+    )
+
+  if (upsertError) {
+    console.error('Failed to upsert sponsor profile:', upsertError)
+    return { error: 'Unable to create your account right now. Please try again.' }
   }
 
-  redirect('/')
-}
+  // Mirror the role into Clerk publicMetadata for client UX gating (not security).
+  try {
+    const clerk = await clerkClient()
+    await clerk.users.updateUserMetadata(clerkUserId, {
+      publicMetadata: { role: 'sponsor' },
+    })
+  } catch (e) {
+    console.error('Failed to mirror sponsor role into Clerk metadata:', e)
+  }
 
-export async function signOut() {
-  const supabase = await createClient()
-  await supabase.auth.signOut()
-  redirect('/login')
+  // Create a Sponsor Application entry
+  const { error: appError } = await adminClient
+    .from('sponsor_applications')
+    .insert({
+      company_name: payload.companyName,
+      contact_name: payload.fullName,
+      contact_email: payload.email,
+      proposed_cap_cents: payload.proposedCapCents,
+      message: payload.sponsorshipReason,
+    })
+
+  if (appError) {
+    console.error('Failed to create sponsor application entry:', appError)
+  }
+
+  // Send Notifications
+  try {
+    // Confirmation to sponsor
+    await sendSponsorApplicationConfirmation(
+      payload.companyName,
+      payload.email,
+      payload.fullName,
+      payload.proposedCapCents
+    )
+
+    // Alert to admins (Email)
+    await sendSponsorApplicationAlert(
+      payload.companyName,
+      payload.fullName,
+      payload.email,
+      payload.proposedCapCents
+    )
+
+    // Alert to admins (In-App)
+    const { data: admins } = await adminClient.from('profiles').select('id').eq('role', 'admin')
+    if (admins) {
+      await Promise.all(admins.map(admin =>
+        createInAppNotification({
+          skipEmail: true,
+          recipientId: admin.id,
+          type: 'general',
+          title: 'New Sponsor Application',
+          body: `${payload.companyName} (${payload.fullName}) has applied to become a sponsor.`,
+        })
+      ))
+    }
+  } catch (e) {
+    console.error('Failed to send sponsor notifications:', e)
+  }
 }

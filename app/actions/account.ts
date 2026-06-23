@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { clerkClient } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { requireAuth } from '@/lib/actions-utils'
@@ -45,11 +46,6 @@ export async function updateProfile(data: { fullName: string }) {
     return { error: 'Not authenticated' }
   }
 
-  const { error: authError } = await supabase.auth.updateUser({
-    data: { full_name: result.data.fullName },
-  })
-  if (authError) return { error: authError.message }
-
   const { error: profileError } = await supabase
     .from('profiles')
     .update({ full_name: result.data.fullName })
@@ -66,26 +62,31 @@ export async function updatePassword(data: { newPassword: string; currentPasswor
     return { error: result.error.issues[0].message }
   }
 
-  let user, supabase
+  let clerkUserId
   try {
     const auth = await requireAuth()
-    user = auth.user
-    supabase = auth.supabase
+    clerkUserId = auth.clerkUserId
   } catch {
     return { error: 'Not authenticated' }
   }
 
+  const clerk = await clerkClient()
+
   // Re-authenticate before changing password
-  const { error: reauthError } = await supabase.auth.signInWithPassword({
-    email: user.email ?? '',
-    password: result.data.currentPassword,
-  })
-  if (reauthError) {
+  try {
+    await clerk.users.verifyPassword({
+      userId: clerkUserId,
+      password: result.data.currentPassword,
+    })
+  } catch {
     return { error: 'Current password is incorrect.' }
   }
 
-  const { error } = await supabase.auth.updateUser({ password: result.data.newPassword })
-  if (error) return { error: error.message }
+  try {
+    await clerk.users.updateUser(clerkUserId, { password: result.data.newPassword })
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Unable to update password.' }
+  }
 
   return { success: true }
 }
@@ -96,11 +97,11 @@ export async function changeEmail(data: { newEmail: string; currentPassword: str
     return { error: result.error.issues[0].message }
   }
 
-  let user, supabase
+  let user, clerkUserId
   try {
     const auth = await requireAuth()
     user = auth.user
-    supabase = auth.supabase
+    clerkUserId = auth.clerkUserId
   } catch {
     return { error: 'Not authenticated' }
   }
@@ -109,18 +110,32 @@ export async function changeEmail(data: { newEmail: string; currentPassword: str
     return { error: 'New email must be different from your current email.' }
   }
 
+  const clerk = await clerkClient()
+
   // Re-authenticate before changing email
-  const { error: reauthError } = await supabase.auth.signInWithPassword({
-    email: user.email ?? '',
-    password: result.data.currentPassword,
-  })
-  if (reauthError) {
+  try {
+    await clerk.users.verifyPassword({
+      userId: clerkUserId,
+      password: result.data.currentPassword,
+    })
+  } catch {
     return { error: 'Current password is incorrect.' }
   }
 
-  // Supabase sends a confirmation link to both old and new email addresses
-  const { error } = await supabase.auth.updateUser({ email: result.data.newEmail })
-  if (error) return { error: error.message }
+  // Clerk owns email verification: register the new address (unverified, not yet
+  // primary). The user confirms it via the link Clerk emails, after which it can
+  // be promoted to primary. The profiles.email mirror is updated by the Clerk
+  // webhook once the change lands.
+  try {
+    await clerk.emailAddresses.createEmailAddress({
+      userId: clerkUserId,
+      emailAddress: result.data.newEmail,
+      verified: false,
+      primary: false,
+    })
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Unable to change email.' }
+  }
 
   return { success: true, message: 'Check your new email inbox for a confirmation link.' }
 }
@@ -131,11 +146,11 @@ export async function deleteAccount(data: { confirmEmail: string; currentPasswor
     return { error: parsed.error.issues[0]?.message ?? 'Invalid account deletion request' }
   }
 
-  let user, supabase
+  let user, clerkUserId
   try {
     const auth = await requireAuth()
     user = auth.user
-    supabase = auth.supabase
+    clerkUserId = auth.clerkUserId
   } catch {
     return { error: 'Not authenticated' }
   }
@@ -145,21 +160,25 @@ export async function deleteAccount(data: { confirmEmail: string; currentPasswor
     return { error: 'Confirmation email does not match your account email.' }
   }
 
+  const clerk = await clerkClient()
+
   // Re-authenticate before destructive deletion
-  const { error: reauthError } = await supabase.auth.signInWithPassword({
-    email: userEmail,
-    password: parsed.data.currentPassword,
-  })
-  if (reauthError) {
+  try {
+    await clerk.users.verifyPassword({
+      userId: clerkUserId,
+      password: parsed.data.currentPassword,
+    })
+  } catch {
     return { error: 'Re-authentication failed. Check your current password and try again.' }
   }
 
-  const adminClient = createAdminClient()
-
-  const { error } = await adminClient.auth.admin.deleteUser(user.id)
-  if (error) return { error: error.message }
-
-  await supabase.auth.signOut()
+  // Deleting the Clerk user fires a `user.deleted` webhook, which removes the
+  // corresponding profiles row (and DB-cascaded data).
+  try {
+    await clerk.users.deleteUser(clerkUserId)
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Unable to delete account.' }
+  }
 
   redirect('/login?deleted=1')
 }

@@ -43,23 +43,11 @@ export function GlobalShortcuts() {
             break
           case 'S':
             e.preventDefault()
-            router.push('/dashboard?tab=find-sponsors')
-            break
-          case 'H':
-            e.preventDefault()
-            router.push('/dashboard?tab=submissions')
+            router.push('/dashboard?tab=sponsors')
             break
           case 'N':
             e.preventDefault()
             router.push('/dashboard?tab=inbox')
-            break
-          case 'I':
-            e.preventDefault()
-            router.push('/dashboard?tab=insights')
-            break
-          case 'L':
-            e.preventDefault()
-            router.push('/dashboard?tab=ledger')
             break
           case '<': // Shift + ,
             e.preventDefault()

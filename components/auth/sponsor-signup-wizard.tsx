@@ -4,7 +4,9 @@ import { useState, useRef, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { sponsorSignupSchema, type SponsorSignupInput } from '@/lib/schemas/sponsor-signup'
-import { signUpSponsor } from '@/app/actions/auth'
+import { createSponsorApplication } from '@/app/actions/auth'
+import { useSignUp } from '@clerk/nextjs/legacy'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -23,12 +25,26 @@ const FUNDING_FREQUENCIES = ['One-time', 'Quarterly', 'Annual'] as const
 const FOCUS_AREAS = ['Engineering', 'Programming', 'Business/Marketing', 'Diversity & Inclusion', 'Community Outreach', 'General Support']
 const STEP_LABELS = ['Account', 'Company', 'Sponsorship']
 
+// Surface a readable message from a Clerk error payload.
+function clerkErrorMessage(err: unknown, fallback: string): string {
+  const anyErr = err as { errors?: { longMessage?: string; message?: string }[] }
+  return anyErr?.errors?.[0]?.longMessage ?? anyErr?.errors?.[0]?.message ?? fallback
+}
+
 export function SponsorSignupWizard() {
+  const router = useRouter()
+  const { isLoaded, signUp, setActive } = useSignUp()
   const [step, setStep] = useState(1)
   const totalSteps = 3
   const [error, setError] = useState<string | null>(null)
   const [isPending, setIsPending] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+
+  // Email-code verification sub-step (between Account and Company steps).
+  const [showEmailVerify, setShowEmailVerify] = useState(false)
+  const [emailVerified, setEmailVerified] = useState(false)
+  const [verifyCode, setVerifyCode] = useState('')
+  const [verifyPending, setVerifyPending] = useState(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -93,7 +109,70 @@ export function SponsorSignupWizard() {
     if (step === 2) fieldsToValidate = ['companyName', 'industry', 'website', 'phoneNumber', 'companyAddress']
 
     const isValid = await form.trigger(fieldsToValidate)
-    if (isValid) { setStep(prev => Math.min(prev + 1, totalSteps)); window.scrollTo(0, 0) }
+    if (!isValid) return
+
+    // Leaving the Account step: create the Clerk user + send the email code.
+    if (step === 1 && !emailVerified) {
+      if (!isLoaded || !signUp) return
+      setError(null)
+      setIsPending(true)
+      try {
+        await signUp.create({
+          emailAddress: form.getValues('email'),
+          password: form.getValues('password'),
+        })
+        await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
+        setShowEmailVerify(true)
+        setIsPending(false)
+        window.scrollTo(0, 0)
+      } catch (err) {
+        setError(clerkErrorMessage(err, 'Could not start sign up. Please check your details and try again.'))
+        setIsPending(false)
+      }
+      return
+    }
+
+    setStep(prev => Math.min(prev + 1, totalSteps))
+    window.scrollTo(0, 0)
+  }
+
+  // Email-code verification: confirm the code, activate the Clerk session,
+  // then advance to the Company step.
+  async function handleVerifyEmail() {
+    if (!isLoaded || !signUp) return
+    if (!verifyCode.trim()) {
+      setError('Enter the 6-digit code sent to your email.')
+      return
+    }
+    setError(null)
+    setVerifyPending(true)
+    try {
+      const result = await signUp.attemptEmailAddressVerification({ code: verifyCode.trim() })
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId })
+        setEmailVerified(true)
+        setShowEmailVerify(false)
+        setVerifyPending(false)
+        setStep(2)
+        window.scrollTo(0, 0)
+      } else {
+        setError('Verification incomplete. Please try the code again.')
+        setVerifyPending(false)
+      }
+    } catch (err) {
+      setError(clerkErrorMessage(err, 'Invalid or expired code. Please try again.'))
+      setVerifyPending(false)
+    }
+  }
+
+  async function resendVerifyCode() {
+    if (!isLoaded || !signUp) return
+    setError(null)
+    try {
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
+    } catch (err) {
+      setError(clerkErrorMessage(err, 'Could not resend the code. Please try again.'))
+    }
   }
 
   const prevStep = () => { setStep(prev => Math.max(prev - 1, 1)); window.scrollTo(0, 0) }
@@ -101,8 +180,11 @@ export function SponsorSignupWizard() {
   async function onSubmit(values: SponsorSignupInput) {
     setIsPending(true)
     setError(null)
-    const result = await signUpSponsor(values)
-    if (result?.error) { setError(result.error); setIsPending(false) }
+    const result = await createSponsorApplication(values)
+    if (result?.error) { setError(result.error); setIsPending(false); return }
+
+    // Matches the previous flow: sponsors land on the awaiting-verification page.
+    router.push('/awaiting-verification')
   }
 
   const toggleFocusArea = (area: string) => {
@@ -167,13 +249,63 @@ export function SponsorSignupWizard() {
             </div>
 
             <CardDescription className="text-base text-muted-foreground">
-              {step === 1 && "Set up your representative account."}
-              {step === 2 && "Tell us about your organization."}
-              {step === 3 && "Define your sponsorship goals and accept our policies."}
+              {showEmailVerify && "Confirm your email to continue."}
+              {!showEmailVerify && step === 1 && "Set up your representative account."}
+              {!showEmailVerify && step === 2 && "Tell us about your organization."}
+              {!showEmailVerify && step === 3 && "Define your sponsorship goals and accept our policies."}
             </CardDescription>
           </CardHeader>
 
           <CardContent className="pt-6">
+            {showEmailVerify ? (
+              <div className="space-y-6 text-foreground">
+                {error && (
+                  <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground/80">Verification Code</label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    className="tracking-[0.3em] text-center h-11"
+                    placeholder="123456"
+                    value={verifyCode}
+                    onChange={(e) => setVerifyCode(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    We emailed a 6-digit code to {form.getValues('email') || 'your email'}. Enter it to verify your account.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleVerifyEmail}
+                  size="lg"
+                  disabled={verifyPending || !isLoaded}
+                  className="w-full bg-primary text-primary-foreground hover:opacity-90 font-semibold"
+                >
+                  {verifyPending ? 'Verifying…' : 'Verify Email'}
+                </Button>
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={resendVerifyCode}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Resend code
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowEmailVerify(false); setError(null); setVerifyCode('') }}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Edit account details
+                  </button>
+                </div>
+              </div>
+            ) : (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 text-foreground">
                 {error && (
@@ -384,8 +516,8 @@ export function SponsorSignupWizard() {
                   ) : <div />}
 
                   {step < totalSteps ? (
-                    <Button type="button" onClick={nextStep} className="bg-primary text-primary-foreground">
-                      Next <ChevronRight className="w-4 h-4 ml-2" />
+                    <Button type="button" onClick={nextStep} disabled={step === 1 && (isPending || !isLoaded)} className="bg-primary text-primary-foreground">
+                      {step === 1 && isPending ? 'Sending code…' : <>Next <ChevronRight className="w-4 h-4 ml-2" /></>}
                     </Button>
                   ) : (
                     <Button type="submit" size="lg" disabled={isPending} className="bg-primary text-primary-foreground font-semibold px-8">
@@ -395,6 +527,7 @@ export function SponsorSignupWizard() {
                 </div>
               </form>
             </Form>
+            )}
           </CardContent>
           <CardFooter className="border-t border-border/50 flex justify-center py-5">
             <p className="text-sm text-muted-foreground">

@@ -1,27 +1,24 @@
 # FTC Sponsorship Portal
 
-## Core Mandates
-- **COPPA Compliance**: No student PII collected/exposed. Verified adult coaches only.
-- **Admin-Gatekept Outreach**: Sponsor-facing **pitch dispatch** requires Admin approval via the review queue (`lib/dispatch.ts`). This gate is only for outreach to sponsors — **transactional notifications** (status changes, decisions, new-submission alerts) auto-send to BOTH the in-app inbox and the recipient's email via `createInAppNotification` in `lib/notify.ts`.
-- **Capacity Integrity**: Sponsor funding caps are strictly enforced.
-- **Data Architecture Distinction**: Strictly prioritize the distinction between Global Team Data (the Portfolio) and Submission-Specific Data (custom pitch alignment, specific needs, local connection).
+A platform connecting verified adult FTC robotics coaches with corporate sponsors.
+Coaches build a team Portfolio and submit tailored pitches; admins moderate and
+gate sponsor-facing outreach; sponsors review approved pitches and fund teams under
+strict capacity caps. Next.js 16 (App Router) + Clerk (auth) + Supabase (Postgres + Storage) + Resend.
 
-## Tech Stack & Architecture
-- **Next.js 16.2** (App Router), React 19, Tailwind v4, shadcn/ui.
-  - *Warning*: Next.js 15+ has breaking changes. Consult `node_modules/next/dist/docs/` for current API conventions.
-- **Supabase** (Postgres, Auth, Storage). Security enforced via database RLS.
-- **Backend**: Server Actions for all mutations (`app/actions/`), validated with Zod.
-- **Email**: Resend + React Email.
-- **Audit**: All sensitive admin actions append to `audit_log`.
+## Core Mandates (never violate)
+- **COPPA Compliance**: No student PII collected or exposed. Verified adult coaches only.
+- **Admin-Gatekept Outreach**: Sponsor-facing **pitch dispatch** requires Admin approval via the review queue (`lib/dispatch.ts`). This gate is ONLY for outreach to sponsors. **Transactional notifications** (status changes, decisions, new-submission alerts) auto-send to BOTH the in-app inbox AND the recipient's email via `createInAppNotification` in `lib/notify.ts`. (Auth-flow emails — email verification, password reset — are owned by Clerk, separate from this path.)
+- **Capacity Integrity**: Sponsor funding caps are strictly enforced. Never let a submission reserve beyond a sponsor's remaining cap.
+- **Data Architecture Distinction**: Keep Global Team Data (the Portfolio — reused across pitches) strictly separate from Submission-Specific Data (custom pitch alignment, specific needs, local connection — unique per pitch).
 
-## Commands
-- Dev: `npm run dev`, `npm run build`
-- Validate: `npm run lint`, `npm run typecheck`
-- Test: `npx playwright test` (E2E), Vitest (Unit), pgtap (RLS).
+## Detailed rules (auto-loaded)
+@.claude/rules/architecture.md
+@.claude/rules/auth-supabase.md
+@.claude/rules/conventions.md
+@.claude/rules/workflows.md
 
-## Deployment & Ops
-- **Live**: Vercel — `https://ftc-sponsorship-portal.vercel.app` (Hobby tier). Runtime env vars live in the Vercel project, not `.env.local`.
-- **Supabase keys**: use the **legacy JWT** keys (`eyJ…`, Settings → API → JWT keys). The new `sb_secret_` key is rejected (401) by this project's REST + Auth Admin API; `SUPABASE_SERVICE_ROLE_KEY` must be the legacy service_role JWT or the whole server side fails.
-- **Migrations**: apply via `psql` (or `supabase db reset --linked`). The Supabase CLI's statement splitter mishandles migrations that define multiple `$$`-quoted functions in one file (0035/0041/0044/0047 → "cannot insert multiple commands into a prepared statement") — apply those with `psql -f`. Migrations are idempotent; enum values are pre-declared at type creation so a from-scratch replay works.
-- **No Upstash/Redis** — rate limiting was removed entirely; do not reintroduce those env vars.
-- **Build** uses webpack (`next build --webpack`), not Turbopack.
+## Working here
+- General-purpose commands: `/feature`, `/fix`, `/supa`, `/ship`.
+- Project agents: `rls-auditor`, `action-reviewer`, `auth-flow-debugger`.
+- Auth is **Clerk** (`@clerk/nextjs`); Supabase trusts Clerk via native third-party auth, and RLS keys off the Clerk user id in `auth.jwt()->>'sub'` (not `auth.uid()`). See `.claude/rules/auth-supabase.md`.
+- Validate before pushing: `npm run typecheck && npm run lint`. Build uses webpack (`next build --webpack`), not Turbopack.

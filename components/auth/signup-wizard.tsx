@@ -5,8 +5,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { signupSchema, type SignupInput } from '@/lib/schemas/auth'
 import { LIMITS } from '@/lib/schemas/limits'
-import { signUp } from '@/app/actions/auth'
+import { createCoachProfile } from '@/app/actions/auth'
 import { lookupFTCTeam } from '@/app/actions/team'
+import { useSignUp } from '@clerk/nextjs/legacy'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -22,7 +24,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 const STEP_LABELS = ['Account', 'Verification', 'Your Team']
 
+// Surface a readable message from a Clerk error payload.
+function clerkErrorMessage(err: unknown, fallback: string): string {
+  const anyErr = err as { errors?: { longMessage?: string; message?: string }[] }
+  return anyErr?.errors?.[0]?.longMessage ?? anyErr?.errors?.[0]?.message ?? fallback
+}
+
 export function SignupWizard() {
+  const router = useRouter()
+  const { isLoaded, signUp, setActive } = useSignUp()
   const [step, setStep] = useState(1)
   const totalSteps = 3
   const [error, setError] = useState<string | null>(null)
@@ -30,6 +40,12 @@ export function SignupWizard() {
   const [isLookingUp, setIsLookingUp] = useState(false)
   const [lookupSuccess, setLookupSuccess] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Email-code verification sub-step (between Account and Verification steps).
+  const [showEmailVerify, setShowEmailVerify] = useState(false)
+  const [emailVerified, setEmailVerified] = useState(false)
+  const [verifyCode, setVerifyCode] = useState('')
+  const [verifyPending, setVerifyPending] = useState(false)
 
   const form = useForm<SignupInput>({
     resolver: zodResolver(signupSchema) as any,
@@ -79,14 +95,76 @@ export function SignupWizard() {
     ]
 
     const isValid = await form.trigger(fieldsToValidate)
+    if (!isValid) return
 
-    if (isValid) {
-      if (step === 2 && !file) {
-        form.setError('photoIdFile', { message: 'Photo ID is required' })
-        return
+    // Leaving the Account step: create the Clerk user + send the email code,
+    // unless the email is already verified (e.g. user navigated back and forth).
+    if (step === 1 && !emailVerified) {
+      if (!isLoaded || !signUp) return
+      setError(null)
+      setIsPending(true)
+      try {
+        await signUp.create({
+          emailAddress: form.getValues('email'),
+          password: form.getValues('password'),
+        })
+        await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
+        setShowEmailVerify(true)
+        setIsPending(false)
+        window.scrollTo(0, 0)
+      } catch (err) {
+        setError(clerkErrorMessage(err, 'Could not start sign up. Please check your details and try again.'))
+        setIsPending(false)
       }
-      setStep(prev => Math.min(prev + 1, totalSteps))
-      window.scrollTo(0, 0)
+      return
+    }
+
+    if (step === 2 && !file) {
+      form.setError('photoIdFile', { message: 'Photo ID is required' })
+      return
+    }
+
+    setStep(prev => Math.min(prev + 1, totalSteps))
+    window.scrollTo(0, 0)
+  }
+
+  // Email-code verification: confirm the code, activate the Clerk session,
+  // then advance to the Verification step. The user is now authenticated for
+  // the remaining steps; the photo-ID File stays in memory until final submit.
+  async function handleVerifyEmail() {
+    if (!isLoaded || !signUp) return
+    if (!verifyCode.trim()) {
+      setError('Enter the 6-digit code sent to your email.')
+      return
+    }
+    setError(null)
+    setVerifyPending(true)
+    try {
+      const result = await signUp.attemptEmailAddressVerification({ code: verifyCode.trim() })
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId })
+        setEmailVerified(true)
+        setShowEmailVerify(false)
+        setVerifyPending(false)
+        setStep(2)
+        window.scrollTo(0, 0)
+      } else {
+        setError('Verification incomplete. Please try the code again.')
+        setVerifyPending(false)
+      }
+    } catch (err) {
+      setError(clerkErrorMessage(err, 'Invalid or expired code. Please try again.'))
+      setVerifyPending(false)
+    }
+  }
+
+  async function resendVerifyCode() {
+    if (!isLoaded || !signUp) return
+    setError(null)
+    try {
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
+    } catch (err) {
+      setError(clerkErrorMessage(err, 'Could not resend the code. Please try again.'))
     }
   }
 
@@ -120,18 +198,24 @@ export function SignupWizard() {
     setIsPending(true)
     setError(null)
 
+    // The photoIdFile is not JSON-serializable; send it as a separate FormData part.
+    const { photoIdFile, ...jsonValues } = values
     const formData = new FormData()
-    formData.append('data', JSON.stringify(values))
-    if (values.photoIdFile) {
-      formData.append('photoIdFile', values.photoIdFile)
+    formData.append('data', JSON.stringify(jsonValues))
+    if (photoIdFile) {
+      formData.append('photoIdFile', photoIdFile)
     }
 
-    const result = await signUp(formData)
+    const result = await createCoachProfile(formData)
 
     if (result?.error) {
       setError(result.error)
       setIsPending(false)
+      return
     }
+
+    // Matches the previous flow: coaches proceed to upload/await verification.
+    router.push('/upload-credentials')
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -182,13 +266,63 @@ export function SignupWizard() {
             </div>
 
             <CardDescription className="text-base text-muted-foreground">
-              {step === 1 && "Set up your account credentials."}
-              {step === 2 && "Verify your identity and accept our policies."}
-              {step === 3 && "Tell us about your team."}
+              {showEmailVerify && "Confirm your email to continue."}
+              {!showEmailVerify && step === 1 && "Set up your account credentials."}
+              {!showEmailVerify && step === 2 && "Verify your identity and accept our policies."}
+              {!showEmailVerify && step === 3 && "Tell us about your team."}
             </CardDescription>
           </CardHeader>
 
           <CardContent className="pt-6">
+            {showEmailVerify ? (
+              <div className="space-y-6 text-foreground">
+                {error && (
+                  <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground/80">Verification Code</label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    className="bg-background border-border text-foreground placeholder:text-muted-foreground tracking-[0.3em] text-center h-11"
+                    placeholder="123456"
+                    value={verifyCode}
+                    onChange={(e) => setVerifyCode(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    We emailed a 6-digit code to {form.getValues('email') || 'your email'}. Enter it to verify your account.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleVerifyEmail}
+                  size="lg"
+                  disabled={verifyPending || !isLoaded}
+                  className="w-full bg-primary text-primary-foreground hover:opacity-90 font-semibold"
+                >
+                  {verifyPending ? 'Verifying…' : 'Verify Email'}
+                </Button>
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={resendVerifyCode}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Resend code
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowEmailVerify(false); setError(null); setVerifyCode('') }}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Edit account details
+                  </button>
+                </div>
+              </div>
+            ) : (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 text-foreground">
                 {error && (
@@ -512,8 +646,8 @@ export function SignupWizard() {
                   ) : <div />}
 
                   {step < totalSteps ? (
-                    <Button type="button" onClick={nextStep} className="bg-primary text-primary-foreground hover:opacity-90">
-                      Next <ChevronRight className="w-4 h-4 ml-2" />
+                    <Button type="button" onClick={nextStep} disabled={step === 1 && (isPending || !isLoaded)} className="bg-primary text-primary-foreground hover:opacity-90">
+                      {step === 1 && isPending ? 'Sending code…' : <>Next <ChevronRight className="w-4 h-4 ml-2" /></>}
                     </Button>
                   ) : (
                     <Button type="submit" size="lg" disabled={isPending} className="bg-primary text-primary-foreground hover:opacity-90 font-semibold px-8">
@@ -523,6 +657,7 @@ export function SignupWizard() {
                 </div>
               </form>
             </Form>
+            )}
           </CardContent>
           <CardFooter className="border-t border-border/50 flex justify-center py-5">
             <p className="text-sm text-muted-foreground">

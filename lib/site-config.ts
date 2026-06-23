@@ -5,20 +5,21 @@
  */
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
-// Professional Steel palette (Slate)
-export const ACCENT_DARK_TEXT = "#657ba1ff"  // Slate 400
-export const ACCENT_DARK_GLOBE = "#ffffff" // Slate 600
-export const ACCENT_LIGHT_TEXT = "#617c98ff" // Slate 800
-export const ACCENT_LIGHT_GLOBE = "#000000" // Slate 500
+// Warm Pine
+export const ACCENT_TEXT = "#1F6F5C"  // Pine
+export const ACCENT_GLOBE = "#1F6F5C" // Pine
 
 // ─── Season ──────────────────────────────────────────────────────────────────
 export const CURRENT_SEASON = '2026'
 export const DISPATCH_SEASON_LABEL = `Season ${CURRENT_SEASON} dispatch window open`
 
+// ─── Showcase team (the real team used across product mocks) ──────────────────
+export const SHOWCASE_TEAM = { number: '31579', name: 'Exodius' } as const
+
 // ─── Portfolio mock (product showcase) ───────────────────────────────────────
 export const PORTFOLIO_MOCK = {
-  teamNumber: '31579',
-  teamName: 'Exodius',
+  teamNumber: SHOWCASE_TEAM.number,
+  teamName: SHOWCASE_TEAM.name,
   budgetItems: [
     { label: `Outreach, Q1 ${CURRENT_SEASON}`, funded: '$2,400', goal: '$5,000' },
     { label: 'Robot build', funded: '$1,100', goal: '$2,800' },
@@ -26,13 +27,21 @@ export const PORTFOLIO_MOCK = {
   ],
 }
 
-// ─── Moderation queue mock ───────────────────────────────────────────────────
-export const MODERATION_MOCK_ROWS = [
-  { to: 'partnerships@northwind.example', team: 'Iron Eagles · 14256', status: 'pending' },
-  { to: 'grants@cascade-mfg.example', team: 'Circuit Breakers · 9871', status: 'approved' },
-  { to: 'community@brightpath.example', team: 'Voltage Vipers · 18203', status: 'pending' },
-  { to: 'giving@summit-labs.example', team: 'Gear Daemons · 7412', status: 'changes' },
-] as const
+// ─── Dispatch review timeline (product showcase) ──────────────────────────────
+// Illustrates the human-review gate using the real team's own pitch lifecycle —
+// no invented teams or sponsor companies.
+export const DISPATCH_REVIEW = {
+  team: SHOWCASE_TEAM,
+  submissionRef: '318',
+  subject: 'Sponsor outreach draft',
+  steps: [
+    { label: 'Drafted by coach', meta: '2h ago', state: 'done' },
+    { label: 'Submitted for review', meta: '1h ago', state: 'done' },
+    { label: 'In admin review', meta: 'Now', state: 'active' },
+    { label: 'Approval gate', meta: 'Pending', state: 'todo' },
+    { label: 'Dispatched · signed URL', meta: '—', state: 'todo' },
+  ],
+} as const
 
 // ─── Footer social links ─────────────────────────────────────────────────────
 export const FOOTER_SOCIALS = [

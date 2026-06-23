@@ -1,14 +1,23 @@
 import { test, expect } from '@playwright/test';
+import { clerk, setupClerkTestingToken } from '@clerk/testing/playwright';
 import { writeFileSync } from 'node:fs';
 
 test('Golden Path E2E Test', async ({ page }) => {
   test.setTimeout(120000);
 
-  // 1. Log in as coach
-  await page.goto('http://localhost:3000/login');
-  await page.fill('input[name="email"]', 'coach@test.local');
-  await page.fill('input[name="password"]', 'SponsorPass123!');
-  await page.click('button[type="submit"]');
+  // 1. Log in as coach via Clerk (seeded persona — see scripts/seed-test-accounts.mjs)
+  await setupClerkTestingToken({ page });
+  await page.goto('http://localhost:3000/');
+  await clerk.signOut({ page }).catch(() => {});
+  await clerk.signIn({
+    page,
+    signInParams: {
+      strategy: 'password',
+      identifier: 'coach+clerk_test@devtest.local',
+      password: 'CoachTest123!',
+    },
+  });
+  await page.goto('http://localhost:3000/dashboard');
   await expect(page).toHaveURL(/.*dashboard/);
 
   // 2. Go to Find Sponsors

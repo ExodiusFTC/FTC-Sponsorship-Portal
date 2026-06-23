@@ -4,6 +4,7 @@ import { createHash } from 'crypto'
 import { SponsorDecisionPanel } from '@/components/sponsor/sponsor-decision-panel'
 import { Badge } from '@/components/ui/badge'
 import { RichText } from '@/components/ui/rich-text'
+import { htmlToPlainText } from '@/lib/utils'
 
 interface Props {
   params: Promise<{ token: string }>
@@ -89,9 +90,9 @@ export default async function SponsorViewPage({ params }: Props) {
         {/* Custom Pitch */}
         <div className="bg-card rounded-xl border p-8 shadow-sm space-y-4">
           <h2 className="text-lg font-semibold text-foreground">Why We Align With You</h2>
-          <RichText html={submission.custom_pitch_alignment} className="text-muted-foreground leading-relaxed" />
+          <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{htmlToPlainText(submission.custom_pitch_alignment)}</p>
           <h2 className="text-lg font-semibold text-foreground pt-2">Our Specific Needs</h2>
-          <RichText html={submission.specific_needs_statement} className="text-muted-foreground leading-relaxed" />
+          <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">{htmlToPlainText(submission.specific_needs_statement)}</p>
         </div>
 
         {/* Portfolio */}

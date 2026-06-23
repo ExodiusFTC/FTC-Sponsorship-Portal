@@ -2,23 +2,40 @@
  * Seed test accounts for manual QA.
  * Run from project root: node scripts/seed-test-accounts.mjs
  *
- * What it does:
- *   1. Deletes ALL existing auth users (clean slate)
- *   2. Creates coach / admin / sponsor accounts (email pre-confirmed)
- *   3. Creates "dev testing" sponsor company and links it to the sponsor user
- *   4. Marks coach as verified and creates a starter team so they can build a portfolio right away
+ * Auth is now Clerk (Supabase keeps Postgres + Storage). This script:
+ *   1. Deletes existing seeded Clerk test users + clears dependent public tables (clean slate)
+ *   2. Creates coach / admin / sponsor users in Clerk via the Backend SDK
+ *   3. Upserts the matching `profiles` row (service-role / RLS-bypass) with the
+ *      Clerk user id stored in `profiles.clerk_user_id`, plus the right role /
+ *      coach_verified / sponsor_id (profile rows are created by the app at runtime,
+ *      not by a DB trigger, so the seeder writes them directly)
+ *   4. Creates a "dev testing" sponsor company and links it to the sponsor user
+ *   5. Marks the coach as verified and creates a starter team
+ *
+ * Required env (.env.local):
+ *   NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY  — Supabase DB seeding (bypasses RLS)
+ *   CLERK_SECRET_KEY                                     — Clerk Backend SDK (create/delete test users)
+ *
+ * Test accounts use Clerk's `+clerk_test` email convention so they're deterministic
+ * and email verification can be satisfied with the static test code 424242.
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { createClerkClient } from '@clerk/nextjs/server'
 import * as dotenv from 'dotenv'
 
 dotenv.config({ path: '.env.local' })
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local')
+  process.exit(1)
+}
+if (!CLERK_SECRET_KEY) {
+  console.error('Missing CLERK_SECRET_KEY in .env.local (required to create Clerk test users)')
   process.exit(1)
 }
 
@@ -26,42 +43,46 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }
 })
 
+const clerk = createClerkClient({ secretKey: CLERK_SECRET_KEY })
+
 // ─── Credentials ─────────────────────────────────────────────────────────────
+// Uses Clerk's `+clerk_test` convention so accounts are deterministic test users
+// (email verification can be satisfied with the static code 424242).
 const ACCOUNTS = {
   coach: {
-    email: 'coach@devtest.local',
+    email: 'coach+clerk_test@devtest.local',
     password: 'CoachTest123!',
     fullName: 'Dev Coach',
     role: 'coach',
   },
   admin: {
-    email: 'admin@devtest.local',
+    email: 'admin+clerk_test@devtest.local',
     password: 'AdminTest123!',
     fullName: 'Dev Admin',
     role: 'admin',
   },
   sponsor: {
-    email: 'sponsor@devtest.local',
+    email: 'sponsor+clerk_test@devtest.local',
     password: 'SponsorTest123!',
     fullName: 'Dev Sponsor',
     role: 'sponsor',
   },
 }
 
+const ALL_EMAILS = Object.values(ACCOUNTS).map(a => a.email)
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function log(msg) { console.log(`  ✓ ${msg}`) }
 function warn(msg) { console.warn(`  ⚠ ${msg}`) }
 function section(title) { console.log(`\n── ${title} ──`) }
 
-// ─── Step 1: Wipe all users ───────────────────────────────────────────────────
+// ─── Step 1: Wipe seeded Clerk users + dependent public tables ────────────────
 async function wipeUsers() {
-  section('Wiping public tables & existing users')
+  section('Wiping public tables & existing seeded Clerk users')
 
   // Clean up dependent tables first to avoid foreign key constraint violations.
-  // Order matters: children before parents. Surface errors instead of swallowing
-  // them — a silently-failed delete leaves the DB in a partial state that produces
-  // confusing downstream seed failures. (Supabase .delete() returns an error object
-  // rather than throwing, so we check `error` directly.)
+  // Order matters: children before parents. Supabase .delete() returns an error
+  // object rather than throwing, so we check `error` directly.
   const tablesToClear = [
     'transactions_ledger',
     'notifications',
@@ -79,67 +100,81 @@ async function wipeUsers() {
     else log(`Cleared ${table}`)
   }
 
-  const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 })
-  if (error) throw new Error(`listUsers failed: ${error.message}`)
-
-  if (data.users.length === 0) {
-    log('No existing users found')
-    return
-  }
-
-  for (const user of data.users) {
-    const { error: delErr } = await admin.auth.admin.deleteUser(user.id)
-    if (delErr) warn(`Could not delete ${user.email}: ${delErr.message}`)
-    else log(`Deleted ${user.email}`)
+  // Delete only the seeded test users from Clerk (matched by email), not every
+  // user in the Clerk instance.
+  for (const email of ALL_EMAILS) {
+    try {
+      const { data: matches } = await clerk.users.getUserList({ emailAddress: [email] })
+      for (const u of matches) {
+        await clerk.users.deleteUser(u.id)
+        log(`Deleted Clerk user ${email}  [id: ${u.id}]`)
+      }
+    } catch (err) {
+      warn(`Could not delete Clerk user ${email}: ${err.message}`)
+    }
   }
 }
 
-// ─── Step 2: Create an auth user (email pre-confirmed) ───────────────────────
-async function createUser(email, password, fullName, role) {
-  const { data, error } = await admin.auth.admin.createUser({
-    email,
+// ─── Step 2: Create a Clerk user (email pre-verified via test convention) ─────
+async function createUser(email, password, fullName) {
+  const [firstName, ...rest] = fullName.split(' ')
+  const lastName = rest.join(' ') || 'User'
+  const user = await clerk.users.createUser({
+    emailAddress: [email],
     password,
-    email_confirm: true,
-    user_metadata: { full_name: fullName, role },
+    firstName,
+    lastName,
+    skipPasswordChecks: true,
   })
-  if (error) throw new Error(`createUser(${email}) failed: ${error.message}`)
-  log(`Created auth user ${email}  [id: ${data.user.id}]`)
-  return data.user.id
+  log(`Created Clerk user ${email}  [id: ${user.id}]`)
+  return user.id
 }
 
-// ─── Step 3: Upsert profile fields the trigger doesn't set ───────────────────
-async function patchProfile(id, patch) {
-  // Retry up to 5× to handle trigger propagation lag
-  for (let i = 0; i < 5; i++) {
-    const { error } = await admin.from('profiles').update(patch).eq('id', id)
-    if (!error) { log(`Patched profile ${id}`); return }
-    await new Promise(r => setTimeout(r, 400))
-  }
-  throw new Error(`patchProfile(${id}) failed after retries`)
+// ─── Step 3: Upsert the matching profile row (links clerk_user_id → role) ─────
+// Profile rows are normally created by the app at runtime; the seeder writes them
+// directly via the service-role client (bypasses RLS).
+async function upsertProfile(clerkUserId, email, fullName, patch) {
+  const { data, error } = await admin
+    .from('profiles')
+    .upsert(
+      {
+        clerk_user_id: clerkUserId,
+        email,
+        full_name: fullName,
+        ...patch,
+      },
+      { onConflict: 'clerk_user_id' }
+    )
+    .select('id')
+    .single()
+  if (error) throw new Error(`upsertProfile(${email}) failed: ${error.message}`)
+  log(`Upserted profile for ${email}  [profile id: ${data.id}]`)
+  return data.id
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
-  console.log('\n🚀  FTC Portal — test account seeder\n')
+  console.log('\n🚀  FTC Portal — test account seeder (Clerk)\n')
 
   // 1. Wipe
   await wipeUsers()
 
-  // 2. Create auth users
-  section('Creating auth users')
-  const coachId   = await createUser(ACCOUNTS.coach.email,   ACCOUNTS.coach.password,   ACCOUNTS.coach.fullName,   ACCOUNTS.coach.role)
-  const adminId   = await createUser(ACCOUNTS.admin.email,   ACCOUNTS.admin.password,   ACCOUNTS.admin.fullName,   ACCOUNTS.admin.role)
-  const sponsorId = await createUser(ACCOUNTS.sponsor.email, ACCOUNTS.sponsor.password, ACCOUNTS.sponsor.fullName, ACCOUNTS.sponsor.role)
+  // 2. Create Clerk users
+  section('Creating Clerk users')
+  const coachClerkId   = await createUser(ACCOUNTS.coach.email,   ACCOUNTS.coach.password,   ACCOUNTS.coach.fullName)
+  const adminClerkId   = await createUser(ACCOUNTS.admin.email,   ACCOUNTS.admin.password,   ACCOUNTS.admin.fullName)
+  const sponsorClerkId = await createUser(ACCOUNTS.sponsor.email, ACCOUNTS.sponsor.password, ACCOUNTS.sponsor.fullName)
 
-  // Give the DB trigger a moment to insert profiles
-  await new Promise(r => setTimeout(r, 1200))
-
-  // 3. Patch admin role (trigger defaults to 'coach' if metadata isn't read)
-  section('Configuring roles')
-  await patchProfile(adminId, { role: 'admin' })
-  await patchProfile(coachId, {
+  // 3. Upsert profiles with roles (no DB trigger — write them directly)
+  section('Creating profiles & configuring roles')
+  const coachProfileId = await upsertProfile(coachClerkId, ACCOUNTS.coach.email, ACCOUNTS.coach.fullName, {
     role: 'coach',
     coach_verified: true,
+    coppa_acknowledged: true,
+    tos_accepted: true,
+  })
+  await upsertProfile(adminClerkId, ACCOUNTS.admin.email, ACCOUNTS.admin.fullName, {
+    role: 'admin',
     coppa_acknowledged: true,
     tos_accepted: true,
   })
@@ -167,14 +202,14 @@ async function main() {
 
   // 5. Link sponsor profile → company
   section('Linking sponsor account to company')
-  await patchProfile(sponsorId, {
+  await upsertProfile(sponsorClerkId, ACCOUNTS.sponsor.email, ACCOUNTS.sponsor.fullName, {
     role: 'sponsor',
     sponsor_id: sponsorRow.id,
     coppa_acknowledged: true,
     tos_accepted: true,
   })
 
-  // 6. Create also a sponsor_application entry so admin queue shows it
+  // 6. Create a sponsor_application entry so the admin queue shows it
   await admin.from('sponsor_applications').insert({
     company_name: 'dev testing',
     contact_name: ACCOUNTS.sponsor.fullName,
@@ -192,7 +227,7 @@ async function main() {
   const { data: team, error: teamErr } = await admin
     .from('teams')
     .insert({
-      owner_id: coachId,
+      owner_id: coachProfileId,
       status: 'existing',
       ftc_team_number: 99999,
       team_name: 'Dev Test Team',
@@ -212,22 +247,24 @@ async function main() {
   // 8. Print credentials summary
   console.log(`
 ╔══════════════════════════════════════════════════════════════╗
-║               TEST ACCOUNT CREDENTIALS                       ║
+║               TEST ACCOUNT CREDENTIALS (Clerk)               ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  COACH                                                        ║
-║    Email:    coach@devtest.local                              ║
+║    Email:    coach+clerk_test@devtest.local                  ║
 ║    Password: CoachTest123!                                    ║
 ║    Status:   verified ✓  |  Team: Dev Test Team (#99999)     ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  ADMIN                                                        ║
-║    Email:    admin@devtest.local                              ║
+║    Email:    admin+clerk_test@devtest.local                  ║
 ║    Password: AdminTest123!                                    ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  SPONSOR                                                      ║
-║    Email:    sponsor@devtest.local                            ║
+║    Email:    sponsor+clerk_test@devtest.local                ║
 ║    Password: SponsorTest123!                                  ║
 ║    Company:  dev testing  ($5,000 cap, active)               ║
 ╚══════════════════════════════════════════════════════════════╝
+
+Email verification (if prompted): use the Clerk test code 424242.
 
 Next steps:
   1. Log in as coach → create a submission/portfolio targeting "dev testing"

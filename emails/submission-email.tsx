@@ -4,6 +4,7 @@ import {
 } from '@react-email/components'
 import * as React from 'react'
 import DOMPurify from 'isomorphic-dompurify'
+import { htmlToPlainText } from '@/lib/utils'
 
 // Rich-text fields are stored as sanitized HTML. Sanitize again on render (defense in depth)
 // and strip tags where we need a short plaintext preview.
@@ -106,12 +107,12 @@ export default function SubmissionEmail({
           {/* Custom pitch */}
           <Section style={pitchBox}>
             <Heading style={h2}>Why We Align With You</Heading>
-            <div style={text} dangerouslySetInnerHTML={{ __html: sanitizeHtml(customPitchAlignment) }} />
+            <Text style={{ ...text, whiteSpace: 'pre-wrap' }}>{htmlToPlainText(customPitchAlignment)}</Text>
           </Section>
 
           <Section style={{ marginTop: '16px' }}>
             <Heading style={h2}>Our Specific Needs</Heading>
-            <div style={text} dangerouslySetInnerHTML={{ __html: sanitizeHtml(specificNeedsStatement) }} />
+            <Text style={{ ...text, whiteSpace: 'pre-wrap' }}>{htmlToPlainText(specificNeedsStatement)}</Text>
           </Section>
 
           <Hr style={hr} />

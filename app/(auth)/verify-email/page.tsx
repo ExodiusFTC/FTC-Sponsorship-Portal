@@ -3,23 +3,32 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 
+// Email verification now happens inline during the signup wizard (Clerk email
+// code), so this page is informational. It stays reachable as a friendly
+// fallback / bookmark target and links users back to where they need to go.
 export default function VerifyEmailPage() {
   return (
     <div className="container mx-auto flex items-center justify-center min-h-screen py-12">
       <Card className="w-full max-w-md mx-auto text-center">
         <CardHeader>
-          <CardTitle>Check your email</CardTitle>
+          <CardTitle>You&apos;re all set</CardTitle>
           <CardDescription>
-            We&apos;ve sent you a verification link. Please check your inbox and click the link to verify your account.
+            Email verification is handled during sign up. If you&apos;ve already created your
+            account, you can continue from here.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Once verified, you&apos;ll be able to log in and start building your team profile.
+            Coaches: finish uploading your credential photo. Sponsors: your application is under review.
           </p>
-          <Link href="/login" className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}>
-            Return to Login
-          </Link>
+          <div className="flex flex-col gap-2">
+            <Link href="/login" className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}>
+              Go to Login
+            </Link>
+            <Link href="/signup" className={cn(buttonVariants({ variant: 'ghost' }), 'w-full')}>
+              Back to Sign Up
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,11 +1,10 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAuthedProfile } from '@/lib/actions-utils'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ count: 0 }, { status: 401 })
+  const authed = await getAuthedProfile()
+  if (!authed) return NextResponse.json({ count: 0 }, { status: 401 })
+  const { supabase, user } = authed
 
   const { data: profile } = await supabase
     .from('profiles')

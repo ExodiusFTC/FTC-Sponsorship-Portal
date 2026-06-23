@@ -14,7 +14,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { RateLimitNotice } from '@/components/ui/rate-limit-notice'
 import { SaveIndicator } from '@/components/ui/save-indicator'
-import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { ChevronDown } from 'lucide-react'
 import {
   DropdownMenu,
@@ -186,11 +185,15 @@ export function PortfolioForm({ initialSubmission, initialValues, sponsors = [],
                   <FormItem>
                     <FormLabel>Custom Pitch Alignment</FormLabel>
                     <FormControl>
-                      <RichTextEditor
+                      <Textarea
+                        placeholder="Explain why your team aligns with this company..."
+                        className="min-h-[140px]"
+                        disabled={readOnly}
                         value={field.value ?? ''}
                         onChange={field.onChange}
-                        placeholder="Explain why your team aligns with this company..."
-                        disabled={readOnly}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
                       />
                     </FormControl>
                     <FormMessage />
@@ -205,11 +208,15 @@ export function PortfolioForm({ initialSubmission, initialValues, sponsors = [],
                   <FormItem>
                     <FormLabel>Specific Needs Statement</FormLabel>
                     <FormControl>
-                      <RichTextEditor
+                      <Textarea
+                        placeholder="Detail your specific financial or material needs..."
+                        className="min-h-[140px]"
+                        disabled={readOnly}
                         value={field.value ?? ''}
                         onChange={field.onChange}
-                        placeholder="Detail your specific financial or material needs..."
-                        disabled={readOnly}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
                       />
                     </FormControl>
                     <FormMessage />

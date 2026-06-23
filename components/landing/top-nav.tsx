@@ -2,23 +2,10 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Sun, Moon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useTheme } from 'next-themes'
 
 export function TopNav() {
   const [scrolled, setScrolled] = useState(false)
-  const { setTheme, resolvedTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-
-  // Avoid hydration mismatch
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const toggleTheme = () => {
-    setTheme(resolvedTheme === 'light' ? 'dark' : 'light')
-  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12)
@@ -27,16 +14,12 @@ export function TopNav() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  if (!mounted) return null
-
-  const isLight = resolvedTheme === 'light'
-
   return (
     <header
       className={cn(
         'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
         scrolled
-          ? 'backdrop-blur-xl bg-background/80 border-b border-border'
+          ? 'backdrop-blur-xl bg-background/90 border-b border-border'
           : 'bg-transparent border-b border-transparent'
       )}
     >
@@ -56,30 +39,21 @@ export function TopNav() {
         </Link>
 
         <nav className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-1.5 rounded-full border border-border/80 bg-background/40 p-1.5 backdrop-blur-md shadow-sm">
-          <a href="#sponsors" className="rounded-full px-3 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors">Sponsors</a>
           <a href="#product" className="rounded-full px-3 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors">Product</a>
           <a href="#how" className="rounded-full px-3 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors">How it works</a>
           <a href="#faq" className="rounded-full px-3 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors">FAQ</a>
-          <div className="w-px h-4 bg-border/80 mx-1" />
-          <button
-            onClick={toggleTheme}
-            className="rounded-full p-1.5 text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
-            aria-label="Toggle theme"
-          >
-            {isLight ? <Moon className="w-4 h-4" strokeWidth={2} /> : <Sun className="w-4 h-4" strokeWidth={2} />}
-          </button>
         </nav>
 
         <div className="flex items-center gap-2">
           <Link
             href="/login"
-            className="hidden sm:inline-flex text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5"
+            className="hidden sm:inline-flex text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5"
           >
             Sign in
           </Link>
           <Link
             href="/signup"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity active:scale-[0.98]"
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors active:scale-[0.98]"
           >
             Open portal
           </Link>

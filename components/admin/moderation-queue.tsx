@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { CheckCircle2, AlertCircle, CheckSquare, Square, ChevronDown, ChevronUp } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, htmlToPlainText } from '@/lib/utils'
 
 interface Submission {
   id: string
@@ -77,12 +77,12 @@ function PreviewPane({ submission }: { submission: Submission }) {
       <div className="grid grid-cols-2 gap-4 border-b border-border pb-4">
         <FieldBlock label="Custom Pitch Alignment">
           <p className="whitespace-pre-wrap rounded-md bg-muted/50 px-3 py-2.5 text-muted-foreground leading-relaxed">
-            {submission.custom_pitch_alignment || '—'}
+            {htmlToPlainText(submission.custom_pitch_alignment) || '—'}
           </p>
         </FieldBlock>
         <FieldBlock label="Specific Needs Statement">
           <p className="whitespace-pre-wrap rounded-md bg-muted/50 px-3 py-2.5 text-muted-foreground leading-relaxed">
-            {submission.specific_needs_statement || '—'}
+            {htmlToPlainText(submission.specific_needs_statement) || '—'}
           </p>
         </FieldBlock>
       </div>

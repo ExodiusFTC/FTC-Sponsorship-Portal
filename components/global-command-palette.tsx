@@ -3,39 +3,39 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from 'cmdk'
-import { LayoutDashboard, BookOpen, Target, FileText, Inbox, BarChart2, Wallet, Settings, LogOut, Building2, Users, Search } from 'lucide-react'
-import { signOut } from '@/app/actions/auth'
+import { LayoutDashboard, BookOpen, Target, Inbox, Settings, LogOut, Building2, Users, Search } from 'lucide-react'
+import { useClerk } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
+
+interface RunCtx {
+  router: ReturnType<typeof useRouter>
+  signOut: () => void
+}
 
 interface PaletteAction {
   label: string
   group: string
   icon: React.ReactNode
-  run: (router: ReturnType<typeof useRouter>) => void
+  run: (ctx: RunCtx) => void
 }
 
 const coachActions: PaletteAction[] = [
-  { label: 'Overview',       group: 'Navigate', icon: <LayoutDashboard className="h-4 w-4" />, run: r => r.push('/dashboard') },
-  { label: 'Portfolio',      group: 'Navigate', icon: <BookOpen className="h-4 w-4" />,        run: r => r.push('/dashboard?tab=portfolio') },
-  { label: 'Find Sponsors',  group: 'Navigate', icon: <Target className="h-4 w-4" />,          run: r => r.push('/dashboard?tab=find-sponsors') },
-  { label: 'Submissions',    group: 'Navigate', icon: <FileText className="h-4 w-4" />,        run: r => r.push('/dashboard?tab=submissions') },
-  { label: 'Inbox',          group: 'Navigate', icon: <Inbox className="h-4 w-4" />,           run: r => r.push('/dashboard?tab=inbox') },
-  { label: 'Insights',       group: 'Navigate', icon: <BarChart2 className="h-4 w-4" />,       run: r => r.push('/dashboard?tab=insights') },
-  { label: 'Ledger',         group: 'Navigate', icon: <Wallet className="h-4 w-4" />,          run: r => r.push('/dashboard?tab=ledger') },
-  { label: 'Settings',       group: 'Navigate', icon: <Settings className="h-4 w-4" />,        run: r => r.push('/dashboard?tab=settings') },
+  { label: 'Home',           group: 'Navigate', icon: <LayoutDashboard className="h-4 w-4" />, run: ({ router }) => router.push('/dashboard') },
+  { label: 'Portfolio',      group: 'Navigate', icon: <BookOpen className="h-4 w-4" />,        run: ({ router }) => router.push('/dashboard?tab=portfolio') },
+  { label: 'Sponsors',       group: 'Navigate', icon: <Target className="h-4 w-4" />,          run: ({ router }) => router.push('/dashboard?tab=sponsors') },
+  { label: 'Inbox',          group: 'Navigate', icon: <Inbox className="h-4 w-4" />,           run: ({ router }) => router.push('/dashboard?tab=inbox') },
+  { label: 'Settings',       group: 'Navigate', icon: <Settings className="h-4 w-4" />,        run: ({ router }) => router.push('/dashboard?tab=settings') },
 ]
 
 const adminActions: PaletteAction[] = [
-  { label: 'Admin Dashboard', group: 'Navigate', icon: <LayoutDashboard className="h-4 w-4" />, run: r => r.push('/admin') },
-  { label: 'Moderation Queue',group: 'Navigate', icon: <Inbox className="h-4 w-4" />,           run: r => r.push('/moderation') },
-  { label: 'Sponsors',        group: 'Navigate', icon: <Building2 className="h-4 w-4" />,       run: r => r.push('/sponsors') },
-  { label: 'Teams',           group: 'Navigate', icon: <Users className="h-4 w-4" />,           run: r => r.push('/coaches') },
-  { label: 'Analytics',       group: 'Navigate', icon: <BarChart2 className="h-4 w-4" />,       run: r => r.push('/analytics') },
-  { label: 'Audit Log',       group: 'Navigate', icon: <FileText className="h-4 w-4" />,        run: r => r.push('/admin/audit') },
+  { label: 'Dashboard',       group: 'Navigate', icon: <LayoutDashboard className="h-4 w-4" />, run: ({ router }) => router.push('/admin') },
+  { label: 'Review',          group: 'Navigate', icon: <Inbox className="h-4 w-4" />,           run: ({ router }) => router.push('/moderation') },
+  { label: 'Sponsors',        group: 'Navigate', icon: <Building2 className="h-4 w-4" />,       run: ({ router }) => router.push('/sponsors') },
+  { label: 'Teams',           group: 'Navigate', icon: <Users className="h-4 w-4" />,           run: ({ router }) => router.push('/coaches') },
 ]
 
 const accountActions: PaletteAction[] = [
-  { label: 'Sign Out', group: 'Account', icon: <LogOut className="h-4 w-4" />, run: () => signOut() },
+  { label: 'Sign Out', group: 'Account', icon: <LogOut className="h-4 w-4" />, run: ({ signOut }) => signOut() },
 ]
 
 interface Props {
@@ -45,14 +45,15 @@ interface Props {
 export function GlobalCommandPalette({ role }: Props) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
+  const { signOut } = useClerk()
 
   const navActions = role === 'admin' ? adminActions : coachActions
   const allActions = [...navActions, ...accountActions]
 
   const handleSelect = useCallback((action: PaletteAction) => {
     setOpen(false)
-    action.run(router)
-  }, [router])
+    action.run({ router, signOut: () => signOut({ redirectUrl: '/login' }) })
+  }, [router, signOut])
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {

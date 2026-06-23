@@ -7,14 +7,15 @@ A "Dynamic Portfolio" and Verified Grant Portal connecting FIRST Tech Challenge 
 | Layer | Technology |
 |---|---|
 | Frontend | Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + shadcn/ui |
-| Database & Auth | Supabase (Postgres + RLS + Auth + Storage) |
+| Auth | Clerk (`@clerk/nextjs`) — sessions, email verification, password reset |
+| Database | Supabase (Postgres + RLS + Storage); trusts Clerk via native third-party auth |
 | Email Dispatch | Resend + React Email |
 | Validation | Zod + React Hook Form |
 | Hosting | Vercel + Supabase Cloud |
 
 ## Key Design Principles
 
-- **RLS-first authorization** — every table enforces policy at the DB layer; app code is the second line of defense
+- **RLS-first authorization** — every table enforces policy at the DB layer (keyed on the Clerk user id via `auth.jwt()->>'sub'`); app code is the second line of defense
 - **Admin-gatekept dispatch** — no email leaves the platform without admin approval
 - **COPPA compliance** — only verified adult coaches register; zero student PII columns in schema
 - **Immutable audit log** — all admin actions are appended to `audit_log`
@@ -25,7 +26,7 @@ A "Dynamic Portfolio" and Verified Grant Portal connecting FIRST Tech Challenge 
 | Role | Description |
 |---|---|
 | `coach` | Adult advisor who registers, builds team portfolio, creates submissions |
-| `admin` | Platform operator who verifies coaches, reviews submissions, and triggers dispatch. Requires TOTP/MFA (`aal2`) for all admin actions. |
+| `admin` | Platform operator who verifies coaches, reviews submissions, and triggers dispatch. |
 | `sponsor` | Funder account that reviews dispatched submissions and approves/declines funding from `/sponsor/dashboard` |
 
 Sponsors can also be reached without logging in via a unique, trackable link (`/sponsor-view/[token]`) sent by email.
@@ -37,6 +38,7 @@ Sponsors can also be reached without logging in via a unique, trackable link (`/
 - Node.js 20+
 - The [Supabase CLI](https://supabase.com/docs/guides/cli) and `psql` (for migrations)
 - A [Supabase](https://supabase.com) project
+- A [Clerk](https://clerk.com) application (auth)
 - A [Resend](https://resend.com) account
 
 ### Environment Variables
@@ -47,6 +49,10 @@ Copy `.env.example` to `.env.local` and fill in:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=        # Supabase anon key — use the legacy JWT (eyJ…)
 SUPABASE_SERVICE_ROLE_KEY=            # Supabase service_role key — legacy JWT (eyJ…)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=   # Clerk publishable key
+CLERK_SECRET_KEY=                    # Clerk secret key (server-only)
+CLERK_WEBHOOK_SIGNING_SECRET=        # Svix secret for app/api/webhooks/clerk; required in production
+# Optional: NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login, NEXT_PUBLIC_CLERK_SIGN_UP_URL=/signup
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=noreply@yourdomain.com
 RESEND_WEBHOOK_SECRET=                # Svix signing secret; required in production
@@ -56,6 +62,8 @@ CRON_SECRET=                          # bearer token for the Vercel cron; requir
 ```
 
 > **Use the legacy Supabase JWT keys** (Settings → API → JWT keys, they start with `eyJ`). The new `sb_publishable_…` / `sb_secret_…` format is **not** reliably accepted by the API. There is **no** Upstash/Redis dependency — rate limiting was removed.
+
+> **Register Clerk as a Supabase third-party auth provider** (Supabase dashboard → Authentication → Third-party auth) so RLS can trust the Clerk session JWT — policies key off the Clerk user id in `auth.jwt()->>'sub'`. Also set the Clerk password policy to 12+ chars with upper/lower/number.
 
 ### Database Setup
 
@@ -83,14 +91,15 @@ App runs at [http://localhost:3000](http://localhost:3000).
 ## Project Structure
 
 ```
+middleware.ts      # Clerk clerkMiddleware() + public-route matcher
 app/
-  (auth)/          # Login, signup, verify-email, credential upload
+  (auth)/          # Login, signup (Clerk headless), verify-email, credential upload
   (coach)/         # Dashboard, team edit, submission builder, sponsor browser
   (admin)/         # Review queue, moderation, sponsor management, analytics
   (sponsor)/       # Sponsor dashboard — review & decide on dispatched submissions
   sponsor-view/    # Public, token-authenticated pitch viewer
   api/
-    webhooks/      # Resend bounce/open webhook handler
+    webhooks/      # Resend bounce/open + Clerk (user.deleted / email sync) webhook handlers
     cron/          # Scheduled jobs (e.g. expiring submissions)
     health/        # Liveness + authed deep DB probe
 components/
@@ -99,7 +108,7 @@ components/
   sponsor/         # Sponsor application form
   ui/              # shadcn/ui primitives
 lib/
-  supabase/        # server.ts, client.ts, admin.ts, types.ts
+  supabase/        # server.ts, client.ts (both forward the Clerk token), admin.ts, types.ts
   schemas/         # Zod schemas shared between client and server
   dispatch.ts      # Admin-gated sponsor pitch dispatch (Resend)
   notify.ts        # Dual-channel notifications — in-app inbox + email (always both)

@@ -1,14 +1,14 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAuthedProfile } from '@/lib/actions-utils'
 import { redirect } from 'next/navigation'
 import { AchievementForm } from '@/components/team/achievement-form'
 import { buttonVariants } from '@/components/ui/button'
 import Link from 'next/link'
 
 export default async function NewAchievementPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const authed = await getAuthedProfile()
 
-  if (!user) redirect('/login')
+  if (!authed) redirect('/login')
+  const { supabase, user } = authed
 
   const { data: team } = await supabase
     .from('teams')

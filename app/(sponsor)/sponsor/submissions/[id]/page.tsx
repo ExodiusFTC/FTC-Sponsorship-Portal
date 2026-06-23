@@ -1,12 +1,12 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAuthedProfile } from '@/lib/actions-utils'
 import { notFound, redirect } from 'next/navigation'
 import { SponsorReviewShell } from '@/components/sponsor/review-shell'
 
 export default async function SponsorSubmissionReviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const authed = await getAuthedProfile()
+  if (!authed) redirect('/login')
+  const { supabase, user } = authed
 
   const { data: profile } = await supabase
     .from('profiles')

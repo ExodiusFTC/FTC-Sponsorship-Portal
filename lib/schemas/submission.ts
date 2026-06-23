@@ -1,13 +1,15 @@
 import { z } from 'zod'
-import DOMPurify from 'isomorphic-dompurify'
+import { htmlToPlainText } from '@/lib/utils'
 
-function richTextField(min: number, max: number, minMsg: string, maxMsg: string) {
+// Pitch fields are plain text. Any HTML a coach pastes (or legacy TipTap markup) is flattened
+// to readable text on input, so nothing is stored or displayed as raw `<p>…</p>` markup.
+function plainTextField(min: number, max: number, minMsg: string, maxMsg: string) {
   return z
     .string()
     .trim()
-    .transform((val) => DOMPurify.sanitize(val))
+    .transform((val) => htmlToPlainText(val))
     .superRefine((val, ctx) => {
-      const text = val.replace(/<[^>]*>?/gm, '').trim()
+      const text = val.trim()
       if (text.length < min) {
         ctx.addIssue({
           code: z.ZodIssueCode.too_small,
@@ -33,13 +35,13 @@ function richTextField(min: number, max: number, minMsg: string, maxMsg: string)
 
 export const submissionSchema = z.object({
   sponsorId: z.string().uuid('Sponsor is required'),
-  customPitchAlignment: richTextField(
+  customPitchAlignment: plainTextField(
     50,
     1500,
     'Please explain why your team aligns with this company (at least 50 characters).',
     'Pitch alignment must be 1500 characters or fewer'
   ),
-  specificNeedsStatement: richTextField(
+  specificNeedsStatement: plainTextField(
     50,
     1500,
     'Please detail your specific financial or material needs (at least 50 characters).',

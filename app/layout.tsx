@@ -1,16 +1,16 @@
 import type { Metadata } from "next"
-import { Inter, JetBrains_Mono } from "next/font/google"
+import { ClerkProvider } from "@clerk/nextjs"
+import { Hanken_Grotesk, Fraunces, Geist_Mono } from "next/font/google"
 import { Toaster } from "sonner"
 import "./globals.css"
 import { 
-  ACCENT_DARK_TEXT, 
-  ACCENT_DARK_GLOBE, 
-  ACCENT_LIGHT_TEXT, 
-  ACCENT_LIGHT_GLOBE 
+  ACCENT_TEXT, 
+  ACCENT_GLOBE
 } from "@/lib/site-config"
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
-const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains-mono" })
+const hankenGrotesk = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-sans" })
+const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-serif" })
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" })
 
 export const metadata: Metadata = {
   title: "FTC Matchmaker · Sponsorship Portal",
@@ -26,30 +26,31 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html 
-      lang="en" 
-      className={`${inter.variable} ${jetbrainsMono.variable}`} 
-      style={{ 
-        // @ts-expect-error CSS custom properties are not in React.CSSProperties
-        '--accent-text-dark': ACCENT_DARK_TEXT,
-        '--accent-globe-dark': ACCENT_DARK_GLOBE,
-        '--accent-text-light': ACCENT_LIGHT_TEXT,
-        '--accent-globe-light': ACCENT_LIGHT_GLOBE,
-      }} 
-      suppressHydrationWarning
-    >
-      <body>
-        <ThemeProvider
-          attribute="data-theme"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-          <GlobalShortcuts />
-          <Toaster richColors position="top-right" />
-        </ThemeProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html
+        lang="en"
+        className={`${hankenGrotesk.variable} ${fraunces.variable} ${geistMono.variable}`}
+        style={{
+          // @ts-expect-error CSS custom properties are not in React.CSSProperties
+          '--accent-text': ACCENT_TEXT,
+          '--accent-globe': ACCENT_GLOBE,
+        }}
+        suppressHydrationWarning
+      >
+        <body>
+          <ThemeProvider
+            attribute="data-theme"
+            defaultTheme="light"
+            forcedTheme="light"
+            enableSystem={false}
+            disableTransitionOnChange
+          >
+            {children}
+            <GlobalShortcuts />
+            <Toaster richColors position="top-right" />
+          </ThemeProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }

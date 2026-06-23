@@ -1,54 +1,27 @@
 import { test, expect, type Page } from '@playwright/test'
-import * as crypto from 'crypto'
+import { clerk, setupClerkTestingToken } from '@clerk/testing/playwright'
 import * as fs from 'fs'
 import * as path from 'path'
 
-// Base32 decoder for TOTP
-function base32Decode(str: string): Buffer {
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-  str = str.replace(/=+$/, '').toUpperCase().replace(/\s/g, '');
-  let val = 0;
-  let count = 0;
-  const bytes: number[] = [];
-  for (let i = 0; i < str.length; i++) {
-    const idx = alphabet.indexOf(str[i]);
-    if (idx === -1) continue;
-    val = (val << 5) | idx;
-    count += 5;
-    if (count >= 8) {
-      bytes.push((val >>> (count - 8)) & 255);
-      count -= 8;
-    }
-  }
-  return Buffer.from(bytes);
+// Seeded Clerk test personas (see scripts/seed-test-accounts.mjs).
+const PERSONAS = {
+  coach: { email: 'coach+clerk_test@devtest.local', password: 'CoachTest123!' },
+  admin: { email: 'admin+clerk_test@devtest.local', password: 'AdminTest123!' },
+  sponsor: { email: 'sponsor+clerk_test@devtest.local', password: 'SponsorTest123!' },
 }
 
-// Generates TOTP code from secret
-function generateTOTP(secret: string): string {
-  const key = base32Decode(secret);
-  const epoch = Math.floor(Date.now() / 1000);
-  const counter = Math.floor(epoch / 30);
-  
-  const buffer = Buffer.alloc(8);
-  let temp = counter;
-  for (let i = 7; i >= 0; i--) {
-    buffer[i] = temp & 0xff;
-    temp = Math.floor(temp / 256);
-  }
-  
-  const hmac = crypto.createHmac('sha1', key);
-  hmac.update(buffer);
-  const hmacResult = hmac.digest();
-  
-  const offset = hmacResult[hmacResult.length - 1] & 0xf;
-  const code =
-    ((hmacResult[offset] & 0x7f) << 24) |
-    ((hmacResult[offset + 1] & 0xff) << 16) |
-    ((hmacResult[offset + 2] & 0xff) << 8) |
-    (hmacResult[offset + 3] & 0xff);
-  
-  const otp = code % 1000000;
-  return otp.toString().padStart(6, '0');
+// Sign in via Clerk's test helper (programmatic — no UI form driving). Clears any
+// existing session first so persona switches don't carry over cookies, then injects
+// a Testing Token to bypass bot detection and signs in with password strategy.
+async function signInAs(page: Page, persona: { email: string; password: string }) {
+  await setupClerkTestingToken({ page })
+  // Clerk needs the app loaded (window.Clerk available) before sign-out/sign-in.
+  await page.goto('/')
+  await clerk.signOut({ page }).catch(() => {})
+  await clerk.signIn({
+    page,
+    signInParams: { strategy: 'password', identifier: persona.email, password: persona.password },
+  })
 }
 
 // Global logger to keep track of bugs found during testing
@@ -78,18 +51,14 @@ function setupPageListeners(page: Page) {
   })
 }
 
-// Global variable to save MFA secret across test flows
-let adminMfaSecret = ''
-
 test.describe('Exhaustive QA Audit Flow', () => {
   test.setTimeout(300000) // 5 minutes for the whole flow
 
   test('Perform Comprehensive Web App Testing', async ({ page }, testInfo) => {
-    // This audit mutates shared DB state (MFA enrollment is one-shot, the cross-persona
-    // flow seeds/approves submissions) and writes a single results file. Running it across
-    // all configured browser projects in parallel collides on that shared state, so pin it
-    // to one project.
-    test.skip(testInfo.project.name !== 'chromium', 'Single-project audit (shared DB/MFA state)')
+    // This audit mutates shared DB state (the cross-persona flow seeds/approves
+    // submissions) and writes a single results file. Running it across all configured
+    // browser projects in parallel collides on that shared state, so pin it to one project.
+    test.skip(testInfo.project.name !== 'chromium', 'Single-project audit (shared DB state)')
 
     setupPageListeners(page)
 
@@ -110,54 +79,24 @@ test.describe('Exhaustive QA Audit Flow', () => {
     await page.goto('/legal/privacy')
     await expect(page.locator('h1').first()).toContainText(/privacy/i)
     
-    // Check login page rendering
+    // Check login page rendering (Clerk-driven login form)
     await page.goto('/login')
-    await expect(page.locator('input[name="email"]')).toBeVisible()
-    await expect(page.locator('input[type="password"]')).toBeVisible()
+    await expect(page.locator('input[type="password"]').first()).toBeVisible()
 
     // ==========================================
     // PHASE 2: Admin Persona
     // ==========================================
     console.log('--- Phase 2: Logging in as Admin ---')
-    await page.goto('/login')
-    await page.fill('input[name="email"]', 'admin@devtest.local')
-    await page.fill('input[name="password"]', 'AdminTest123!')
-    await page.click('button[type="submit"]')
-    await page.waitForURL(url => url.pathname.includes('security') || url.pathname.includes('mfa') || url.pathname.includes('admin'), { timeout: 10000 }).catch(() => {})
+    await signInAs(page, PERSONAS.admin)
+    await page.goto('/admin')
+    await page.waitForURL(url => url.pathname.includes('admin') || url.pathname.includes('dashboard'), { timeout: 10000 }).catch(() => {})
     await page.waitForTimeout(1000)
-
-    // MFA setup / redirect handling
-    const currentUrl = page.url()
-    if (currentUrl.includes('/admin/security')) {
-      console.log('MFA Setup redirection detected. Enrolling TOTP factor...');
-      // Wait for manual entry secret key
-      await page.waitForSelector('.select-all')
-      const secretText = await page.locator('.select-all').innerText()
-      adminMfaSecret = secretText.trim()
-      console.log(`Extracted admin MFA secret: ${adminMfaSecret}`)
-
-      // Generate and verify code
-      const code = generateTOTP(adminMfaSecret)
-      await page.fill('input[placeholder="000 000"]', code)
-      await page.click('text=Verify & activate 2FA')
-      await page.waitForTimeout(2000)
-    } else if (currentUrl.includes('/mfa')) {
-      console.log('MFA Challenge redirection detected. Entering TOTP code...');
-      if (!adminMfaSecret) {
-        logBug(currentUrl, 'RED', 'Admin MFA is already enrolled but secret is unknown. Reset database to test.')
-        throw new Error('MFA already enrolled, cannot continue admin tests.')
-      }
-      const code = generateTOTP(adminMfaSecret)
-      await page.fill('input[placeholder="000 000"]', code)
-      await page.click('text=Verify')
-      await page.waitForTimeout(2000)
-    }
 
     // Now on admin dashboard
     await page.goto('/admin')
     await page.waitForTimeout(1000)
     if (!page.url().includes('/admin')) {
-      logBug(page.url(), 'RED', 'Failed to reach Admin Dashboard after login/MFA')
+      logBug(page.url(), 'RED', 'Failed to reach Admin Dashboard after login')
     } else {
       console.log('Successfully reached Admin Dashboard.')
     }
@@ -171,7 +110,6 @@ test.describe('Exhaustive QA Audit Flow', () => {
       { path: '/applications', title: 'Applications' },
       { path: '/analytics', title: 'Analytics' },
       { path: '/admin/audit', title: 'Audit' },
-      { path: '/admin/security', title: 'Security' },
       { path: '/settings', title: 'Settings' }
     ]
 
@@ -194,15 +132,8 @@ test.describe('Exhaustive QA Audit Flow', () => {
     // PHASE 3: Coach Persona
     // ==========================================
     console.log('--- Phase 3: Logging in as Coach ---')
-    // Sign out first by clearing cookies
-    await page.context().clearCookies()
-    await page.goto('/')
-    await page.waitForTimeout(1000)
-
-    await page.goto('/login')
-    await page.fill('input[name="email"]', 'coach@devtest.local')
-    await page.fill('input[name="password"]', 'CoachTest123!')
-    await page.click('button[type="submit"]')
+    await signInAs(page, PERSONAS.coach)
+    await page.goto('/dashboard')
     await page.waitForURL(/\/dashboard/, { timeout: 10000 }).catch(() => {})
 
     if (!page.url().includes('/dashboard')) {
@@ -250,11 +181,8 @@ test.describe('Exhaustive QA Audit Flow', () => {
     // PHASE 4: Sponsor Persona
     // ==========================================
     console.log('--- Phase 4: Logging in as Sponsor ---')
-    await page.context().clearCookies()
-    await page.goto('/login')
-    await page.fill('input[name="email"]', 'sponsor@devtest.local')
-    await page.fill('input[name="password"]', 'SponsorTest123!')
-    await page.click('button[type="submit"]')
+    await signInAs(page, PERSONAS.sponsor)
+    await page.goto('/sponsor/dashboard')
     await page.waitForURL(/\/sponsor\/dashboard/, { timeout: 10000 }).catch(() => {})
 
     if (!page.url().includes('/sponsor/dashboard')) {
@@ -292,11 +220,8 @@ test.describe('Exhaustive QA Audit Flow', () => {
     try {
       // 1. Coach creates and submits a pitch
       console.log('[Flow] Logging in as Coach...');
-      await page.context().clearCookies()
-      await page.goto('/login')
-      await page.fill('input[name="email"]', 'coach@devtest.local')
-      await page.fill('input[name="password"]', 'CoachTest123!')
-      await page.click('button[type="submit"]')
+      await signInAs(page, PERSONAS.coach)
+      await page.goto('/dashboard')
       await page.waitForURL(/\/dashboard/, { timeout: 10000 })
 
       console.log('[Flow] Creating new pitch submission...');
@@ -329,17 +254,8 @@ test.describe('Exhaustive QA Audit Flow', () => {
 
       // 2. Admin logs in and approves the pitch
       console.log('[Flow] Logging in as Admin...');
-      await page.context().clearCookies()
-      await page.goto('/login')
-      await page.fill('input[name="email"]', 'admin@devtest.local')
-      await page.fill('input[name="password"]', 'AdminTest123!')
-      await page.click('button[type="submit"]')
-      
-      // Wait for MFA challenge
-      await page.waitForURL(/\/mfa/, { timeout: 10000 })
-      const mfaCode = generateTOTP(adminMfaSecret)
-      await page.fill('input[placeholder="000 000"]', mfaCode)
-      await page.click('text=Verify')
+      await signInAs(page, PERSONAS.admin)
+      await page.goto('/admin')
       await page.waitForURL(/\/admin/, { timeout: 10000 })
 
       console.log('[Flow] Navigating to Admin Moderation Queue...');
@@ -371,11 +287,8 @@ test.describe('Exhaustive QA Audit Flow', () => {
 
       // 3. Sponsor verifies receipt
       console.log('[Flow] Logging in as Sponsor...');
-      await page.context().clearCookies()
-      await page.goto('/login')
-      await page.fill('input[name="email"]', 'sponsor@devtest.local')
-      await page.fill('input[name="password"]', 'SponsorTest123!')
-      await page.click('button[type="submit"]')
+      await signInAs(page, PERSONAS.sponsor)
+      await page.goto('/sponsor/dashboard')
       await page.waitForURL(/\/sponsor\/dashboard/, { timeout: 10000 })
 
       console.log('[Flow] Checking Sponsor Submissions...');
