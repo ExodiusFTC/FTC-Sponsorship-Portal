@@ -24,38 +24,26 @@ export function HowItWorks() {
       </FadeUp>
 
       <div className="relative mt-20">
-        <svg
-          aria-hidden
-          className="absolute left-10 right-10 top-10 hidden md:block w-[calc(100%-80px)]"
-          height="2"
-          viewBox="0 0 1000 2"
-          preserveAspectRatio="none"
-        >
-          <motion.line
-            x1="0" x2="1000" y1="1" y2="1"
-            stroke="currentColor"
-            strokeOpacity={0.3}
-            strokeWidth="2"
-            strokeDasharray="6 6"
-            initial={reduce ? { pathLength: 1 } : { pathLength: 0 }}
-            whileInView={{ pathLength: 1 }}
-            viewport={{ once: true, margin: '-80px' }}
-            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-            className="text-primary"
-          />
-        </svg>
+
 
         <StaggerContainer className="grid gap-12 md:grid-cols-4 md:gap-8">
-          {steps.map((s) => {
+          {steps.map((s, idx) => {
             const Icon = s.icon
             return (
-              <StaggerItem key={s.label}>
+              <StaggerItem key={s.label} className="relative">
                 <div className="relative inline-flex h-20 w-20 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5">
                   <Icon className="h-7 w-7 text-primary" strokeWidth={1.5} />
                   <span className="absolute -top-3 -right-3 rounded-full border border-primary/20 bg-card px-2 py-0.5 text-xs font-mono text-primary shadow-sm">
                     {s.label}
                   </span>
                 </div>
+                {idx < steps.length - 1 && (
+                  <div className="hidden md:block absolute top-10 right-[-16px] translate-x-1/2 -translate-y-1/2 text-primary/40">
+                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                       <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                     </svg>
+                  </div>
+                )}
                 <h3 className="mt-6 text-lg font-medium tracking-tight text-foreground">{s.title}</h3>
                 <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{s.body}</p>
               </StaggerItem>

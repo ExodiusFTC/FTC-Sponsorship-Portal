@@ -35,7 +35,7 @@ export function PortfolioTab({ team, achievements }: { team: Team, achievements:
       status: team.status,
       ftcTeamNumber: team.ftc_team_number ?? '',
       teamName: team.team_name,
-      tagline: team.organization || '',
+      tagline: team.tagline || '',
       organization: team.organization || '',
       city: team.city || '',
       state: team.state || '',

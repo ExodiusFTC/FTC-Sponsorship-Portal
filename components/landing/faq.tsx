@@ -36,25 +36,23 @@ const items = [
 export function FAQ() {
   return (
     <Section id="faq" className="bg-card border-y border-border">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8">
-        <div className="lg:col-span-5 flex flex-col justify-start">
-          <FadeUp>
-            <h2 className="text-3xl md:text-4xl font-medium tracking-tight text-foreground">
-              Questions coaches actually ask.
-            </h2>
-            <p className="mt-4 text-[17px] text-muted-foreground leading-relaxed">
-              Have a question that isn&apos;t answered here? Reach out to our team.
-            </p>
-            <Link 
-              href="mailto:exodiusftc@gmail.com"
-              className="mt-8 inline-flex w-fit items-center gap-2 rounded-full border border-border bg-background px-6 py-3 text-sm font-medium text-foreground hover:bg-accent transition-colors shadow-sm"
-            >
-              Contact support
-              <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
-            </Link>
-          </FadeUp>
-        </div>
-        <div className="lg:col-span-7">
+      <div className="mx-auto max-w-4xl flex flex-col items-center">
+        <FadeUp className="text-center flex flex-col items-center">
+          <h2 className="text-3xl md:text-4xl font-medium tracking-tight text-foreground">
+            Questions coaches actually ask.
+          </h2>
+          <p className="mt-4 text-[17px] text-muted-foreground leading-relaxed max-w-2xl">
+            Have a question that isn&apos;t answered here? Reach out to our team.
+          </p>
+          <Link 
+            href="mailto:exodiusftc@gmail.com"
+            className="mt-8 mb-12 inline-flex w-fit items-center gap-2 rounded-full border border-border bg-background px-6 py-3 text-sm font-medium text-foreground hover:bg-accent transition-colors shadow-sm"
+          >
+            Contact support
+            <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
+          </Link>
+        </FadeUp>
+        <div className="w-full">
           <FadeUp delay={0.1}>
             <Accordion items={items} />
           </FadeUp>

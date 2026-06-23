@@ -1,8 +1,8 @@
 # Workflows
 
 ## Local dev
-- `npm run dev` — Next dev (webpack).
-- `npm run build` — production build (`next build --webpack`). NOT Turbopack.
+- `npm run dev` — Next dev (Turbopack).
+- `npm run build` — production build (`next build`, Turbopack). The `jsdom`/`cssstyle` pins in `package.json` `overrides` must stay — they fix a runtime `ERR_REQUIRE_ESM` in the serverless bundle and are unrelated to the bundler. Do not re-add `--webpack`.
 
 ## Validate (run before every push)
 - `npm run typecheck` — `tsc --noEmit`.

@@ -50,9 +50,15 @@ function ProductHeroMock() {
         {/* Browser Chrome */}
         <div className="flex h-12 items-center gap-2 border-b border-border bg-card/80 px-4 backdrop-blur-sm">
           <div className="flex gap-1.5">
-            <div className="h-3 w-3 rounded-full bg-[#E7E1D6]" />
-            <div className="h-3 w-3 rounded-full bg-[#E7E1D6]" />
-            <div className="h-3 w-3 rounded-full bg-[#E7E1D6]" />
+            <div className="h-3 w-3 rounded-full bg-[#ff5f56]" />
+            <div className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
+            <div className="h-3 w-3 rounded-full bg-[#27c93f]" />
+          </div>
+          <div className="ml-4 flex-1">
+            <div className="h-6 w-1/3 max-w-[200px] rounded-md bg-muted/50 flex items-center px-2">
+               <Search className="w-3 h-3 text-muted-foreground mr-2" />
+               <span className="text-[10px] text-muted-foreground">app.ftcmatchmaker.com</span>
+            </div>
           </div>
         </div>
         {/* Mock Content */}
@@ -63,7 +69,7 @@ function ProductHeroMock() {
               label="Potential Matches"
               value="12"
               description="3 high-confidence fits"
-              className="bg-background shadow-none"
+              className="bg-background shadow-sm hover:shadow-md transition-shadow"
             />
             <StatCard 
               icon={Activity}
@@ -71,7 +77,7 @@ function ProductHeroMock() {
               value="4"
               description="Awaiting response"
               progress={65}
-              className="bg-background shadow-none"
+              className="bg-background shadow-sm hover:shadow-md transition-shadow"
             />
             <StatCard 
               icon={CheckCircle2}
@@ -79,22 +85,69 @@ function ProductHeroMock() {
               value="$4,200"
               description="Goal: $5,000"
               progress={84}
-              className="bg-background shadow-none"
+              className="bg-background shadow-sm hover:shadow-md transition-shadow"
             />
           </div>
-          {/* Mock Submission Row */}
-          <div className="mt-8 rounded-xl border border-border bg-background p-5 flex items-center justify-between">
-             <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-lg bg-secondary border border-border flex items-center justify-center">
-                  <div className="h-6 w-6 rounded bg-muted-foreground/20" />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <div className="h-4 w-40 rounded bg-foreground/10" />
-                  <div className="h-3 w-24 rounded bg-muted-foreground/20" />
-                </div>
+          {/* Mock Submissions List */}
+          <div className="mt-8">
+             <div className="text-sm font-medium text-foreground mb-4 px-1 flex items-center justify-between">
+               <span>Recent Activity</span>
+               <span className="text-xs text-muted-foreground hover:text-primary cursor-pointer transition-colors">View all</span>
              </div>
-             <div className="h-8 w-28 rounded-full bg-primary/10 flex items-center justify-center">
-               <div className="h-2 w-16 bg-primary/40 rounded-full" />
+             <div className="space-y-3">
+               <motion.div 
+                 whileHover={{ scale: 1.01 }}
+                 className="group rounded-xl border border-border bg-background p-4 flex items-center justify-between shadow-sm hover:border-primary/30 transition-all cursor-pointer"
+               >
+                  <div className="flex items-center gap-4">
+                     <div className="h-10 w-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                       <span className="text-blue-600 font-bold text-xs tracking-wider">TF</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="text-sm font-semibold text-foreground">TechFlow Systems</span>
+                       <span className="text-xs text-muted-foreground">98% match • Tech company looking to sponsor</span>
+                     </div>
+                  </div>
+                  <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                    <span className="text-xs font-medium text-primary">New Match</span>
+                  </div>
+               </motion.div>
+               
+               <motion.div 
+                 whileHover={{ scale: 1.01 }}
+                 className="group rounded-xl border border-border bg-background p-4 flex items-center justify-between shadow-sm hover:border-amber-500/30 transition-all cursor-pointer"
+               >
+                  <div className="flex items-center gap-4">
+                     <div className="h-10 w-10 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                       <span className="text-purple-600 font-bold text-xs tracking-wider">AR</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="text-sm font-semibold text-foreground">Apex Robotics</span>
+                       <span className="text-xs text-muted-foreground">Currently reviewing your pitch deck</span>
+                     </div>
+                  </div>
+                  <div className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                    <span className="text-xs font-medium text-amber-600">In Progress</span>
+                  </div>
+               </motion.div>
+
+               <motion.div 
+                 whileHover={{ scale: 1.01 }}
+                 className="group rounded-xl border border-border bg-background p-4 flex items-center justify-between shadow-sm hover:border-emerald-500/30 transition-all cursor-pointer opacity-80"
+               >
+                  <div className="flex items-center gap-4">
+                     <div className="h-10 w-10 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                       <span className="text-rose-600 font-bold text-xs tracking-wider">ND</span>
+                     </div>
+                     <div className="flex flex-col">
+                       <span className="text-sm font-semibold text-foreground">Nexus Dynamics</span>
+                       <span className="text-xs text-muted-foreground">Sponsorship secured • Funds transferred</span>
+                     </div>
+                  </div>
+                  <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                    <span className="text-xs font-medium text-emerald-600">+$2,500</span>
+                  </div>
+               </motion.div>
              </div>
           </div>
         </div>
@@ -155,11 +208,13 @@ export function Hero() {
           initial={init}
           animate={show}
           transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-8 max-w-4xl text-5xl sm:text-6xl lg:text-7xl font-medium tracking-tight text-foreground leading-[1.1]"
+          className="mt-8 max-w-4xl text-5xl sm:text-6xl lg:text-7xl font-medium tracking-tight text-foreground leading-[1.1] md:leading-[1.15]"
         >
-          Land your next{' '}
-          <MorphingWord />
-          {' '}and fuel your FTC journey.
+          <div className="block pb-2">Land your next</div>
+          <div className="block pb-2">
+            <MorphingWord />
+          </div>
+          <div className="block">and fuel your FTC journey.</div>
         </motion.h1>
 
         <motion.p

@@ -51,9 +51,9 @@ export function PortfolioMock() {
   return (
     <div className="relative rounded-2xl border border-border bg-background/80 p-3 shadow-xl shadow-foreground/5 backdrop-blur">
       <div className="flex items-center gap-1.5 px-2 py-1.5">
-        <span className="h-2.5 w-2.5 rounded-full bg-border" />
-        <span className="h-2.5 w-2.5 rounded-full bg-border" />
-        <span className="h-2.5 w-2.5 rounded-full bg-border" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f56]" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f]" />
         <span className="ml-3 font-mono text-[10px] text-muted-foreground">ftcmatchmaker.app/portfolio</span>
       </div>
       <div className="rounded-lg border border-border bg-card p-5 space-y-4">
@@ -96,9 +96,9 @@ export function ModerationMock() {
     <div className="relative rounded-2xl border border-border bg-background/80 p-3 shadow-xl shadow-foreground/5 backdrop-blur">
       <div className="flex items-center justify-between px-2 py-1.5">
         <div className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-border" />
-          <span className="h-2.5 w-2.5 rounded-full bg-border" />
-          <span className="h-2.5 w-2.5 rounded-full bg-border" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f56]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f]" />
         </div>
         <span className="font-mono text-[10px] text-muted-foreground">ftcmatchmaker.app/admin/review</span>
       </div>

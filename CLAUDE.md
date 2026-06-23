@@ -21,4 +21,4 @@ strict capacity caps. Next.js 16 (App Router) + Clerk (auth) + Supabase (Postgre
 - General-purpose commands: `/feature`, `/fix`, `/supa`, `/ship`.
 - Project agents: `rls-auditor`, `action-reviewer`, `auth-flow-debugger`.
 - Auth is **Clerk** (`@clerk/nextjs`); Supabase trusts Clerk via native third-party auth, and RLS keys off the Clerk user id in `auth.jwt()->>'sub'` (not `auth.uid()`). See `.claude/rules/auth-supabase.md`.
-- Validate before pushing: `npm run typecheck && npm run lint`. Build uses webpack (`next build --webpack`), not Turbopack.
+- Validate before pushing: `npm run typecheck && npm run lint`. Build uses Turbopack (`next build`); keep the `jsdom`/`cssstyle` `overrides` in `package.json`.
