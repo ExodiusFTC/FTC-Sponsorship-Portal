@@ -38,9 +38,9 @@ export function HowItWorks() {
                   </span>
                 </div>
                 {idx < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-10 right-[-16px] translate-x-1/2 -translate-y-1/2 text-primary/40">
-                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                       <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                  <div className="hidden md:flex absolute top-0 left-[80px] h-20 w-[calc(100%+32px-80px)] items-center justify-center text-primary/30">
+                     <svg width="72" height="24" viewBox="0 0 72 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                       <path d="M0 12h70"/><path d="m63 5 7 7-7 7"/>
                      </svg>
                   </div>
                 )}
