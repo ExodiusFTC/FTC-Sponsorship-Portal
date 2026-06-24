@@ -21,7 +21,10 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { createClerkClient } from '@clerk/nextjs/server'
+// Import from @clerk/backend (not @clerk/nextjs/server): the Next wrapper's ESM
+// export map breaks under plain `node` (routeMatcher subpath fails to resolve).
+// createClerkClient is the same function, re-exported by the Next package.
+import { createClerkClient } from '@clerk/backend'
 import * as dotenv from 'dotenv'
 
 dotenv.config({ path: '.env.local' })
@@ -50,19 +53,19 @@ const clerk = createClerkClient({ secretKey: CLERK_SECRET_KEY })
 // (email verification can be satisfied with the static code 424242).
 const ACCOUNTS = {
   coach: {
-    email: 'coach+clerk_test@devtest.local',
+    email: 'coach+clerk_test@example.com',
     password: 'CoachTest123!',
     fullName: 'Dev Coach',
     role: 'coach',
   },
   admin: {
-    email: 'admin+clerk_test@devtest.local',
+    email: 'admin+clerk_test@example.com',
     password: 'AdminTest123!',
     fullName: 'Dev Admin',
     role: 'admin',
   },
   sponsor: {
-    email: 'sponsor+clerk_test@devtest.local',
+    email: 'sponsor+clerk_test@example.com',
     password: 'SponsorTest123!',
     fullName: 'Dev Sponsor',
     role: 'sponsor',
@@ -179,21 +182,24 @@ async function main() {
     tos_accepted: true,
   })
 
-  // 4. Create "dev testing" sponsor company
+  // 4. Create "dev testing" sponsor company.
+  // `sponsors` has no unique constraint on company_name, so ON CONFLICT can't be
+  // used. The wipe step also doesn't clear `sponsors`, so delete the prior test
+  // company (and its application) first, then insert fresh — keeps this idempotent.
   section('Creating sponsor company')
+  await admin.from('sponsor_applications').delete().eq('company_name', 'dev testing')
+  await admin.from('sponsors').delete().eq('company_name', 'dev testing')
+
   const { data: sponsorRow, error: sponsorErr } = await admin
     .from('sponsors')
-    .upsert(
-      {
-        company_name: 'dev testing',
-        contact_name: ACCOUNTS.sponsor.fullName,
-        contact_email: ACCOUNTS.sponsor.email,
-        funding_cap_cents: 500000,   // $5,000
-        status: 'active',
-        source: 'admin_added',
-      },
-      { onConflict: 'company_name' }
-    )
+    .insert({
+      company_name: 'dev testing',
+      contact_name: ACCOUNTS.sponsor.fullName,
+      contact_email: ACCOUNTS.sponsor.email,
+      funding_cap_cents: 500000,   // $5,000
+      status: 'active',
+      source: 'admin_added',
+    })
     .select('id')
     .single()
 
@@ -250,16 +256,16 @@ async function main() {
 ║               TEST ACCOUNT CREDENTIALS (Clerk)               ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  COACH                                                        ║
-║    Email:    coach+clerk_test@devtest.local                  ║
+║    Email:    coach+clerk_test@example.com                    ║
 ║    Password: CoachTest123!                                    ║
 ║    Status:   verified ✓  |  Team: Dev Test Team (#99999)     ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  ADMIN                                                        ║
-║    Email:    admin+clerk_test@devtest.local                  ║
+║    Email:    admin+clerk_test@example.com                    ║
 ║    Password: AdminTest123!                                    ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  SPONSOR                                                      ║
-║    Email:    sponsor+clerk_test@devtest.local                ║
+║    Email:    sponsor+clerk_test@example.com                  ║
 ║    Password: SponsorTest123!                                  ║
 ║    Company:  dev testing  ($5,000 cap, active)               ║
 ╚══════════════════════════════════════════════════════════════╝
