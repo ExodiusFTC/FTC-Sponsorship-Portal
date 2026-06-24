@@ -20,7 +20,7 @@ function clerkErrorMessage(err: unknown, fallback: string): string {
   return anyErr?.errors?.[0]?.longMessage ?? anyErr?.errors?.[0]?.message ?? fallback
 }
 
-type Mode = 'login' | 'forgot-request' | 'forgot-reset'
+type Mode = 'login' | 'device-verify' | 'forgot-request' | 'forgot-reset'
 
 export function LoginForm() {
   const searchParams = useSearchParams()
@@ -38,6 +38,11 @@ export function LoginForm() {
   const [resetCode, setResetCode] = useState('')
   const [resetNewPassword, setResetNewPassword] = useState('')
   const [resetSent, setResetSent] = useState(false)
+
+  // Client Trust (new-device verification) local state
+  const [deviceCode, setDeviceCode] = useState('')
+  const [deviceEmail, setDeviceEmail] = useState('')
+  const [deviceEmailId, setDeviceEmailId] = useState('')
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
@@ -120,13 +125,73 @@ export function LoginForm() {
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId })
         router.push(redirectUrl)
+      } else if (result.status === 'needs_client_trust' || result.status === 'needs_second_factor') {
+        // Password verified, but Clerk's Client Trust feature requires confirming
+        // an emailed code before issuing a session on a new / untrusted device.
+        const emailFactor = result.supportedSecondFactors?.find(
+          (f) => f.strategy === 'email_code'
+        )
+        if (!emailFactor || emailFactor.strategy !== 'email_code') {
+          setError('Unable to complete sign in. Please try again.')
+          setIsPending(false)
+          return
+        }
+        await signIn.prepareSecondFactor({
+          strategy: 'email_code',
+          emailAddressId: emailFactor.emailAddressId,
+        })
+        setDeviceEmail(emailFactor.safeIdentifier ?? values.email)
+        setDeviceEmailId(emailFactor.emailAddressId)
+        setDeviceCode('')
+        setMode('device-verify')
+        setIsPending(false)
       } else {
-        // No second factor is configured for this app; any other status is unexpected.
         setError('Unable to complete sign in. Please try again.')
         setIsPending(false)
       }
     } catch (err) {
       setError(clerkErrorMessage(err, 'Invalid email or password.'))
+      setIsPending(false)
+    }
+  }
+
+  // Client Trust — verify the emailed code to trust this device, then sign in.
+  async function submitDeviceCode() {
+    if (!isLoaded || !signIn) return
+    setError(null)
+    if (!deviceCode.trim()) {
+      setError('Enter the 6-digit code sent to your email.')
+      return
+    }
+    setIsPending(true)
+    try {
+      const result = await signIn.attemptSecondFactor({
+        strategy: 'email_code',
+        code: deviceCode.trim(),
+      })
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId })
+        router.push(redirectUrl)
+      } else {
+        setError('Unable to complete sign in. Please try again.')
+        setIsPending(false)
+      }
+    } catch (err) {
+      setError(clerkErrorMessage(err, 'Invalid code. Please try again.'))
+      setIsPending(false)
+    }
+  }
+
+  // Client Trust — resend the device-verification code.
+  async function resendDeviceCode() {
+    if (!isLoaded || !signIn || !deviceEmailId) return
+    setError(null)
+    setIsPending(true)
+    try {
+      await signIn.prepareSecondFactor({ strategy: 'email_code', emailAddressId: deviceEmailId })
+    } catch (err) {
+      setError(clerkErrorMessage(err, 'Could not resend the code. Please try again.'))
+    } finally {
       setIsPending(false)
     }
   }
@@ -192,16 +257,22 @@ export function LoginForm() {
     setResetSent(false)
     setResetCode('')
     setResetNewPassword('')
+    setDeviceCode('')
+    setIsPending(false)
   }
 
   const cardTitle =
-    mode === 'login' ? 'Log In' : 'Reset Password'
+    mode === 'login' ? 'Log In'
+      : mode === 'device-verify' ? 'Verify Your Device'
+        : 'Reset Password'
   const cardDescription =
     mode === 'login'
       ? 'Welcome back. Access your sponsorship portal.'
-      : mode === 'forgot-request'
-        ? 'Enter your email and we’ll send you a reset code.'
-        : 'Enter the code we emailed you and choose a new password.'
+      : mode === 'device-verify'
+        ? 'For your security, enter the code we emailed to confirm this device.'
+        : mode === 'forgot-request'
+          ? 'Enter your email and we’ll send you a reset code.'
+          : 'Enter the code we emailed you and choose a new password.'
 
   return (
     <section className="fixed inset-0 bg-background text-foreground overflow-y-auto">
@@ -350,6 +421,52 @@ export function LoginForm() {
                   </Button>
                 </form>
               </Form>
+            )}
+
+            {/* CLIENT TRUST — VERIFY NEW DEVICE */}
+            {mode === 'device-verify' && (
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground/80">Verification Code</label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    className="bg-background border-border text-foreground placeholder:text-muted-foreground h-11 tracking-[0.3em] text-center"
+                    placeholder="123456"
+                    value={deviceCode}
+                    onChange={(e) => setDeviceCode(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    We emailed a 6-digit code to {deviceEmail || 'your email'}.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  onClick={submitDeviceCode}
+                  className="w-full h-11 bg-primary text-primary-foreground hover:opacity-90 font-semibold text-base"
+                  disabled={isPending || !isLoaded}
+                >
+                  {isPending ? 'Verifying…' : 'Verify & Sign In'}
+                </Button>
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={resendDeviceCode}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    disabled={isPending}
+                  >
+                    Resend code
+                  </button>
+                  <button
+                    type="button"
+                    onClick={backToLogin}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Back to login
+                  </button>
+                </div>
+              </div>
             )}
 
             {/* FORGOT PASSWORD — REQUEST CODE */}
