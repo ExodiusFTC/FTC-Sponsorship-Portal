@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { loginSchema, type LoginInput } from '@/lib/schemas/auth'
 import { useSignIn } from '@clerk/nextjs/legacy'
+import { useAuth } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,6 +29,7 @@ export function LoginForm() {
   const resetSuccess = searchParams.get('reset') === 'success'
   const redirectUrl = searchParams.get('redirect_url') || '/'
   const { isLoaded, signIn, setActive } = useSignIn()
+  const { isLoaded: authLoaded, isSignedIn } = useAuth()
 
   const [error, setError] = useState<string | null>(null)
   const [isPending, setIsPending] = useState(false)
@@ -45,6 +47,33 @@ export function LoginForm() {
   const [deviceEmailId, setDeviceEmailId] = useState('')
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+
+  // If the visitor already has an active Clerk session, the login form is a
+  // dead end — Clerk's signIn.create() would throw "You're already signed in."
+  // Bounce them straight to the dashboard instead of showing that error.
+  useEffect(() => {
+    if (authLoaded && isSignedIn) {
+      router.replace('/dashboard')
+    }
+  }, [authLoaded, isSignedIn, router])
+
+  // The reactive effect above does NOT fire when the page is restored from the
+  // browser's back/forward cache (bfcache) — React's state is frozen and reused,
+  // so a user pressing Back lands on the stale form. The `pageshow` event with
+  // `persisted === true` is the only signal for a bfcache restore; re-check the
+  // live Clerk instance there and redirect if a session exists.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (
+        e.persisted &&
+        (window as unknown as { Clerk?: { user?: unknown } }).Clerk?.user
+      ) {
+        router.replace('/dashboard')
+      }
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [router])
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -115,6 +144,12 @@ export function LoginForm() {
 
   async function onSubmit(values: LoginInput) {
     if (!isLoaded || !signIn) return
+    // Guard against submitting a stale autofilled form while already signed in
+    // (Clerk would reject signIn.create with "You're already signed in.").
+    if (isSignedIn) {
+      router.replace('/dashboard')
+      return
+    }
     setIsPending(true)
     setError(null)
     try {
@@ -273,6 +308,16 @@ export function LoginForm() {
         : mode === 'forgot-request'
           ? 'Enter your email and we’ll send you a reset code.'
           : 'Enter the code we emailed you and choose a new password.'
+
+  // Already authenticated — render a quiet redirecting state instead of the
+  // sign-in form (the effects above are navigating to /dashboard).
+  if (authLoaded && isSignedIn) {
+    return (
+      <section className="fixed inset-0 grid place-items-center bg-background text-foreground">
+        <p className="text-sm text-muted-foreground">You’re already signed in. Redirecting…</p>
+      </section>
+    )
+  }
 
   return (
     <section className="fixed inset-0 bg-background text-foreground overflow-y-auto">
