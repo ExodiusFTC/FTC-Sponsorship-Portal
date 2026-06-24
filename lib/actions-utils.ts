@@ -3,6 +3,36 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { headers } from 'next/headers'
 import type { Database } from '@/lib/supabase/types'
+import { SPONSOR_PREVIEW, mockProfile, createMockSupabaseClient } from '@/lib/dev-preview'
+import { isDevAuthBypass, MOCK_ADMIN_PROFILE, createMockSupabaseClient as createAdminMockClient } from '@/lib/dev-bypass'
+import { COACH_PREVIEW, mockCoachProfile, createMockCoachClient } from '@/lib/dev-coach-preview'
+
+// DEV-ONLY: when a preview flag is on, every auth guard resolves to a static mock
+// profile backed by a fixture-serving Supabase client. Gated so it cannot activate
+// in a production build. Admin → lib/dev-bypass.ts; sponsor → lib/dev-preview.ts;
+// coach → lib/dev-coach-preview.ts.
+type ServerClient = Awaited<ReturnType<typeof createClient>>
+function previewAuthed() {
+  return {
+    supabase: createMockSupabaseClient() as unknown as ServerClient,
+    user: mockProfile as unknown as Profile,
+    clerkUserId: mockProfile.clerk_user_id,
+  }
+}
+function adminBypassAuthed() {
+  return {
+    supabase: createAdminMockClient() as unknown as ServerClient,
+    user: MOCK_ADMIN_PROFILE as unknown as Profile,
+    clerkUserId: MOCK_ADMIN_PROFILE.clerk_user_id!,
+  }
+}
+function coachPreviewAuthed() {
+  return {
+    supabase: createMockCoachClient() as unknown as ServerClient,
+    user: mockCoachProfile as unknown as Profile,
+    clerkUserId: (mockCoachProfile as unknown as Profile).clerk_user_id as string,
+  }
+}
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -22,6 +52,9 @@ export async function requireAuth(): Promise<{
   user: Profile
   clerkUserId: string
 }> {
+  if (isDevAuthBypass()) return adminBypassAuthed()
+  if (SPONSOR_PREVIEW) return previewAuthed()
+  if (COACH_PREVIEW) return coachPreviewAuthed()
   const { userId: clerkUserId } = await auth()
   if (!clerkUserId) {
     throw new Error('Unauthorized')
@@ -53,6 +86,9 @@ export async function getAuthedProfile(): Promise<{
   user: Profile
   clerkUserId: string
 } | null> {
+  if (isDevAuthBypass()) return adminBypassAuthed()
+  if (SPONSOR_PREVIEW) return previewAuthed()
+  if (COACH_PREVIEW) return coachPreviewAuthed()
   const { userId: clerkUserId } = await auth()
   if (!clerkUserId) return null
 

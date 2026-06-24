@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:sponsor-preview": "NEXT_PUBLIC_SPONSOR_PREVIEW=1 next dev",
+    "dev:admin-preview": "NEXT_PUBLIC_DEV_AUTH_BYPASS=true next dev",
+    "dev:coach-preview": "NEXT_PUBLIC_COACH_PREVIEW=1 next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

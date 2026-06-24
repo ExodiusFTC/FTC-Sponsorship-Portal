@@ -1,6 +1,8 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { auth } from '@clerk/nextjs/server'
 import type { Database } from './types'
+import { isDevAuthBypass, createMockSupabaseClient } from '@/lib/dev-bypass'
+import { COACH_PREVIEW, createMockCoachClient } from '@/lib/dev-coach-preview'
 
 // Server-side Supabase client that respects RLS as the CURRENT Clerk user.
 //
@@ -11,6 +13,9 @@ import type { Database } from './types'
 //
 // Kept `async` for source-compatibility with existing `await createClient()` callers.
 export async function createClient() {
+  // Dev-only: serve canned data so the portal works with no session. No-op in prod.
+  if (isDevAuthBypass()) return createMockSupabaseClient()
+  if (COACH_PREVIEW) return createMockCoachClient()
   return createSupabaseClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

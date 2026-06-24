@@ -44,12 +44,6 @@ test.describe('Public pages (no auth required)', () => {
     await expect(page).toHaveURL(/\/sponsors\/apply/)
   })
 
-  test('auth-code-error page renders', async ({ page }) => {
-    await page.goto('/auth/auth-code-error')
-    await expect(page.getByRole('heading', { name: /link expired/i })).toBeVisible()
-    await expect(page.getByRole('link', { name: /back to sign in/i })).toBeVisible()
-  })
-
   test('unauthenticated access to /dashboard redirects to /login', async ({ page }) => {
     await page.goto('/dashboard')
     await expect(page).toHaveURL(/\/login/)

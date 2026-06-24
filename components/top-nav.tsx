@@ -71,15 +71,48 @@ function NavLink({ item, isActive }: { item: NavDef; isActive: boolean }) {
   )
 }
 
+// DEV-ONLY sponsor preview (see lib/dev-preview.ts). Inlined at build; off in prod.
+const SPONSOR_PREVIEW =
+  process.env.NODE_ENV !== 'production' &&
+  process.env.NEXT_PUBLIC_SPONSOR_PREVIEW === '1'
+
+// DEV-ONLY admin bypass (see lib/dev-bypass.ts). Inlined at build; off in prod.
+const DEV_AUTH_BYPASS =
+  process.env.NODE_ENV !== 'production' &&
+  process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true'
+
+// DEV-ONLY coach preview (see lib/dev-coach-preview.ts). Inlined at build; off in prod.
+const COACH_PREVIEW =
+  process.env.NODE_ENV !== 'production' &&
+  process.env.NEXT_PUBLIC_COACH_PREVIEW === '1'
+
 export function TopNav() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { user } = useUser()
   const { signOut } = useClerk()
 
-  const role = (user?.publicMetadata?.role as Role) ?? null
-  const userEmail = user?.primaryEmailAddress?.emailAddress ?? ''
-  const userName = user?.fullName ?? userEmail ?? 'User'
+  const role: Role = DEV_AUTH_BYPASS
+    ? 'admin'
+    : SPONSOR_PREVIEW
+      ? 'sponsor'
+      : COACH_PREVIEW
+        ? 'coach'
+        : ((user?.publicMetadata?.role as Role) ?? null)
+  const userEmail = DEV_AUTH_BYPASS
+    ? 'admin@devtest.local'
+    : SPONSOR_PREVIEW
+      ? 'sponsor@preview.local'
+      : COACH_PREVIEW
+        ? 'coach@preview.local'
+        : (user?.primaryEmailAddress?.emailAddress ?? '')
+  const userName = DEV_AUTH_BYPASS
+    ? 'Dev Admin'
+    : SPONSOR_PREVIEW
+      ? 'Jordan Avery'
+      : COACH_PREVIEW
+        ? 'Dev Coach'
+        : (user?.fullName ?? userEmail ?? 'User')
 
   const { data: queueData } = useSWR<{ count: number }>(
     role === 'admin' ? '/api/admin/queue/count' : null,
@@ -96,6 +129,7 @@ export function TopNav() {
   const coachUnreadCount = inboxData?.count ?? 0
 
   async function handleSignOut() {
+    if (SPONSOR_PREVIEW || DEV_AUTH_BYPASS || COACH_PREVIEW) return // no Clerk session to sign out of in preview
     await signOut({ redirectUrl: '/login' })
   }
 

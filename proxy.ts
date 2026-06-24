@@ -23,7 +23,24 @@ const isPublicRoute = createRouteMatcher([
 
 const isApiRoute = createRouteMatcher(['/api(.*)'])
 
+// DEV-ONLY sponsor preview: skip all auth routing so the portal is reachable
+// with no Clerk session. Cannot activate in a production build. See lib/dev-preview.ts.
+const SPONSOR_PREVIEW =
+  process.env.NODE_ENV !== 'production' &&
+  process.env.NEXT_PUBLIC_SPONSOR_PREVIEW === '1'
+
+// DEV-ONLY admin bypass: same idea, for the admin portal. See lib/dev-bypass.ts.
+const DEV_AUTH_BYPASS =
+  process.env.NODE_ENV !== 'production' &&
+  process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true'
+
+// DEV-ONLY coach preview: same idea, for the coach portal. See lib/dev-coach-preview.ts.
+const COACH_PREVIEW =
+  process.env.NODE_ENV !== 'production' &&
+  process.env.NEXT_PUBLIC_COACH_PREVIEW === '1'
+
 const handler = clerkMiddleware(async (auth, req) => {
+  if (SPONSOR_PREVIEW || DEV_AUTH_BYPASS || COACH_PREVIEW) return
   if (isPublicRoute(req)) return
 
   const { userId } = await auth()
