@@ -10,6 +10,7 @@ import {
   HERO_MORPHING_WORDS
 } from '@/lib/site-config'
 import { StatCard } from '@/components/ui/stat-card'
+import { ContainerScroll } from '@/components/ui/container-scroll-animation'
 
 function MorphingWord() {
   const [index, setIndex] = useState(0)
@@ -43,9 +44,8 @@ function MorphingWord() {
 function ProductHeroMock() {
   return (
     <div className="relative mx-auto mt-20 w-full max-w-5xl pb-10">
-      <div 
+      <div
         className="relative rounded-xl border border-border/80 bg-background/50 shadow-2xl backdrop-blur-md overflow-hidden"
-        style={{ transform: 'perspective(1200px) rotateX(2deg)', transformOrigin: 'top center' }}
       >
         {/* Browser Chrome */}
         <div className="flex h-12 items-center gap-2 border-b border-border bg-card/80 px-4 backdrop-blur-sm">
@@ -255,7 +255,9 @@ export function Hero() {
           transition={{ duration: 1.0, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className="w-full"
         >
-          <ProductHeroMock />
+          <ContainerScroll>
+            <ProductHeroMock />
+          </ContainerScroll>
         </motion.div>
       </div>
     </section>
