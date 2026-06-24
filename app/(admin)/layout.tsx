@@ -10,5 +10,5 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') redirect('/dashboard')
 
-  return <AppLayout>{children}</AppLayout>
+  return <AppLayout role="admin">{children}</AppLayout>
 }

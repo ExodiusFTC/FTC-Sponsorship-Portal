@@ -14,7 +14,7 @@ export default async function SponsorLayout({ children }: { children: React.Reac
 
   if (!profile.sponsor_id) {
     return (
-      <AppLayout>
+      <AppLayout role="sponsor">
         <div className="mx-auto max-w-xl py-24">
           <div className="rounded-xl border border-border bg-card p-8 text-center space-y-3">
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">Awaiting verification</h1>

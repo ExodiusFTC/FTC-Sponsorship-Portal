@@ -12,5 +12,5 @@ export default async function CoachLayout({ children }: { children: React.ReactN
   if (profile?.role === 'sponsor') redirect('/sponsor/dashboard')
   if (profile?.role === 'coach' && !profile.coach_verified) redirect('/awaiting-verification')
 
-  return <AppLayout>{children}</AppLayout>
+  return <AppLayout role="coach">{children}</AppLayout>
 }

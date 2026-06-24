@@ -23,16 +23,21 @@ type NavDef = { label: string; href: string; match: (ctx: MatchCtx) => boolean }
 type MatchCtx = { pathname: string; tab: string }
 
 /* Coach navigation collapses the old nine tabs into three destinations.
-   Portfolio absorbs the budget/ledger; Sponsors absorbs find + submissions + drafts. */
+   Dashboard absorbs the overview/portfolio/ledger; Pitches is the submissions list;
+   Sponsors is find-sponsors. */
 const coachNav: NavDef[] = [
-  { label: 'Home', href: '/dashboard', match: ({ pathname, tab }) => pathname === '/dashboard' && (tab === '' || tab === 'overview') },
-  { label: 'Portfolio', href: '/dashboard?tab=portfolio', match: ({ pathname, tab }) => pathname === '/dashboard' && ['portfolio', 'ledger'].includes(tab) },
-  { label: 'Sponsors', href: '/dashboard?tab=sponsors', match: ({ pathname, tab }) => pathname === '/dashboard' && ['sponsors', 'find-sponsors', 'submissions', 'drafts'].includes(tab) },
+  { label: 'Dashboard', href: '/dashboard', match: ({ pathname, tab }) => pathname === '/dashboard' && ['', 'overview', 'portfolio', 'ledger', 'insights'].includes(tab) },
+  { label: 'Pitches', href: '/dashboard?tab=submissions', match: ({ pathname, tab }) => pathname === '/dashboard' && ['submissions', 'drafts'].includes(tab) },
+  { label: 'Sponsors', href: '/dashboard?tab=sponsors', match: ({ pathname, tab }) => pathname === '/dashboard' && ['sponsors', 'find-sponsors'].includes(tab) },
 ]
 
+/* Admin surfaces both gatekeeping queues — Review (pitch moderation) and
+   Applications (sponsor approvals) — plus sponsor management and coach/team
+   verification. Analytics & audit are drill-downs reached from the dashboard. */
 const adminNav: NavDef[] = [
-  { label: 'Dashboard', href: '/admin', match: ({ pathname }) => pathname === '/admin' },
+  { label: 'Dashboard', href: '/admin', match: ({ pathname }) => pathname === '/admin' || pathname.startsWith('/admin/') },
   { label: 'Review', href: '/moderation', match: ({ pathname }) => pathname.startsWith('/moderation') },
+  { label: 'Applications', href: '/applications', match: ({ pathname }) => pathname.startsWith('/applications') },
   { label: 'Sponsors', href: '/sponsors', match: ({ pathname }) => pathname.startsWith('/sponsors') },
   { label: 'Teams', href: '/coaches', match: ({ pathname }) => pathname.startsWith('/coaches') },
 ]
@@ -86,19 +91,22 @@ const COACH_PREVIEW =
   process.env.NODE_ENV !== 'production' &&
   process.env.NEXT_PUBLIC_COACH_PREVIEW === '1'
 
-export function TopNav() {
+export function TopNav({ role: roleProp }: { role?: Role } = {}) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { user } = useUser()
   const { signOut } = useClerk()
 
+  // Role is resolved server-side (authoritative `profiles.role`) and passed as a
+  // prop. Fall back to the Clerk `publicMetadata` mirror only when no prop is
+  // supplied. Dev preview flags still override everything below.
   const role: Role = DEV_AUTH_BYPASS
     ? 'admin'
     : SPONSOR_PREVIEW
       ? 'sponsor'
       : COACH_PREVIEW
         ? 'coach'
-        : ((user?.publicMetadata?.role as Role) ?? null)
+        : (roleProp ?? (user?.publicMetadata?.role as Role) ?? null)
   const userEmail = DEV_AUTH_BYPASS
     ? 'admin@devtest.local'
     : SPONSOR_PREVIEW
