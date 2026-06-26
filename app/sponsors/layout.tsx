@@ -1,6 +1,6 @@
 import { DotGrid } from '@/components/ui/dot-grid'
 
-export default function PublicLayout({ children }: { children: React.ReactNode }) {
+export default function SponsorsPublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative isolate min-h-screen">
       <DotGrid />

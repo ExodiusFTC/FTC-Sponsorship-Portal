@@ -19,6 +19,7 @@ export const metadata: Metadata = {
 
 import { ThemeProvider } from "@/components/theme-provider"
 import { GlobalShortcuts } from "@/components/global-shortcuts"
+import { RoboticsCursor } from "@/components/robotics-cursor"
 
 export default function RootLayout({
   children,
@@ -47,6 +48,7 @@ export default function RootLayout({
           >
             {children}
             <GlobalShortcuts />
+            <RoboticsCursor />
             <Toaster richColors position="top-right" />
           </ThemeProvider>
         </body>
