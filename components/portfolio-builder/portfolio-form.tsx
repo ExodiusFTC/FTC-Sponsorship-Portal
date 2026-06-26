@@ -12,7 +12,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { RateLimitNotice } from '@/components/ui/rate-limit-notice'
 import { SaveIndicator } from '@/components/ui/save-indicator'
 import { ChevronDown } from 'lucide-react'
 import {
@@ -40,7 +39,6 @@ type Props = {
 export function PortfolioForm({ initialSubmission, initialValues, sponsors = [], preselectedSponsorId }: Props) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
-  const [rateLimitData, setRateLimitData] = useState<{ retryAfterSeconds: number; limit: number } | null>(null)
   const [isPending, setIsPending] = useState(false)
   const [submissionId, setSubmissionId] = useState<string | undefined>(initialSubmission?.id)
   
@@ -97,15 +95,12 @@ export function PortfolioForm({ initialSubmission, initialValues, sponsors = [],
   async function onSubmit(values: SubmissionInput, status: 'draft' | 'pending') {
     setIsPending(true)
     setError(null)
-    setRateLimitData(null)
     const result = await saveSubmission(values, status, submissionId)
-    if (result?.error === 'rate_limited' && 'retryAfterSeconds' in result) {
-      setRateLimitData({ retryAfterSeconds: result.retryAfterSeconds as number, limit: (result as { limit?: number }).limit || 0 })
-      setIsPending(false)
-      return
-    }
     if (result?.error) {
-      setError(result.error)
+      const msg = result.error === 'rate_limited' && 'message' in result
+        ? (result as { message: string }).message
+        : result.error
+      setError(msg)
       setIsPending(false)
       return
     }
@@ -143,9 +138,7 @@ export function PortfolioForm({ initialSubmission, initialValues, sponsors = [],
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            {rateLimitData && (
-              <RateLimitNotice retryAfterSeconds={rateLimitData.retryAfterSeconds} />
-            )}
+
 
             <div className="space-y-4">
               <FormField

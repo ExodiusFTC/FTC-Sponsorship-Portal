@@ -6,13 +6,7 @@ export async function GET() {
   if (!authed) return NextResponse.json({ count: 0 }, { status: 401 })
   const { supabase, user } = authed
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') {
+  if (user.role !== 'admin') {
     return NextResponse.json({ count: 0 }, { status: 403 })
   }
 

@@ -9,13 +9,7 @@ export async function GET() {
   }
   const { supabase, user } = authed
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'coach') {
+  if (user.role !== 'coach') {
     return NextResponse.json({ count: 0 }, { status: 403 })
   }
   
