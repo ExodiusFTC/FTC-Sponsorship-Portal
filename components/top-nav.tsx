@@ -22,12 +22,10 @@ type Role = 'coach' | 'admin' | 'sponsor' | null
 type NavDef = { label: string; href: string; match: (ctx: MatchCtx) => boolean }
 type MatchCtx = { pathname: string; tab: string }
 
-/* Coach navigation collapses the old nine tabs into three destinations.
-   Dashboard absorbs the overview/portfolio/ledger; Pitches is the submissions list;
-   Sponsors is find-sponsors. */
 const coachNav: NavDef[] = [
-  { label: 'Dashboard', href: '/dashboard', match: ({ pathname, tab }) => pathname === '/dashboard' && ['', 'overview', 'portfolio', 'ledger', 'insights'].includes(tab) },
-  { label: 'Pitches', href: '/dashboard?tab=submissions', match: ({ pathname, tab }) => pathname === '/dashboard' && ['submissions', 'drafts'].includes(tab) },
+  { label: 'Dashboard', href: '/dashboard', match: ({ pathname, tab }) => pathname === '/dashboard' && ['', 'overview', 'insights'].includes(tab) },
+  { label: 'Portfolio', href: '/dashboard?tab=portfolio', match: ({ pathname, tab }) => pathname === '/dashboard' && ['portfolio', 'ledger'].includes(tab) },
+  { label: 'Pitches', href: '/dashboard?tab=pitches', match: ({ pathname, tab }) => pathname === '/dashboard' && ['pitches', 'submissions', 'drafts'].includes(tab) },
   { label: 'Sponsors', href: '/dashboard?tab=sponsors', match: ({ pathname, tab }) => pathname === '/dashboard' && ['sponsors', 'find-sponsors'].includes(tab) },
 ]
 

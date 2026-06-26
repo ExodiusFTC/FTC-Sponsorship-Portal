@@ -30,12 +30,10 @@ import { updateTeam } from '@/app/actions/team'
 import { toast } from 'sonner'
 import type { Team, Notification, Submission, Sponsor, TeamAchievement, SubmissionSummary } from '@/lib/supabase/types'
 
-/* Three primary destinations + two reachable-but-hidden views (Inbox via the
-   top-bar bell, Settings via the account menu). Legacy tab names are aliased
-   so old links and keyboard shortcuts keep working. */
 const TABS = [
-  { id: 'overview', label: 'Home' },
+  { id: 'overview', label: 'Dashboard' },
   { id: 'portfolio', label: 'Portfolio' },
+  { id: 'pitches', label: 'Pitches' },
   { id: 'sponsors', label: 'Sponsors' },
   { id: 'inbox', label: 'Inbox' },
   { id: 'settings', label: 'Settings' },
@@ -43,8 +41,8 @@ const TABS = [
 
 const TAB_ALIASES: Record<string, string> = {
   'find-sponsors': 'sponsors',
-  'submissions': 'sponsors',
-  'drafts': 'sponsors',
+  'submissions': 'pitches',
+  'drafts': 'pitches',
   'ledger': 'portfolio',
   'insights': 'overview',
 }
@@ -74,8 +72,6 @@ export function DashboardShell({
   const rawTab = searchParams.get('tab') ?? 'overview'
   const canonical = TAB_ALIASES[rawTab] ?? rawTab
   const tab = TABS.some(t => t.id === canonical) ? canonical : 'overview'
-  // When arriving from a legacy "submissions"/"drafts" link, open the pitches view.
-  const initialSponsorsView: 'find' | 'pitches' = (rawTab === 'submissions' || rawTab === 'drafts') ? 'pitches' : 'find'
 
   const setTab = (newTab: string) => {
     const sp = new URLSearchParams(searchParams)
@@ -125,7 +121,8 @@ export function DashboardShell({
             />
           )}
           {tab === 'portfolio' && <PortfolioTab team={team} achievements={achievements} />}
-          {tab === 'sponsors' && <SponsorsTab sponsors={sponsors} submissions={submissions} initialView={initialSponsorsView} />}
+          {tab === 'pitches' && <SubmissionsTab submissions={submissions} onNewPitch={() => setTab('sponsors')} />}
+          {tab === 'sponsors' && <FindSponsorsTab sponsors={sponsors} submissions={submissions} />}
           {tab === 'inbox' && <InboxTab notifications={notifications} switchTab={setTab} />}
           {tab === 'settings' && (
             <div className="max-w-[600px] mx-auto">
@@ -329,51 +326,6 @@ function OverviewTab({
   )
 }
 
-/* ── Sponsors tab ───────────────────────────────────────────────────────────── */
-/* Combines sponsor discovery and the pitch lifecycle (submissions + drafts) behind
-   a single toggle, replacing the former Find Sponsors / Submissions / Drafts tabs. */
-
-function SponsorsTab({
-  sponsors, submissions, initialView,
-}: {
-  sponsors: Sponsor[]
-  submissions: SubmissionSummary[]
-  initialView: 'find' | 'pitches'
-}) {
-  const [view, setView] = useState<'find' | 'pitches'>(initialView)
-  const pitchCount = submissions.length
-
-  const VIEWS: { id: 'find' | 'pitches'; label: string }[] = [
-    { id: 'find', label: 'Find sponsors' },
-    { id: 'pitches', label: `My pitches${pitchCount ? ` · ${pitchCount}` : ''}` },
-  ]
-
-  return (
-    <div className="space-y-6 pb-20">
-      <div className="inline-flex rounded-lg border border-border bg-card/60 p-0.5 shadow-sm">
-        {VIEWS.map(v => (
-          <button
-            key={v.id}
-            onClick={() => setView(v.id)}
-            className={cn(
-              'rounded-md px-4 py-1.5 text-[13px] font-medium transition-colors',
-              view === v.id
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-            )}
-          >
-            {v.label}
-          </button>
-        ))}
-      </div>
-
-      {view === 'find'
-        ? <FindSponsorsTab sponsors={sponsors} submissions={submissions} />
-        : <SubmissionsTab submissions={submissions} onNewPitch={() => setView('find')} />}
-    </div>
-  )
-}
-
 /* ── Find Sponsors tab ──────────────────────────────────────────────────────── */
 
 const FUNDING_RANGES = [
@@ -419,7 +371,7 @@ function FindSponsorsTab({ sponsors, submissions }: { sponsors: Sponsor[], submi
 
   return (
     <FadeUp>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-20">
         <div className="flex items-center gap-2 text-primary">
           <Sparkles className="h-4 w-4" strokeWidth={1.5} />
           <h2 className="text-[15px] font-medium tracking-tight text-foreground">Find sponsors for your next pitch</h2>
