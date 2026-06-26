@@ -108,7 +108,7 @@ export function TopNav({ role: roleProp }: { role?: Role } = {}) {
         ? 'coach'
         : (roleProp ?? (user?.publicMetadata?.role as Role) ?? null)
   const userEmail = DEV_AUTH_BYPASS
-    ? 'admin@devtest.local'
+    ? 'admin+clerk_test@example.com'
     : SPONSOR_PREVIEW
       ? 'sponsor@preview.local'
       : COACH_PREVIEW

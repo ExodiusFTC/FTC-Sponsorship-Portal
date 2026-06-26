@@ -35,7 +35,7 @@ export const MOCK_ADMIN_PROFILE = {
   clerk_user_id: 'user_dev_admin',
   role: 'admin',
   full_name: 'Dev Admin',
-  email: 'admin@devtest.local',
+  email: 'admin+clerk_test@example.com',
   coach_verified: false,
   sponsor_id: null,
   coach_credentials_url: null,
@@ -65,7 +65,7 @@ const DATA: Record<string, any[]> = {
     MOCK_ADMIN_PROFILE,
     {
       id: 'c1', clerk_user_id: 'user_c1', role: 'coach', full_name: 'Anish Yarrakonda',
-      email: 'coach@devtest.local', coach_verified: true, coach_credentials_url: null,
+      email: 'coach+clerk_test@example.com', coach_verified: true, coach_credentials_url: null,
       sponsor_id: null, date_of_birth: '1990-04-12', phone_number: '(214) 555-0131',
       address_line1: '120 Robotics Way', city: 'Plano', state: 'TX', zip_code: '75024',
       referral_source: 'FIRST regional', coppa_acknowledged: true, tos_accepted: true,

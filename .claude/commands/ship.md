@@ -10,7 +10,7 @@ Catch what breaks before Vercel does, then open a PR.
 ## Steps
 1. **Typecheck** — `npm run typecheck`. Fix errors before continuing.
 2. **Lint** — `npm run lint`.
-3. **Build** — `npm run build` (webpack). This catches Next 16 / RSC issues `tsc` misses.
+3. **Build** — `npm run build` (Turbopack). This catches Next 16 / RSC issues `tsc` misses.
 4. **Tests** — `npm run test` (Vitest) and, if relevant to the change, `npx playwright test`.
 5. **PR** — only if all green and the user wants to push:
    - If on `main`, create a branch first.

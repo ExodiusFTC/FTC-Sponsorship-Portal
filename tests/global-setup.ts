@@ -13,7 +13,7 @@
  * Required env:
  *   CLERK_PUBLISHABLE_KEY / NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY
  *     — consumed by `clerkSetup()` to talk to the Clerk Frontend/Backend APIs.
- *   ADMIN_EMAIL — the seeded admin's Clerk email (e.g. admin+clerk_test@devtest.local);
+ *   ADMIN_EMAIL — the seeded admin's Clerk email (e.g. admin+clerk_test@example.com);
  *     used to mint a server-side session token (no password needed).
  *   SUPABASE_LOCAL / NEXT_PUBLIC_SUPABASE_URL — optional local Supabase reachability check.
  */

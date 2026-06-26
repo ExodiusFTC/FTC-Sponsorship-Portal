@@ -12,7 +12,14 @@
 ## Directory map
 - `app/(account|admin|auth|coach|public|sponsor)/` — route groups by audience (the parens are not in the URL).
 - `app/actions/*.ts` — server actions: `account`, `admin`, `auth`, `moderation`, `notifications`, `sponsor-decision`, `sponsor`, `submission`, `team`.
-- `app/api/*` — route handlers (return JSON; never redirected to `/login`).
+- `app/api/*` — route handlers (return JSON; never redirected to `/login`). Current routes:
+  - `admin/export` — CSV/data export (admin-only)
+  - `admin/queue/count` — moderation queue badge count
+  - `coach/notifications/unread` — unread notification count (coach)
+  - `cron/expire-submissions` — daily cron at 02:00 UTC (scheduled via `vercel.json`); marks stale submissions expired
+  - `health` — public health check
+  - `webhooks/clerk` — handles `user.deleted` and email sync from Clerk
+  - `webhooks/resend` — delivery event webhooks from Resend
 - `lib/supabase/{client,server,admin,types}.ts` — Supabase clients (see auth-supabase.md). `client`/`server` forward the Clerk token via an `accessToken` callback.
 - `middleware.ts` (repo root) — `clerkMiddleware()` + `createRouteMatcher` for public routes. (The old `lib/supabase/middleware.ts` was deleted.)
 - `lib/schemas/*.ts` — Zod schemas (`auth`, `submission`, `team`, `sponsor`, `sponsor-signup`, `achievement`, `limits`).
@@ -20,7 +27,12 @@
 - `lib/notify.ts` — `createInAppNotification` + typed email senders.
 - `lib/dispatch.ts` — gated sponsor outreach (`dispatchApprovedSubmission`).
 - `lib/env.ts` — Zod-validated env (warns in dev, throws in prod).
-- `supabase/migrations/*.sql` — numbered, idempotent migrations.
+- `lib/ftc-roster.ts` — FTC team roster lookup helpers (used for coach verification).
+- `lib/site-config.ts` — centralised landing-page copy, theme accent colours, and static fixtures; edit here to update landing page stats/sponsors without touching components.
+- `lib/dev-bypass.ts` — dev-only admin auth bypass + mock Supabase data (`NEXT_PUBLIC_DEV_AUTH_BYPASS=true`; forced off in production).
+- `lib/dev-preview.ts` — dev-only sponsor portal preview with static fixtures (`NEXT_PUBLIC_SPONSOR_PREVIEW=1`; forced off in production).
+- `lib/dev-coach-preview.ts` — dev-only coach portal preview with static fixtures (`NEXT_PUBLIC_COACH_PREVIEW=1`; forced off in production).
+- `supabase/migrations/*.sql` — numbered, idempotent migrations (latest: `0052_profiles_id_independence.sql`).
 - `tests/` — Playwright E2E + `global-setup.ts`; `scripts/seed-test-accounts.mjs` for local data.
 
 ## Roles & key tables

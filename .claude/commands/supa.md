@@ -10,7 +10,7 @@ One command for the Supabase/auth work that's easy to get wrong. Read
 
 ## Mode A — Auth / login / session issue
 - Use the `auth-flow-debugger` agent.
-- Check: `getUser()` vs `getSession()` misuse; server vs browser vs admin client confusion; cookie/session refresh in `lib/supabase/middleware.ts`; redirect loops (is the route in the public/auth lists?); `requireXxx` guard returning the right error (incl. `NEEDS_VERIFICATION`); API routes returning JSON 401/403 not redirecting.
+- Check: server vs browser vs admin client confusion; redirect loops (is the route in the `createRouteMatcher` public list in `middleware.ts`?); `requireXxx` guard returning the right error (incl. `NEEDS_VERIFICATION`); API routes returning JSON 401/403 not redirecting. (Note: `lib/supabase/middleware.ts` was deleted — session handling is Clerk's `clerkMiddleware()` in root `middleware.ts`.)
 - Remember: MFA is removed — do not reintroduce it.
 
 ## Mode B — RLS policy authoring / audit
