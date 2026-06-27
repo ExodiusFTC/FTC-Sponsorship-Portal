@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import {
   Search, Plus, ArrowUpRight, Sparkles, Building2, AlertCircle,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, Bell, CheckCircle2,
 } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { FadeUp } from '@/components/motion/fade-up'
@@ -23,6 +23,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PortfolioTab } from './portfolio-tab'
 import { InboxTab } from './inbox-tab'
 import { AccountSettings } from '@/components/account/account-settings'
@@ -118,6 +119,7 @@ export function DashboardShell({
               totalFunded={totalFunded}
               portfolioAsk={team.financial_ask_cents || 0}
               submissions={submissions}
+              unreadCount={unreadCount}
             />
           )}
           {tab === 'portfolio' && <PortfolioTab team={team} achievements={achievements} />}
@@ -165,7 +167,7 @@ function StatusChip({ status }: { status: string }) {
 /* ── Overview tab ───────────────────────────────────────────────────────────── */
 
 function OverviewTab({
-  team, switchTab, activePitches, submissionsCount, totalFunded, portfolioAsk, submissions,
+  team, switchTab, activePitches, submissionsCount, totalFunded, portfolioAsk, submissions, unreadCount,
 }: {
   team: Team
   switchTab: (t: string) => void
@@ -174,8 +176,17 @@ function OverviewTab({
   totalFunded: number
   portfolioAsk: number
   submissions: SubmissionSummary[]
+  unreadCount: number
 }) {
   const needsAttention = submissions.filter(s => s.status === 'declined' || s.status === 'changes_requested')
+  const recentPitches = [...submissions]
+    .sort((a, b) => new Date(b.updated_at ?? 0).getTime() - new Date(a.updated_at ?? 0).getTime())
+    .slice(0, 5)
+  const fundedAmount = submissions
+    .filter(s => s.status === 'approved')
+    .reduce((sum, s) => sum + (s.requested_amount_cents || 0), 0)
+  const fundingPct = portfolioAsk > 0 ? Math.min(100, Math.round((fundedAmount / portfolioAsk) * 100)) : 0
+
   const [showGraduation, setShowGraduation] = useState(false)
   const [gradNumber, setGradNumber] = useState('')
   const [gradName, setGradName] = useState(team.team_name)
@@ -203,6 +214,7 @@ function OverviewTab({
 
   return (
     <div className="space-y-8 pb-20">
+      {/* Incubator graduation banner */}
       {team.status === 'incubator' && (
         <FadeUp>
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -277,16 +289,7 @@ function OverviewTab({
         </FadeUp>
       )}
 
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="secondary"
-          onClick={() => switchTab('portfolio')}
-          className="shadow-sm border border-border/50"
-        >
-          Edit Portfolio
-        </Button>
-      </div>
-
+      {/* Needs-attention alerts */}
       {needsAttention.length > 0 && (
         <FadeUp>
           <div className="space-y-3">
@@ -315,6 +318,7 @@ function OverviewTab({
         </FadeUp>
       )}
 
+      {/* KPI row */}
       <FadeUp className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={AlertCircle} label="Active pitches" value={activePitches} description="In review or approved" />
         <StatCard icon={Search} label="Submissions" value={submissionsCount} description="All-time sponsor outreach" />
@@ -322,7 +326,156 @@ function OverviewTab({
         <StatCard icon={Sparkles} label="Portfolio ask" value={`$${(portfolioAsk / 100).toLocaleString('en-US')}`} description="Season target" />
       </FadeUp>
 
+      {/* Two-column: Recent Pitches + Portfolio Snapshot */}
+      <FadeUp className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Recent Pitches</CardTitle>
+              <button
+                onClick={() => switchTab('pitches')}
+                className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                View all <ArrowUpRight className="h-3 w-3" />
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {recentPitches.length > 0 ? (
+              <div className="flex flex-col divide-y divide-border">
+                {recentPitches.map(s => (
+                  <div key={s.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-accent/30 text-muted-foreground">
+                        <Building2 className="h-4 w-4" strokeWidth={1.5} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{s.company_name}</p>
+                        <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+                          {new Date(s.updated_at ?? 0).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <StatusChip status={s.status ?? 'draft'} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center">
+                <p className="text-sm text-muted-foreground mb-3">No pitches yet.</p>
+                <button
+                  onClick={() => switchTab('sponsors')}
+                  className="inline-flex items-center gap-1.5 text-[13px] font-medium text-primary hover:opacity-80 transition-opacity"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Start your first pitch
+                </button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Portfolio Snapshot</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {team.mission_statement ? (
+              <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-3">
+                {team.mission_statement}
+              </p>
+            ) : (
+              <p className="text-[13px] text-muted-foreground italic">Add a mission statement to strengthen your pitches.</p>
+            )}
+
+            {portfolioAsk > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  <span>Funded</span>
+                  <span className="font-mono text-foreground">
+                    ${(fundedAmount / 100).toLocaleString()} of ${(portfolioAsk / 100).toLocaleString()}
+                  </span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{ width: `${fundingPct}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">{fundingPct}% of season target</p>
+              </div>
+            )}
+
+            {team.budget_items && (team.budget_items as any[]).length > 0 && (
+              <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" strokeWidth={1.5} />
+                <span>{(team.budget_items as any[]).length} budget line items</span>
+              </div>
+            )}
+
+            <button
+              onClick={() => switchTab('portfolio')}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-border py-2.5 text-[13px] font-medium text-foreground hover:bg-accent transition-colors"
+            >
+              Edit Portfolio
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </button>
+          </CardContent>
+        </Card>
+      </FadeUp>
+
+      {/* Quick actions */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <CoachQuickAction
+          icon={<Plus className="h-4 w-4" strokeWidth={1.5} />}
+          label="New Pitch"
+          sub="Target a specific sponsor"
+          onClick={() => switchTab('sponsors')}
+        />
+        <CoachQuickAction
+          icon={<Search className="h-4 w-4" strokeWidth={1.5} />}
+          label="Browse Sponsors"
+          sub="Find your next partner"
+          onClick={() => switchTab('sponsors')}
+        />
+        <CoachQuickAction
+          icon={<Bell className="h-4 w-4" strokeWidth={1.5} />}
+          label="View Inbox"
+          sub={unreadCount > 0 ? `${unreadCount} unread message${unreadCount !== 1 ? 's' : ''}` : 'All caught up'}
+          onClick={() => switchTab('inbox')}
+          badge={unreadCount > 0 ? unreadCount : undefined}
+        />
+      </div>
     </div>
+  )
+}
+
+/* ── Coach quick action card ────────────────────────────────────────────────── */
+
+function CoachQuickAction({ icon, label, sub, onClick, badge }: {
+  icon: React.ReactNode
+  label: string
+  sub: string
+  onClick: () => void
+  badge?: number
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="text-left rounded-xl border border-border p-4 transition-colors hover:bg-accent/50"
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-foreground">
+          {icon}
+          <span className="text-sm font-medium">{label}</span>
+        </div>
+        {badge != null && (
+          <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+            {badge}
+          </span>
+        )}
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
+    </button>
   )
 }
 

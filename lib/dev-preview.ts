@@ -20,6 +20,7 @@ const PROFILE_ID = 'preview-profile'
 const SPONSOR_ID = 'preview-sponsor'
 const TEAM_ID_A = 'preview-team-a'
 const TEAM_ID_B = 'preview-team-b'
+const TEAM_ID_C = 'preview-team-c'
 
 // ---- static fixtures -------------------------------------------------------
 
@@ -135,6 +136,69 @@ const teamB = makeTeam(TEAM_ID_B, {
   organization: 'Roosevelt STEM Academy',
   city: 'Austin',
   state: 'TX',
+  tagline: 'Lifting limits — on robots and on students.',
+  mission_statement:
+    'Iron Aviators exists to show underrepresented students that engineering is for them. Every season we field a competitive robot AND mentor two rookie teams in our district.',
+  technical_summary:
+    'Four-bar linkage endgame climber, dead-wheel odometry for autonomous, and a custom vision pipeline for sample detection.',
+  autonomous_description: 'Odometry-based auton scoring 4 samples in 28s with 90% repeatability at our last qualifier.',
+  drivetrain: 'Mecanum',
+  control_system: 'REV Control Hub + Expansion Hub',
+  build_system: 'goBILDA + 3D-printed brackets',
+  cad_software: 'Onshape',
+  programming: 'Java / FTC SDK + OpenCV',
+  manufacturing_capabilities: ['FDM 3D printing', 'Laser cutting'],
+  sensors: ['Webcam (EOCV)', 'IMU', 'Distance sensor'],
+  proudest_mechanism_name: 'Four-bar climber',
+  proudest_mechanism_problem: 'Climbing the high bar consistently under 30 s end-game pressure.',
+  proudest_mechanism_solution: 'A passive-lock four-bar that snaps into position — no motors needed to hold.',
+  outreach_summary: 'Co-hosted a Saturday robotics camp with Roosevelt STEM Academy that reached 120 Title I students.',
+  community_interest_text: 'Running a district rookie intake program that has on-boarded 3 new teams since 2024.',
+  financial_ask_cents: 600_000,
+  seed_funding_goals_cents: 400_000,
+  team_achievements: [
+    { id: 'ach-b1', team_id: TEAM_ID_B, event_name: 'Central TX Qualifier', award: 'Think Award', season: '2025-2026', description: 'Recognized for innovative engineering process documentation.', created_at: '2026-01-18T15:00:00.000Z' },
+  ],
+})
+
+const teamC = makeTeam(TEAM_ID_C, {
+  team_name: 'Volt Vanguard',
+  ftc_team_number: 22317,
+  slug: 'volt-vanguard',
+  organization: 'Westlake Academy',
+  city: 'San Francisco',
+  state: 'CA',
+  tagline: 'High voltage. High ambition.',
+  mission_statement:
+    'Volt Vanguard is a student-run team that blends rigorous engineering with community education, holding free quarterly workshops for Bay Area middle-schoolers.',
+  technical_summary:
+    'Differential swerve prototype, PIDF-tuned slides, and a Limelight 3 vision system for AprilTag targeting.',
+  autonomous_description: 'AprilTag-guided auto reliably scores 5 specimens in the first 30 s.',
+  drivetrain: 'Differential swerve (prototype)',
+  control_system: 'REV Control Hub',
+  build_system: 'Custom CNC + goBILDA',
+  cad_software: 'Fusion 360',
+  programming: 'Java / FTC SDK + Limelight',
+  manufacturing_capabilities: ['CNC routing', 'FDM 3D printing', 'Waterjet (school shop)'],
+  sensors: ['Limelight 3 (AprilTag)', 'IMU', 'Magnetic encoder'],
+  proudest_mechanism_name: 'Differential swerve prototype',
+  proudest_mechanism_problem: 'Achieving omnidirectional movement without the weight and cost of commercial swerve.',
+  proudest_mechanism_solution: 'Student-designed differential swerve using dual NEOs per module; 30% lighter than our previous mecanum setup.',
+  outreach_summary: 'Quarterly STEM workshops at Title I middle schools across San Francisco, reaching 350+ students this season.',
+  community_interest_text: 'Partner with two local libraries to run after-school robotics clubs.',
+  financial_ask_cents: 850_000,
+  seed_funding_goals_cents: 600_000,
+  budget_items: [
+    { qty: 1, label: 'Limelight 3 vision module', total_cents: 40_000 },
+    { qty: 2, label: 'REV Expansion Hub', total_cents: 30_000 },
+    { qty: 1, label: 'Championship travel (flights + hotel)', total_cents: 480_000 },
+    { qty: 1, label: 'Raw materials (aluminum, hardware)', total_cents: 150_000 },
+    { qty: 1, label: 'Registration fees', total_cents: 150_000 },
+  ],
+  team_achievements: [
+    { id: 'ach-c1', team_id: TEAM_ID_C, event_name: 'Bay Area Qualifier', award: 'Inspire Award – 1st', season: '2025-2026', description: 'Top judged award for overall excellence.', created_at: '2026-02-08T15:00:00.000Z' },
+    { id: 'ach-c2', team_id: TEAM_ID_C, event_name: 'NorCal Championship', award: 'Finalist Alliance', season: '2025-2026', description: null, created_at: '2026-03-22T15:00:00.000Z' },
+  ],
 })
 
 function makeSubmission(id: string, team: typeof teamA, over: Record<string, unknown>) {
@@ -172,39 +236,89 @@ function makeSubmission(id: string, team: typeof teamA, over: Record<string, unk
 }
 
 const submissions = [
-  makeSubmission('preview-sub-1', teamA, { status: 'pending' }),
+  // Pitch 1 — Quantum Foxes (pending, in the review queue)
+  makeSubmission('preview-sub-1', teamA, {
+    status: 'pending',
+    requested_amount_cents: 750_000,
+    requested_amount: 7500,
+    custom_pitch_alignment:
+      "Helix Robotics Foundation's mission to expand underrepresented STEM access mirrors our own — over half our roster is first-generation college-bound and we recruit entirely from Title I feeder schools.",
+    specific_needs_statement:
+      'This grant covers a second REV Control Hub ($250), competition registration ($850), travel to the NorCal Regional Championship ($5,400), and a replacement intake roller kit ($1,000). Without this funding we cannot send the full team to regionals.',
+    local_connection_notes:
+      "Two of our mentors are Helix Robotics Foundation alumni (class of 2019). We already partner with your foundation's annual Tech-for-All day as a demo team.",
+    submitted_at: '2026-05-20T15:00:00.000Z',
+    sent_at: '2026-05-21T09:14:00.000Z',
+  }),
+
+  // Pitch 2 — Iron Aviators (pending, different ask and angle)
   makeSubmission('preview-sub-2', teamB, {
+    status: 'pending',
+    requested_amount_cents: 600_000,
+    requested_amount: 6000,
+    custom_pitch_alignment:
+      "Your foundation prioritizes industrial automation pathways — Iron Aviators' four-bar linkage climber and dead-wheel odometry system were designed end-to-end by students who want careers in mechanical and controls engineering. We are a direct pipeline for the talent you want to see in the field.",
+    specific_needs_statement:
+      'We are requesting $6,000 to cover: travel to the Austin Regional ($3,200), Limelight 3 vision module for our autonomous upgrade ($400), replacement goBILDA structural parts ($800), and a team laptop for on-field programming and debugging ($1,600).',
+    local_connection_notes:
+      "Roosevelt STEM Academy has a formal partnership with Austin-area manufacturing firms. A Helix sponsorship would be highlighted in our school's annual STEM showcase, reaching 600+ families.",
+    submitted_at: '2026-06-01T10:30:00.000Z',
+    sent_at: '2026-06-02T08:00:00.000Z',
+  }),
+
+  // Pitch 3 — Volt Vanguard (pending, highest ask, strongest resume)
+  makeSubmission('preview-sub-3', teamC, {
+    status: 'pending',
+    requested_amount_cents: 850_000,
+    requested_amount: 8500,
+    custom_pitch_alignment:
+      'Volt Vanguard and Helix share geography and goals: we are both Bay Area-based and focused on broadening STEM access for students who would otherwise never see a robotics lab. Our quarterly workshops at Title I middle schools are already funded in part by two local tech companies — Helix would join a cohort of forward-thinking sponsors with measurable community impact.',
+    specific_needs_statement:
+      'The $8,500 request funds: NorCal Championship travel and hotel for 15 students and 3 mentors ($4,800), raw aluminum and hardware for the 2026 robot build ($1,500), competition registration ($1,500), and workshop consumables (3D filament, wire, connectors) for our after-school outreach program ($700).',
+    local_connection_notes:
+      "Westlake Academy is three miles from Helix's San Francisco office. We'd be glad to arrange a shop tour for your team and could co-brand our next community workshop as a Helix Robotics Foundation event.",
+    submitted_at: '2026-06-10T14:00:00.000Z',
+    sent_at: '2026-06-10T14:05:00.000Z',
+  }),
+
+  // Pitch 4 — Quantum Foxes second pitch, already approved (for contrast)
+  makeSubmission('preview-sub-4', teamA, {
     status: 'approved',
     requested_amount_cents: 500_000,
     requested_amount: 5000,
-    reviewed_at: '2026-05-28T15:00:00.000Z',
-  }),
-  makeSubmission('preview-sub-3', teamA, {
-    status: 'changes_requested',
-    requested_amount_cents: 300_000,
-    requested_amount: 3000,
-    admin_feedback: 'Please clarify the travel budget line item before we proceed.',
+    custom_pitch_alignment:
+      "Follow-up request for our outreach kit after the regional championship — fully aligned with Helix's education mandate.",
+    specific_needs_statement: 'STEM kit materials for our summer workshop series (6 sessions, ~40 students each).',
+    local_connection_notes: 'Continuing from our existing Helix partnership.',
+    reviewed_at: '2026-04-15T11:00:00.000Z',
+    submitted_at: '2026-04-10T10:00:00.000Z',
+    sent_at: '2026-04-10T10:30:00.000Z',
   }),
 ]
 
 const notifications = [
-  { id: 'ntf-1', recipient_id: PROFILE_ID, type: 'general', title: 'New pitch from Quantum Foxes', body: 'A new sponsorship request is waiting for your review.', submission_id: 'preview-sub-1', read_at: null, created_at: '2026-05-21T16:00:00.000Z' },
-  { id: 'ntf-2', recipient_id: PROFILE_ID, type: 'general', title: 'Pitch approved', body: 'You approved funding for Iron Aviators.', submission_id: 'preview-sub-2', read_at: '2026-05-28T16:00:00.000Z', created_at: '2026-05-28T15:05:00.000Z' },
+  { id: 'ntf-1', recipient_id: PROFILE_ID, type: 'general', title: 'New pitch from Quantum Foxes', body: 'A new sponsorship pitch from Quantum Foxes (#31579) is waiting for your review.', submission_id: 'preview-sub-1', read_at: null, created_at: '2026-05-21T09:14:00.000Z' },
+  { id: 'ntf-2', recipient_id: PROFILE_ID, type: 'general', title: 'New pitch from Iron Aviators', body: 'Iron Aviators (#18420) submitted a sponsorship pitch for your review.', submission_id: 'preview-sub-2', read_at: null, created_at: '2026-06-02T08:00:00.000Z' },
+  { id: 'ntf-3', recipient_id: PROFILE_ID, type: 'general', title: 'New pitch from Volt Vanguard', body: 'Volt Vanguard (#22317) from San Francisco sent you a pitch. They are a Inspire Award winner.', submission_id: 'preview-sub-3', read_at: null, created_at: '2026-06-10T14:05:00.000Z' },
+  { id: 'ntf-4', recipient_id: PROFILE_ID, type: 'submission_approved', title: 'Funding confirmed — Quantum Foxes', body: 'You approved $5,000 for Quantum Foxes (outreach kit follow-up).', submission_id: 'preview-sub-4', read_at: '2026-04-15T12:00:00.000Z', created_at: '2026-04-15T11:05:00.000Z' },
 ]
 
 const transactions = [
-  { id: 'txn-1', sponsor_id: SPONSOR_ID, submission_id: 'preview-sub-2', team_id: TEAM_ID_B, amount_cents: 500_000, actor_type: 'sponsor', decision_type: 'approve', created_at: '2026-05-28T15:10:00.000Z', teams: { team_name: 'Iron Aviators' } },
-  { id: 'txn-2', sponsor_id: SPONSOR_ID, submission_id: 'preview-sub-1', team_id: TEAM_ID_A, amount_cents: 1_350_000, actor_type: 'sponsor', decision_type: 'approve', created_at: '2026-04-10T15:10:00.000Z', teams: { team_name: 'Quantum Foxes' } },
+  { id: 'txn-1', sponsor_id: SPONSOR_ID, submission_id: 'preview-sub-4', team_id: TEAM_ID_A, amount_cents: 500_000, actor_type: 'sponsor', decision_type: 'approve', created_at: '2026-04-15T11:00:00.000Z', teams: { team_name: 'Quantum Foxes' } },
 ]
 
 const FIXTURES: Record<string, unknown[]> = {
   profiles: [profile],
   sponsors: [sponsor],
-  teams: [teamA, teamB],
+  teams: [teamA, teamB, teamC],
   submissions,
   notifications,
   transactions_ledger: transactions,
-  team_achievements: teamA.team_achievements,
+  team_achievements: [
+    ...teamA.team_achievements,
+    ...teamB.team_achievements as any[],
+    ...teamC.team_achievements as any[],
+  ],
 }
 
 export const mockProfile = profile
