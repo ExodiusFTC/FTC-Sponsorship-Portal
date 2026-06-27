@@ -5,7 +5,7 @@ import { sponsorApplicationSchema, sponsorSchema, type SponsorApplicationInput, 
 import { sendSponsorApplicationConfirmation } from '@/lib/notify'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { requireAdmin } from '@/lib/actions-utils'
+import { requireAdmin, requireSponsor } from '@/lib/actions-utils'
 
 export async function submitSponsorApplication(data: SponsorApplicationInput) {
   const result = sponsorApplicationSchema.safeParse(data)
@@ -211,6 +211,50 @@ export async function searchSponsors(query?: string) {
 
   if (error) return { error: error.message }
   return { data: data ?? [] }
+}
+
+const updateBudgetSchema = z.object({
+  budgetCents: z.number().int('Must be a whole dollar amount').min(0, 'Budget cannot be negative'),
+})
+
+export async function updateSponsorBudget(budgetCents: number) {
+  // 1. VALIDATE
+  const parsed = updateBudgetSchema.safeParse({ budgetCents })
+  if (!parsed.success) {
+    return { error: parsed.error.issues.map(i => i.message).join(', ') }
+  }
+
+  // 2. AUTH
+  let user, sponsorId, adminClient
+  try {
+    const auth = await requireSponsor()
+    user = auth.user
+    sponsorId = auth.sponsorId
+    adminClient = auth.adminClient
+  } catch (e: any) {
+    return { error: e.message }
+  }
+
+  // 3. MUTATE
+  const { error } = await adminClient
+    .from('sponsors')
+    .update({ funding_cap_cents: parsed.data.budgetCents })
+    .eq('id', sponsorId)
+
+  if (error) return { error: error.message }
+
+  // 4. AUDIT
+  await adminClient.from('audit_log').insert({
+    actor_id: user.id,
+    action: 'update_sponsor_budget',
+    entity_type: 'sponsors',
+    entity_id: sponsorId,
+    metadata: { funding_cap_cents: parsed.data.budgetCents },
+  })
+
+  revalidatePath('/sponsor/funding')
+  revalidatePath('/sponsor/dashboard')
+  return { success: true }
 }
 
 /** Lightweight toggle — only updates status, no full schema validation required. */

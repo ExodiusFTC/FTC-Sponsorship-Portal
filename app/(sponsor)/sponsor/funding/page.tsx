@@ -1,8 +1,9 @@
 import { getAuthedProfile } from '@/lib/actions-utils'
 import { redirect } from 'next/navigation'
-import { Wallet, History, ArrowUpRight, TrendingUp } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { BudgetEditor } from '@/components/sponsor/budget-editor'
 
 export default async function SponsorFundingPage() {
   const authed = await getAuthedProfile()
@@ -52,8 +53,12 @@ export default async function SponsorFundingPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Available Budget</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${((total - used) / 100).toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">Out of ${ (total / 100).toLocaleString() } total</p>
+            <div className="text-3xl font-bold">
+              {total > 0 ? `$${((total - used) / 100).toLocaleString()}` : '—'}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {total > 0 ? `Out of $${(total / 100).toLocaleString()} total` : 'No budget cap set'}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -61,7 +66,7 @@ export default async function SponsorFundingPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Utilized</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-emerald-500">{percentage}%</div>
+            <div className="text-3xl font-bold text-emerald-500">{total > 0 ? `${percentage}%` : '—'}</div>
             <Progress value={percentage} className="h-1.5 mt-2" />
           </CardContent>
         </Card>
@@ -75,6 +80,18 @@ export default async function SponsorFundingPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Budget Cap</CardTitle>
+          <CardDescription>
+            Your total seasonal sponsorship budget. Leave unset if you prefer to evaluate each team individually without a fixed cap.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <BudgetEditor currentCapCents={total} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
