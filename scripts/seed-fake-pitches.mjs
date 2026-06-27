@@ -302,14 +302,17 @@ for (const s of createdSubs) {
   log(`Submission for "${team?.team_name}" — $${s.requested_amount_cents / 100}  [${s.id}]`)
 }
 
-// Reflect total reserved in sponsor's funding_used_cents so the dashboard math is correct
+// Reflect total reserved in sponsor's funding_used_cents.
+// Also bump funding_cap_cents to comfortably exceed the total ask so the
+// dashboard doesn't show negative available budget.
 const totalReserved = SUBMISSIONS.reduce((sum, s) => sum + s.reserved_amount_cents, 0)
+const newCap = Math.ceil(totalReserved * 1.5 / 100_000) * 100_000  // round up to nearest $1k
 const { error: capErr } = await admin
   .from('sponsors')
-  .update({ funding_used_cents: totalReserved })
+  .update({ funding_used_cents: totalReserved, funding_cap_cents: newCap })
   .eq('id', sponsor.id)
-if (capErr) warn(`Could not update funding_used_cents: ${capErr.message}`)
-else log(`Sponsor funding_used_cents set to $${totalReserved / 100}`)
+if (capErr) warn(`Could not update sponsor financials: ${capErr.message}`)
+else log(`Sponsor cap=$${newCap / 100}, used=$${totalReserved / 100}`)
 
 // ── Done ──────────────────────────────────────────────────────────────────────
 
