@@ -60,9 +60,8 @@ export function DotGrid() {
   const resize = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const parent = canvas.parentElement
-    const w = parent ? parent.offsetWidth : window.innerWidth
-    const h = parent ? parent.offsetHeight : window.innerHeight
+    const w = window.innerWidth
+    const h = window.innerHeight
     const dpr = window.devicePixelRatio || 1
     canvas.width = w * dpr
     canvas.height = h * dpr
@@ -121,13 +120,8 @@ export function DotGrid() {
     tick()
 
     function handleClick(e: MouseEvent) {
-      const rect = canvas!.getBoundingClientRect()
-      const mx = e.clientX - rect.left
-      const my = e.clientY - rect.top
-      const { w, h } = dimRef.current
-
-      // Ignore clicks outside this canvas area
-      if (mx < 0 || my < 0 || mx > w || my > h) return
+      const mx = e.clientX
+      const my = e.clientY
 
       for (const d of dotsRef.current) {
         const dx = d.ox - mx
@@ -149,14 +143,11 @@ export function DotGrid() {
 
     window.addEventListener('click', handleClick, true)
     window.addEventListener('resize', resize)
-    const ro = new ResizeObserver(resize)
-    if (canvas.parentElement) ro.observe(canvas.parentElement)
 
     return () => {
       cancelAnimationFrame(rafRef.current)
       window.removeEventListener('click', handleClick, true)
       window.removeEventListener('resize', resize)
-      ro.disconnect()
     }
   }, [resize])
 
@@ -164,11 +155,12 @@ export function DotGrid() {
     <canvas
       ref={canvasRef}
       aria-hidden
+      suppressHydrationWarning
       style={{
-        position: 'absolute',
+        position: 'fixed',
         inset: 0,
-        width: '100%',
-        height: '100%',
+        width: '100vw',
+        height: '100vh',
         pointerEvents: 'none',
         zIndex: -1,
       }}

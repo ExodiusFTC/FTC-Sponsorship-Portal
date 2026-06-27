@@ -10,7 +10,7 @@ export function AppLayout({
   role?: 'coach' | 'admin' | 'sponsor'
 }) {
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
+    <div className="flex h-screen flex-col overflow-hidden text-foreground">
       <Suspense fallback={<div className="h-14 border-b border-border bg-card" />}>
         <TopNav role={role} />
       </Suspense>

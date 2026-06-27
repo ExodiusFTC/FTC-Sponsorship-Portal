@@ -20,6 +20,7 @@ export const metadata: Metadata = {
 import { ThemeProvider } from "@/components/theme-provider"
 import { GlobalShortcuts } from "@/components/global-shortcuts"
 import { RoboticsCursor } from "@/components/robotics-cursor"
+import { DotGrid } from "@/components/ui/dot-grid"
 
 export default function RootLayout({
   children,
@@ -46,10 +47,14 @@ export default function RootLayout({
             enableSystem={false}
             disableTransitionOnChange
           >
-            {children}
-            <GlobalShortcuts />
-            <RoboticsCursor />
-            <Toaster richColors position="top-right" />
+            {/* isolate creates a stacking context so the fixed canvas at z-index:-1 sits above the body background */}
+            <div style={{ isolation: 'isolate', position: 'relative' }}>
+              <DotGrid />
+              {children}
+              <GlobalShortcuts />
+              <RoboticsCursor />
+              <Toaster richColors position="top-right" />
+            </div>
           </ThemeProvider>
         </body>
       </html>

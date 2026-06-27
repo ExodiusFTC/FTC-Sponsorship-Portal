@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 export default function SponsorViewLoading() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {/* Sticky header skeleton */}
       <div className="sticky top-0 z-30 border-b border-border bg-background/85 px-6 py-3">
         <div className="mx-auto flex max-w-3xl items-center justify-between">

@@ -134,7 +134,7 @@ export default async function DashboardPage() {
   // 4. Final Safety Check
   if (!currentTeam) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center gap-6 bg-background px-6 text-center">
+      <div className="flex h-screen flex-col items-center justify-center gap-6 px-6 text-center">
         <div className="flex flex-col items-center gap-2">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           <p className="text-lg font-medium">Setting up your workspace...</p>

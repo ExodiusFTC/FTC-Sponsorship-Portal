@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { DotGrid } from '@/components/ui/dot-grid'
 import { ArrowRight, Search, Activity, CheckCircle2 } from 'lucide-react'
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
 import {
@@ -174,8 +173,7 @@ export function Hero() {
   }, [])
 
   return (
-    <section className="relative isolate pt-32 pb-10 lg:pt-40 lg:pb-16 flex flex-col items-center overflow-hidden">
-      <DotGrid />
+    <section className="relative pt-32 pb-10 lg:pt-40 lg:pb-16 flex flex-col items-center overflow-hidden">
       {/* warm radial glow */}
       <div aria-hidden className="absolute left-1/2 top-0 -z-10 h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-primary/5 blur-[100px]" />
 

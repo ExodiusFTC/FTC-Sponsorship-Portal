@@ -66,7 +66,7 @@ export default async function PublicTeamPortfolio({ params }: Props) {
   const mediaUrls = (team.media_urls ?? []) as string[]
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen text-foreground">
       {/* Nav */}
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur-md print:hidden">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-6 py-3">

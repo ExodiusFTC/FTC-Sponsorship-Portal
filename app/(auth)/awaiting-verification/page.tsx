@@ -23,7 +23,7 @@ export default async function AwaitingVerificationPage() {
   const displayName = profile?.full_name ?? user.email ?? 'Coach'
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-4">
+    <div className="min-h-screen text-foreground flex items-center justify-center px-4">
       <div className="w-full max-w-md space-y-6">
         {/* Status card */}
         <div className="rounded-2xl border border-border bg-card p-8 text-center space-y-4">

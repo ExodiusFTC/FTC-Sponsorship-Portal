@@ -31,7 +31,7 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased transition-colors duration-300 selection:bg-primary/20">
+    <div className="min-h-screen text-foreground antialiased transition-colors duration-300 selection:bg-primary/20">
       <InitialLoader />
       <TopNav />
       <main>

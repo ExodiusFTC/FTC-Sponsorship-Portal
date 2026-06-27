@@ -47,7 +47,7 @@ export default async function SponsorViewPage({ params }: Props) {
   const tax = taxBadge(team.tax_status as string)
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <div className="max-w-3xl mx-auto py-12 px-4 space-y-8">
 
         {/* Header */}
