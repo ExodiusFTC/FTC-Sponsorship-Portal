@@ -13,7 +13,7 @@ import {
   Search
 } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { FadeUp } from '@/components/motion/fade-up'
@@ -90,18 +90,14 @@ export function SponsorDashboardShell({
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2 border-border bg-card shadow-sm" asChild>
-            <Link href="/sponsor/funding">
-              <Wallet className="h-4 w-4" />
-              ${(fundingRemaining / 100).toLocaleString()} Remaining
-            </Link>
-          </Button>
-          <Button className="gap-2 shadow-sm" asChild>
-            <Link href="/sponsor/submissions">
-              <Inbox className="h-4 w-4" />
-              Review Queue ({pendingCount})
-            </Link>
-          </Button>
+          <Link href="/sponsor/funding" className={cn(buttonVariants({ variant: 'outline' }), 'gap-2 border-border bg-card shadow-sm')}>
+            <Wallet className="h-4 w-4" />
+            ${(fundingRemaining / 100).toLocaleString()} Remaining
+          </Link>
+          <Link href="/sponsor/submissions" className={cn(buttonVariants(), 'gap-2 shadow-sm')}>
+            <Inbox className="h-4 w-4" />
+            Review Queue ({pendingCount})
+          </Link>
         </div>
       </div>
 
@@ -141,11 +137,9 @@ export function SponsorDashboardShell({
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold tracking-tight">Recent Requests</h2>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
-              <Link href="/sponsor/submissions">
-                View All <ArrowUpRight className="ml-2 h-3 w-3" />
-              </Link>
-            </Button>
+            <Link href="/sponsor/submissions" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'text-muted-foreground hover:text-foreground')}>
+              View All <ArrowUpRight className="ml-2 h-3 w-3" />
+            </Link>
           </div>
 
           <div className="grid gap-4">
