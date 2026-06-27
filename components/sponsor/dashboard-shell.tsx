@@ -1,13 +1,14 @@
 'use client'
 
-import { 
-  Building2, 
-  Users, 
-  FileText, 
-  Inbox, 
-  Wallet, 
-  Clock, 
-  CheckCircle2, 
+import Link from 'next/link'
+import {
+  Building2,
+  Users,
+  FileText,
+  Inbox,
+  Wallet,
+  Clock,
+  CheckCircle2,
   ArrowUpRight,
   Search
 } from 'lucide-react'
@@ -89,13 +90,17 @@ export function SponsorDashboardShell({
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2 border-border bg-card shadow-sm">
-            <Wallet className="h-4 w-4" />
-            ${(fundingRemaining / 100).toLocaleString()} Remaining
+          <Button variant="outline" className="gap-2 border-border bg-card shadow-sm" asChild>
+            <Link href="/sponsor/funding">
+              <Wallet className="h-4 w-4" />
+              ${(fundingRemaining / 100).toLocaleString()} Remaining
+            </Link>
           </Button>
-          <Button className="gap-2 shadow-sm">
-            <Inbox className="h-4 w-4" />
-            Review Queue ({pendingCount})
+          <Button className="gap-2 shadow-sm" asChild>
+            <Link href="/sponsor/submissions">
+              <Inbox className="h-4 w-4" />
+              Review Queue ({pendingCount})
+            </Link>
           </Button>
         </div>
       </div>
@@ -136,8 +141,10 @@ export function SponsorDashboardShell({
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold tracking-tight">Recent Requests</h2>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-              View All <ArrowUpRight className="ml-2 h-3 w-3" />
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
+              <Link href="/sponsor/submissions">
+                View All <ArrowUpRight className="ml-2 h-3 w-3" />
+              </Link>
             </Button>
           </div>
 
@@ -223,9 +230,8 @@ function SubmissionCard({ submission, index }: { submission: Submission; index: 
 
   return (
     <FadeUp delay={index * 0.05}>
-      <div
-        role="button"
-        tabIndex={0}
+      <Link
+        href={`/sponsor/submissions/${submission.id}`}
         className="group flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 transition-all hover:border-border/80 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-5"
       >
         <div className="flex min-w-0 items-center gap-4">
@@ -253,7 +259,7 @@ function SubmissionCard({ submission, index }: { submission: Submission; index: 
           </span>
           <ArrowUpRight className="h-5 w-5 text-muted-foreground/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground" />
         </div>
-      </div>
+      </Link>
     </FadeUp>
   )
 }
