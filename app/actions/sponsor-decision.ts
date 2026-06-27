@@ -11,7 +11,6 @@ const sponsorUpdateSchema = z.object({
   submissionId: z.string().uuid(),
   status: z.enum(['approved', 'declined', 'changes_requested']),
   feedback: z.string().max(2000).optional(),
-  fundingAmountCents: z.number().int().min(0).optional(),
 })
 
 const recordDecisionSchema = z.object({
@@ -38,10 +37,9 @@ function mapDecisionError(code: string | undefined) {
 export async function sponsorUpdateSubmissionStatus(
   submissionId: string,
   status: 'approved' | 'declined' | 'changes_requested',
-  feedback?: string,
-  fundingAmountCents?: number
+  feedback?: string
 ) {
-  const parsed = sponsorUpdateSchema.safeParse({ submissionId, status, feedback, fundingAmountCents })
+  const parsed = sponsorUpdateSchema.safeParse({ submissionId, status, feedback })
   if (!parsed.success) return { error: 'Invalid data provided' }
 
   let user, adminClient
@@ -54,7 +52,7 @@ export async function sponsorUpdateSubmissionStatus(
   }
 
   const normalizedFeedback = feedback?.trim() || undefined
-  const amountCents = status === 'approved' ? Math.max(0, Math.floor(fundingAmountCents ?? 0)) : 0
+  const amountCents = 0
 
   const { data: rpcResult, error: rpcError } = await adminClient.rpc('sponsor_decide_submission_atomic', {
     p_submission_id: submissionId,

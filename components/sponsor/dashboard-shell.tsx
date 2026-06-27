@@ -12,7 +12,6 @@ import {
   ArrowUpRight,
   Search
 } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -22,7 +21,6 @@ import { StatCard } from '@/components/ui/stat-card'
 type Sponsor = {
   id: string
   company_name: string
-  funding_cap_cents: number
   funding_used_cents: number
 }
 
@@ -70,7 +68,6 @@ export function SponsorDashboardShell({
     )
   }
 
-  const fundingRemaining = sponsor.funding_cap_cents - sponsor.funding_used_cents
 
   return (
     <div className="space-y-8 pb-20">
@@ -85,14 +82,14 @@ export function SponsorDashboardShell({
             {sponsor.company_name}
           </h1>
           <p className="mt-2 text-[15px] text-muted-foreground">
-            Managing <span className="text-foreground font-medium">{submissions.length}</span> total requests for the current season.
+            Managing <span className="text-foreground font-medium">{submissions.length}</span> total sponsorship requests.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <Link href="/sponsor/funding" className={cn(buttonVariants({ variant: 'outline' }), 'gap-2 border-border bg-card shadow-sm')}>
             <Wallet className="h-4 w-4" />
-            ${(fundingRemaining / 100).toLocaleString()} Remaining
+            Funding
           </Link>
           <Link href="/sponsor/submissions" className={cn(buttonVariants(), 'gap-2 shadow-sm')}>
             <Inbox className="h-4 w-4" />
@@ -117,11 +114,10 @@ export function SponsorDashboardShell({
           description="Teams you're supporting"
         />
         <StatCard
-          label="Budget Utilized"
-          value={`${Math.round((sponsor.funding_used_cents / sponsor.funding_cap_cents) * 100)}%`}
+          label="$ In Support"
+          value={`$${(sponsor.funding_used_cents / 100).toLocaleString()}`}
           icon={Wallet}
-          description={`$${(sponsor.funding_used_cents / 100).toLocaleString()} spent`}
-          progress={sponsor.funding_cap_cents > 0 ? (sponsor.funding_used_cents / sponsor.funding_cap_cents) * 100 : 0}
+          description="Total approved to date"
         />
         <StatCard
           label="Total Outreach"
@@ -183,18 +179,9 @@ export function SponsorDashboardShell({
             </CardHeader>
             <CardContent>
                <div className="space-y-4">
-                 <div className="space-y-2">
-                   <div className="flex justify-between text-xs font-mono">
-                     <span className="text-muted-foreground">UTILIZED</span>
-                     <span>${(sponsor.funding_used_cents / 100).toLocaleString()}</span>
-                   </div>
-                   <div className="h-2 w-full bg-border/50 rounded-full overflow-hidden">
-                     <motion.div 
-                       initial={{ width: 0 }}
-                       animate={{ width: `${(sponsor.funding_used_cents / sponsor.funding_cap_cents) * 100}%` }}
-                       className="h-full bg-primary"
-                     />
-                   </div>
+                 <div className="space-y-1">
+                   <div className="text-xs font-mono text-muted-foreground uppercase">In Support</div>
+                   <div className="text-2xl font-semibold tracking-tight">${(sponsor.funding_used_cents / 100).toLocaleString()}</div>
                  </div>
                  <div className="grid grid-cols-2 gap-2">
                    <div className="p-3 rounded-lg bg-background border border-border/50 text-center">

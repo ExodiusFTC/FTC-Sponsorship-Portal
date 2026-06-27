@@ -2,8 +2,6 @@ import { getAuthedProfile } from '@/lib/actions-utils'
 import { redirect } from 'next/navigation'
 import { TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
-import { BudgetEditor } from '@/components/sponsor/budget-editor'
 
 export default async function SponsorFundingPage() {
   const authed = await getAuthedProfile()
@@ -20,7 +18,7 @@ export default async function SponsorFundingPage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sponsor = (profile as any)?.sponsors ?? null
-  
+
   if (!sponsor) {
     return (
       <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border rounded-2xl bg-card/30">
@@ -36,38 +34,23 @@ export default async function SponsorFundingPage() {
     .eq('sponsor_id', profile.sponsor_id)
     .order('created_at', { ascending: false })
 
-  const used = sponsor.funding_used_cents
-  const total = sponsor.funding_cap_cents
-  const percentage = total > 0 ? Math.round((used / total) * 100) : 0
+  const totalApproved = transactions?.reduce((s, t) => s + t.amount_cents, 0) ?? 0
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Funding & Budget</h1>
-        <p className="text-muted-foreground mt-1">Track your seasonal budget and active disbursements.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Funding</h1>
+        <p className="text-muted-foreground mt-1">Track your approved sponsorships and disbursements.</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Available Budget</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Total Approved</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">
-              {total > 0 ? `$${((total - used) / 100).toLocaleString()}` : '—'}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {total > 0 ? `Out of $${(total / 100).toLocaleString()} total` : 'No budget cap set'}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Utilized</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-emerald-500">{total > 0 ? `${percentage}%` : '—'}</div>
-            <Progress value={percentage} className="h-1.5 mt-2" />
+            <div className="text-3xl font-bold">${(totalApproved / 100).toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">Across all teams, all time</p>
           </CardContent>
         </Card>
         <Card>
@@ -83,20 +66,8 @@ export default async function SponsorFundingPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Budget Cap</CardTitle>
-          <CardDescription>
-            Your total seasonal sponsorship budget. Leave unset if you prefer to evaluate each team individually without a fixed cap.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BudgetEditor currentCapCents={total} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
           <CardTitle>Transaction History</CardTitle>
-          <CardDescription>Recent funding disbursements to teams.</CardDescription>
+          <CardDescription>Funding disbursements to teams.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">

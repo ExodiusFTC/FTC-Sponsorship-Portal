@@ -8,12 +8,6 @@ import { createInAppNotification } from '@/lib/notify'
 
 const EDITABLE_SUBMISSION_STATUSES = ['draft', 'declined', 'changes_requested'] as const
 
-function getCurrentSeasonLabel(now = new Date()) {
-  const startYear = now.getUTCMonth() >= 6 ? now.getUTCFullYear() : now.getUTCFullYear() - 1
-  const endYearShort = String((startYear + 1) % 100).padStart(2, '0')
-  return `${startYear}-${endYearShort}`
-}
-
 async function getCoachTeamId() {
   let user, supabase
   try {
@@ -70,28 +64,15 @@ export async function saveSubmission(
     }
   }
 
-  const season = getCurrentSeasonLabel()
-
-  // Block submission if the total ask exceeds the targeted sponsor's remaining capacity, so
-  // coaches get immediate feedback instead of an opaque rejection at admin review. RLS already
-  // hides exhausted/inactive sponsors, so a null row here also means "not accepting".
   if (status === 'pending') {
     const { data: sponsor } = await supabase
       .from('sponsors')
-      .select('funding_cap_cents, funding_used_cents, status')
+      .select('status')
       .eq('id', data.sponsorId)
       .single()
 
     if (!sponsor || sponsor.status !== 'active') {
       return { error: 'This sponsor is not currently accepting new submissions.' }
-    }
-
-    const remaining = (sponsor.funding_cap_cents ?? 0) - (sponsor.funding_used_cents ?? 0)
-    if (financialAsk > remaining) {
-      const fmt = (cents: number) => `$${(cents / 100).toLocaleString('en-US')}`
-      return {
-        error: `Your total ask (${fmt(financialAsk)}) exceeds this sponsor's remaining capacity (${fmt(Math.max(0, remaining))}). Lower your ask or choose another sponsor.`,
-      }
     }
   }
 
@@ -103,7 +84,6 @@ export async function saveSubmission(
     specific_needs_statement: data.specificNeedsStatement ?? null,
     local_connection_notes: data.localConnectionNotes ?? null,
     status,
-    season,
     submitted_at: status === 'pending' ? new Date().toISOString() : null,
     requested_amount_cents: financialAsk
   }
@@ -134,12 +114,11 @@ export async function saveSubmission(
       .select('id, status')
       .eq('team_id', teamId)
       .eq('sponsor_id', data.sponsorId)
-      .eq('season', season)
       .not('status', 'in', '("declined","expired","bounced")')
       .maybeSingle()
 
     if (existingTarget) {
-      return { error: 'An active submission for this sponsor already exists in the current season.' }
+      return { error: 'An active submission for this sponsor already exists.' }
     }
 
     const { data: inserted, error } = await supabase
@@ -203,7 +182,6 @@ export async function autoSaveSubmissionDraft(
     specific_needs_statement: data.specificNeedsStatement ?? null,
     local_connection_notes: data.localConnectionNotes ?? null,
     status: 'draft' as const,
-    season: getCurrentSeasonLabel(),
     requested_amount_cents: financialAsk
   }
 
@@ -231,7 +209,6 @@ export async function autoSaveSubmissionDraft(
     .select('id, status')
     .eq('team_id', teamId)
     .eq('sponsor_id', data.sponsorId)
-    .eq('season', payload.season)
     .not('status', 'in', '("declined","expired","bounced")')
     .maybeSingle()
 

@@ -18,7 +18,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn, htmlToPlainText } from '@/lib/utils'
 import { sponsorUpdateSubmissionStatus } from '@/app/actions/sponsor-decision'
@@ -60,7 +59,6 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState('')
-  const [fundingAmount, setFundingAmount] = useState((submissionData.requested_amount_cents || teamData?.financial_ask_cents || 0) / 100)
   const [showConfirm, setShowConfirm] = useState<'approved' | 'declined' | 'changes_requested' | null>(null)
   const sponsorCompany = submissionData?.sponsors?.company_name || 'your company'
 
@@ -69,8 +67,7 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
       const result = await sponsorUpdateSubmissionStatus(
         submissionData.id,
         status,
-        feedback,
-        status === 'approved' ? Math.round(fundingAmount * 100) : undefined
+        feedback
       )
 
       if ('success' in result && result.success) {
@@ -215,20 +212,6 @@ export function SponsorReviewShell({ submission, team }: { submission: any; team
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="amount" className="text-[13px] text-muted-foreground">Funding Offer ($)</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
-                        <Input 
-                          id="amount"
-                          type="number"
-                          value={fundingAmount}
-                          onChange={(e) => setFundingAmount(parseFloat(e.target.value))}
-                          className="pl-7 bg-background border-border text-[15px] font-mono"
-                        />
-                      </div>
-                      <p className="text-[11px] text-muted-foreground font-mono">Team is asking for ${((submissionData.requested_amount_cents || teamData?.financial_ask_cents || 0) / 100).toLocaleString()}</p>
-                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 gap-3 pt-6 border-t border-border">
