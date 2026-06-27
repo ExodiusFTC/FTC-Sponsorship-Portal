@@ -243,6 +243,7 @@ const SUBMISSIONS = [
     status: 'dispatched',
     season: '2025-2026',
     requested_amount_cents: 750_000,
+    reserved_amount_cents: 750_000,
     custom_pitch_alignment:
       "Helix Robotics Foundation's mission to expand underrepresented STEM access mirrors our own — over half our roster is first-generation college-bound and we recruit entirely from Title I feeder schools.",
     specific_needs_statement:
@@ -258,6 +259,7 @@ const SUBMISSIONS = [
     status: 'dispatched',
     season: '2025-2026',
     requested_amount_cents: 600_000,
+    reserved_amount_cents: 600_000,
     custom_pitch_alignment:
       "Your company prioritizes industrial automation pathways — Iron Aviators' four-bar linkage climber and dead-wheel odometry system were designed end-to-end by students who want careers in mechanical and controls engineering. We are a direct pipeline for the talent you want to see in the field.",
     specific_needs_statement:
@@ -273,6 +275,7 @@ const SUBMISSIONS = [
     status: 'dispatched',
     season: '2025-2026',
     requested_amount_cents: 850_000,
+    reserved_amount_cents: 850_000,
     custom_pitch_alignment:
       "Volt Vanguard and dev testing share geography and goals: we are both Bay Area-based and focused on broadening STEM access for students who would otherwise never see a robotics lab. Our quarterly workshops at Title I middle schools are already funded in part by two local tech companies — dev testing would join a cohort of forward-thinking sponsors with measurable community impact.",
     specific_needs_statement:
@@ -298,6 +301,15 @@ for (const s of createdSubs) {
   const team = createdTeams.find((t) => t.id === s.team_id)
   log(`Submission for "${team?.team_name}" — $${s.requested_amount_cents / 100}  [${s.id}]`)
 }
+
+// Reflect total reserved in sponsor's funding_used_cents so the dashboard math is correct
+const totalReserved = SUBMISSIONS.reduce((sum, s) => sum + s.reserved_amount_cents, 0)
+const { error: capErr } = await admin
+  .from('sponsors')
+  .update({ funding_used_cents: totalReserved })
+  .eq('id', sponsor.id)
+if (capErr) warn(`Could not update funding_used_cents: ${capErr.message}`)
+else log(`Sponsor funding_used_cents set to $${totalReserved / 100}`)
 
 // ── Done ──────────────────────────────────────────────────────────────────────
 
