@@ -59,22 +59,62 @@ export function RoboticsCursor() {
     document.head.appendChild(styleEl)
     document.body.style.cursor = 'none'
 
-    const onMove = (e: MouseEvent) => {
-      if (cursorRef.current) {
-        cursorRef.current.style.transform = `translate(${e.clientX - GEAR_SIZE / 2}px, ${e.clientY - GEAR_SIZE / 2}px)`
-      }
+    let x = -999
+    let y = -999
+    let visible = false
+    let rafId = 0
+    let pending = false
 
-      const now = Date.now()
+    const render = () => {
+      pending = false
+      const el = cursorRef.current
+      if (!el) return
+      el.style.transform = `translate(${x - GEAR_SIZE / 2}px, ${y - GEAR_SIZE / 2}px)`
+      el.style.opacity = visible ? '1' : '0'
+    }
+
+    const schedule = () => {
+      if (pending) return
+      pending = true
+      rafId = requestAnimationFrame(render)
+    }
+
+    const onMove = (e: MouseEvent) => {
+      x = e.clientX
+      y = e.clientY
+      visible = true
+      schedule()
+
+      const now = e.timeStamp
       if (now - lastSpawnRef.current >= SPAWN_INTERVAL_MS) {
         lastSpawnRef.current = now
-        spawnHexRing(e.clientX, e.clientY)
+        spawnHexRing(x, y)
       }
     }
 
+    // Hide the gear when the pointer leaves the viewport so it doesn't freeze
+    // stranded on an edge; it reappears on the next move back inside.
+    const onLeave = (e: MouseEvent) => {
+      if (e.relatedTarget === null) {
+        visible = false
+        schedule()
+      }
+    }
+
+    const onBlur = () => {
+      visible = false
+      schedule()
+    }
+
     window.addEventListener('mousemove', onMove, { passive: true })
+    document.addEventListener('mouseout', onLeave)
+    window.addEventListener('blur', onBlur)
 
     return () => {
+      cancelAnimationFrame(rafId)
       window.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseout', onLeave)
+      window.removeEventListener('blur', onBlur)
       document.body.style.cursor = ''
       styleEl.remove()
     }
@@ -91,6 +131,7 @@ export function RoboticsCursor() {
         height: GEAR_SIZE,
         pointerEvents: 'none',
         zIndex: 99999,
+        opacity: 0,
         transform: 'translate(-999px,-999px)',
         willChange: 'transform',
       }}
